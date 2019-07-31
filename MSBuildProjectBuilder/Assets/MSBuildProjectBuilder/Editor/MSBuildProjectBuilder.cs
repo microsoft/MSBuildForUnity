@@ -8,10 +8,6 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-// TODO: Include the --interactive flag when not in batch mode, look for output indicating the user needs to launch their browser and enter a code to complete authentication and display a dialog with instructions (and maybe launch the website)
-// If the "Azure Artifacts credential provider" is missing, help the user install it from https://github.com/microsoft/artifacts-credprovider/blob/master/helpers/installcredprovider.ps1
-// If dotnet is missing, help the user install it from https://dotnet.microsoft.com/download
-
 namespace MSBuildForUnity
 {
     /// <summary>
