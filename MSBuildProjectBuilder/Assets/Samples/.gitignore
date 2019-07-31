@@ -1,0 +1,3 @@
+# Don't ignore MSBuild project files
+!**/*.csproj
+!**/*.sln
