@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace MSBuildForUnity
 {
-    [ScriptedImporter(1, new[] { "csproj", ".sln" })]
-    public sealed partial class MSBuildProjectImporter : ScriptedImporter
+    [ScriptedImporter(1, new[] { "csproj", "sln" })]
+    internal sealed partial class MSBuildProjectImporter : ScriptedImporter
     {
         public override async void OnImportAsset(AssetImportContext context)
         {
