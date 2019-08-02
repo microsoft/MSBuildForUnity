@@ -15,7 +15,7 @@ namespace Microsoft.Build.Unity
 
         [SerializeField]
         [Tooltip("Indicates whether the referenced MSBuild project should automatically be built.")]
-        private bool autoBuild = false;
+        private bool autoBuild = true;
 
         /// <summary>
         /// Creates an in-memory instance that can resolve the full path to the MSBuild project.
