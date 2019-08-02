@@ -1,0 +1,7 @@
+# Don't ignore MSBuild project files
+!**/*.csproj
+!**/*.sln
+
+# Ignore the Output directory
+[Oo]utput/
+[Oo]utput.meta
