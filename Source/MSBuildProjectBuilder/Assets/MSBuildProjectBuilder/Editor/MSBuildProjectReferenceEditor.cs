@@ -11,6 +11,7 @@ namespace Microsoft.Build.Unity
         private sealed class MSBuildProjectReferenceEditor : Editor
         {
             private SerializedProperty autoBuildProperty;
+            private SerializedProperty projectPathProperty;
 
             public override async void OnInspectorGUI()
             {
@@ -56,7 +57,7 @@ namespace Microsoft.Build.Unity
                             var pickedUri = new Uri(pickedPath);
                             var relativeUri = assetUri.MakeRelativeUri(pickedUri);
 
-                            msBuildProjectReference.projectPath = relativeUri.ToString();
+                            projectPathProperty.stringValue = relativeUri.ToString();
                         }
                     }
                 }
@@ -71,6 +72,7 @@ namespace Microsoft.Build.Unity
             private void OnEnable()
             {
                 this.autoBuildProperty = this.serializedObject.FindProperty(nameof(MSBuildProjectReference.autoBuild));
+                this.projectPathProperty = this.serializedObject.FindProperty(nameof(MSBuildProjectReference.projectPath));
             }
         }
     }
