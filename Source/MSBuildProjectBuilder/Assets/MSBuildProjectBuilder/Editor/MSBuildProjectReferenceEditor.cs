@@ -16,20 +16,28 @@ namespace Microsoft.Build.Unity
             {
                 var msBuildProjectReference = (MSBuildProjectReference)this.target;
 
-                // Build & Rebuild buttons
-                EditorGUILayout.BeginHorizontal();
+                // Project path not found error
+                if (!File.Exists(msBuildProjectReference.ProjectPath))
                 {
-                    if (GUILayout.Button("Build"))
-                    {
-                        await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
-                    }
-
-                    if (GUILayout.Button("Rebuild"))
-                    {
-                        await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
-                    }
+                    EditorGUILayout.HelpBox($"The referenced project does not exist.", MessageType.Error);
                 }
-                EditorGUILayout.EndHorizontal();
+                // Build & Rebuild buttons
+                else
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        if (GUILayout.Button("Build"))
+                        {
+                            await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                        }
+
+                        if (GUILayout.Button("Rebuild"))
+                        {
+                            await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
 
                 // Project path selection
                 EditorGUILayout.BeginHorizontal();
