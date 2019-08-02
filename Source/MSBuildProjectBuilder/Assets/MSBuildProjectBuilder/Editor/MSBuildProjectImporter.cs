@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-namespace MSBuildForUnity
+namespace Microsoft.Build.Unity
 {
     [ScriptedImporter(1, new[] { "csproj", "sln" })]
     internal sealed partial class MSBuildProjectImporter : ScriptedImporter

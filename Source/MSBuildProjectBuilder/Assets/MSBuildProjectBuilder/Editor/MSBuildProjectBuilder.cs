@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace MSBuildForUnity
+namespace Microsoft.Build.Unity
 {
     /// <summary>
     /// Provides logic for building MSBuild project (and solution) files.

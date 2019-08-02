@@ -2,7 +2,7 @@
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-namespace MSBuildForUnity
+namespace Microsoft.Build.Unity
 {
     partial class MSBuildProjectImporter
     {

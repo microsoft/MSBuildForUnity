@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace MSBuildForUnity
+namespace Microsoft.Build.Unity
 {
     partial class MSBuildProjectReference
     {

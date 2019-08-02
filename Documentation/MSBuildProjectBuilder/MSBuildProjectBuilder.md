@@ -37,8 +37,8 @@ See the Source/MSBuildProjectBuilder/Assets/Samples directory for an example.
 
 MSBuild projects/solutions can also be built programmatically via [MSBuildProjectBuilder](../../Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder/Editor/MSBuildProjectBuilder.cs).
 
-`MSBuildForUnity.MSBuildProjectBuilder.BuildAllProjectsAsync` - use one of these overloads to build all MSBuild projects/solutions referenced by `MSBuildProjectReference`s in the Unity project.
+`MSBuildProjectBuilder.BuildAllProjectsAsync` - use one of these overloads to build all MSBuild projects/solutions referenced by `MSBuildProjectReference`s in the Unity project.
 
-`MSBuildForUnity.MSBuildProjectBuilder.BuildProjectsAsync` - use one of these overloads to build a specified collection of projects/solutions referenced by `MSBuildProjectReference`s.
+`MSBuildProjectBuilder.BuildProjectsAsync` - use one of these overloads to build a specified collection of projects/solutions referenced by `MSBuildProjectReference`s.
 
-`MSBuildForUnity.MSBuildProjectBuilder.BuildProjectAsync` - use one of these overloads to build a specified project/solution referenced by a `MSBuildProjectReference`.
+`MSBuildProjectBuilder.BuildProjectAsync` - use one of these overloads to build a specified project/solution referenced by a `MSBuildProjectReference`.

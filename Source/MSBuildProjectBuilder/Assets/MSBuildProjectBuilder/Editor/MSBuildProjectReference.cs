@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace MSBuildForUnity
+namespace Microsoft.Build.Unity
 {
     [CreateAssetMenu(fileName = nameof(MSBuildProjectReference), menuName = "MSBuild/Project Reference", order = 1)]
     public sealed partial class MSBuildProjectReference : ScriptableObject
