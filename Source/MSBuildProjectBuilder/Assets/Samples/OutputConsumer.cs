@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
-public class OutputConsumer : MonoBehaviour
+namespace Samples
 {
-    // Start is called before the first frame update
-    void Start()
+    public class OutputConsumer : MonoBehaviour
     {
-        var class1 = new NetStandardProject.Class1();
-    }
+        // Start is called before the first frame update
+        void Start()
+        {
+            var class1 = new NetStandardProject.Class1();
+        }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        // Update is called once per frame
+        void Update()
+        {
+
+        }
     }
 }
