@@ -48,10 +48,15 @@ namespace MSBuildForUnity
                 }
 
                 // Determine the absolute path of the MSBuild project (based on the projectPath being relative to the MSBuildProjectReference asset).
-                string unityProjectPath = Path.GetDirectoryName(Application.dataPath);
-                string assetAbsolutePath = Path.Combine(unityProjectPath, assetRelativePath);
-                string assetAbsoluteDirectory = Path.GetDirectoryName(assetAbsolutePath);
-                return Path.GetFullPath(Path.Combine(assetAbsoluteDirectory, this.projectPath));
+                if (!string.IsNullOrEmpty(this.projectPath))
+                {
+                    string unityProjectPath = Path.GetDirectoryName(Application.dataPath);
+                    string assetAbsolutePath = Path.Combine(unityProjectPath, assetRelativePath);
+                    string assetAbsoluteDirectory = Path.GetDirectoryName(assetAbsolutePath);
+                    return Path.GetFullPath(Path.Combine(assetAbsoluteDirectory, this.projectPath));
+                }
+
+                return string.Empty;
             }
         }
 

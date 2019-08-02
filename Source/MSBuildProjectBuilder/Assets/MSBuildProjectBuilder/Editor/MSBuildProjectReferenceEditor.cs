@@ -42,11 +42,14 @@ namespace MSBuildForUnity
                         string assetPath = Path.Combine(projectPath, AssetDatabase.GetAssetPath(msBuildProjectReference));
                         string pickedPath = EditorUtility.OpenFilePanel("Pick MSBuild Project", Application.dataPath, "*");
 
-                        var assetUri = new Uri(assetPath);
-                        var pickedUri = new Uri(pickedPath);
-                        var relativeUri = assetUri.MakeRelativeUri(pickedUri);
+                        if (!string.IsNullOrEmpty(pickedPath))
+                        {
+                            var assetUri = new Uri(assetPath);
+                            var pickedUri = new Uri(pickedPath);
+                            var relativeUri = assetUri.MakeRelativeUri(pickedUri);
 
-                        msBuildProjectReference.projectPath = relativeUri.ToString();
+                            msBuildProjectReference.projectPath = relativeUri.ToString();
+                        }
                     }
                 }
                 EditorGUILayout.EndHorizontal();
