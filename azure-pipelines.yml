@@ -7,7 +7,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: npm version prerelease --preid=$(Build.BuildNumber)
+- script: npm --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
   displayName: 'Update UPM Version'
   
 - task: Npm@1
