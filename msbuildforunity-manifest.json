@@ -1,0 +1,13 @@
+{
+    "name": "com.microsoft.msbuildforunity",
+    "displayName": "MSBuild for Unity",
+    "version": "0.0.1",
+    "unity": "2018.1",
+    "description": "A set of tools for Unity to make it simpler to work with MSBuild toolchain.",
+    "keywords": [
+        "MSBuild",
+		"NuGet",
+        "unity"
+    ],
+    "category": "Unity"
+}
