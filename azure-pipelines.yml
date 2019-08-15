@@ -7,8 +7,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- script: npm version prerelease --preid=$(Build.BuildNumber)
+  displayName: 'Update UPM Version'
   
 - task: Npm@1
   inputs:
