@@ -9,5 +9,12 @@
 		"NuGet",
         "unity"
     ],
+	"repository": {
+      "type": "git",
+      "url": "https://github.com/microsoft/MSBuildForUnity.git"
+	},
+	"directories": {
+     "ProjectBuilder:": "./Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder"
+	},
     "category": "Unity"
 }
