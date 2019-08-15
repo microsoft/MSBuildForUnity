@@ -1,7 +1,7 @@
 {
     "name": "com.microsoft.msbuildforunity",
     "displayName": "MSBuild for Unity",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "unity": "2018.1",
     "description": "A set of tools for Unity to make it simpler to work with MSBuild toolchain.",
     "keywords": [
@@ -14,7 +14,7 @@
       "url": "https://github.com/microsoft/MSBuildForUnity.git"
 	},
 	"directories": {
-     "ProjectBuilder:": "./Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder"
+     "lib": "./Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder"
 	},
     "category": "Unity"
 }
