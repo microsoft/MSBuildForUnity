@@ -13,8 +13,6 @@
       "type": "git",
       "url": "https://github.com/microsoft/MSBuildForUnity.git"
 	},
-	"directories": {
-     "lib": "./Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder"
-	},
+	"files":["ProjectBuilder", "ProjectGenerator"],
     "category": "Unity"
 }
