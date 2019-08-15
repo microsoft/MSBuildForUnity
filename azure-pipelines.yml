@@ -7,13 +7,17 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: npm --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
+- task: Npm@1
+  inputs:
+    command: 'custom'
+    customCommand: --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
+    workingDir: 'Source/MSBuildTools.Unity/Assets/'
   displayName: 'Update UPM Version'
   
 - task: Npm@1
   inputs:
     command: 'publish'
-    workingDir: '.'
+    workingDir: 'Source/MSBuildTools.Unity/Assets/'
     publishRegistry: 'useFeed'
     publishFeed: '0cb95e25-9194-4ccd-9afb-439b25ecb93a/a3d1c3cc-6042-4e05-b699-39a947e75639'
 # Start with a minimal pipeline that you can customize to build and deploy your code.
