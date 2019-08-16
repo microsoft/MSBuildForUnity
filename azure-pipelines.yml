@@ -1,4 +1,4 @@
-# Starter pipeline
+# CI Pipeline
 
 trigger:
 - master
@@ -11,20 +11,12 @@ steps:
   inputs:
     command: 'custom'
     customCommand: --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
-    workingDir: 'Source/MSBuildTools.Unity/Assets/'
+    workingDir: 'Source/MSBuildTools.Unity/Packages/MSBuildForUnity'
   displayName: 'Update UPM Version'
   
 - task: Npm@1
   inputs:
     command: 'publish'
-    workingDir: 'Source/MSBuildTools.Unity/Assets/'
+    workingDir: 'Source/MSBuildTools.Unity/Packages/MSBuildForUnity'
     publishRegistry: 'useFeed'
     publishFeed: '0cb95e25-9194-4ccd-9afb-439b25ecb93a/a3d1c3cc-6042-4e05-b699-39a947e75639'
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'

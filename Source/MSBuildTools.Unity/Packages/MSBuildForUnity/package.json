@@ -1,0 +1,19 @@
+{
+    "name": "com.microsoft.msbuildforunity",
+    "version": "0.1.0",
+    "displayName": "MSBuild for Unity",
+    "description": "A set of tools for Unity to make it simpler to work with MSBuild toolchain.",
+    "unity": "2018.1",
+    "dependencies": {
+   },
+   "keywords": [
+      "msbuild",
+      "nuget",
+      "unity"
+    ],
+    "author": {
+      "name": "Microsoft",
+      "email": "ryan.tremblay@microsoft.com",
+      "url": "https://github.com/microsoft/MSBuildForUnity"
+    } 
+}
