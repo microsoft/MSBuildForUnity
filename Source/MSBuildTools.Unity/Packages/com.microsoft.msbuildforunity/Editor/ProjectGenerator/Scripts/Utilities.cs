@@ -26,9 +26,14 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
         Project,
 
         /// <summary>
-        /// Inside the Packages folder of the Unity project.
+        /// Inside the Package folder (not the PackagesCache)
         /// </summary>
         Package,
+
+        /// <summary>
+        /// Inside the copy of the PackagesCache folder of the Unity project.
+        /// </summary>
+        PackageCopy,
 
         /// <summary>
         /// Inside the Packages folder shipped with the Unity version.
@@ -86,6 +91,15 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
         {
             if (path.StartsWith(PackagesFolderName))
             {
+                // This is weird special Unity behaviour, the GetFullPath will replace the "Packages" path to "PackagesCache", which we don't want.
+                // However, a File.Exists works the same way; we only care about the packages that are trully in the <ProjectFolder>/Packages instead of <ProjectFolder>/Library/PackagesCache
+                string fullPathInPackages = Path.GetFullPath(Path.Combine(ProjectPath, path));
+                if (!fullPathInPackages.Contains("PackageCache") && (File.Exists(fullPathInPackages) || Directory.Exists(fullPathInPackages)))
+                {
+                    // The Packages folder really has these items, they aren't virtual and thus won't be part of PackagesCopy folder
+                    return fullPathInPackages;
+                }
+
                 return Path.GetFullPath(Path.Combine(MSBuildOutputFolder, PackagesCopyFolderName + path.Substring(PackagesFolderName.Length)));
             }
 
@@ -146,9 +160,13 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
             {
                 return AssetLocation.Project;
             }
-            else if (absolutePath.Contains(packagesPath) || absolutePath.Contains(PackagesCopyPath))
+            else if (absolutePath.Contains(packagesPath) && assetFile.Exists)
             {
                 return AssetLocation.Package;
+            }
+            else if (absolutePath.Contains(packagesPath) || absolutePath.Contains(PackagesCopyPath))
+            {
+                return AssetLocation.PackageCopy;
             }
             else if (absolutePath.Contains(BuiltInPackagesPath))
             {
@@ -201,6 +219,11 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
 
             if (absolutePath.Contains(packagesPath))
             {
+                if (File.Exists(absolutePath) || Directory.Exists(absolutePath))
+                {
+                    return absolutePath.Replace(packagesPath, PackagesFolderName);
+                }
+
                 return absolutePath.Replace(packagesPath, PackagesCopyFolderName);
             }
             else if (absolutePath.Contains(PackagesCopyPath))
@@ -339,7 +362,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
         /// <summary>
         /// Copies the source directory to the output directory creating all the directories first then copying.
         /// </summary>
-        public static void CopyDirectory(string sourcePath, string destinationPath)
+        public static void CopyDirectory(string sourcePath, string destinationPath, params string[] extensionFilters)
         {
             // Create the root directory itself
             Directory.CreateDirectory(destinationPath);
@@ -352,6 +375,17 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
             //Copy all the files & Replaces any files with the same name
             foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
             {
+                if (extensionFilters != null && extensionFilters.Length > 0)
+                {
+                    foreach (string extensionFilter in extensionFilters)
+                    {
+                        if (newPath.EndsWith(extensionFilter))
+                        {
+                            continue;
+                        }
+                    }
+                }
+
                 File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
             }
         }
@@ -535,7 +569,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
 
                 if (fullPaths)
                 {
-                    guids[i] = GetFullPathFromAssetsRelative(guids[i]);
+                    guids[i] = GetFullPathFromKnownRelative(guids[i]);
                 }
             }
         }

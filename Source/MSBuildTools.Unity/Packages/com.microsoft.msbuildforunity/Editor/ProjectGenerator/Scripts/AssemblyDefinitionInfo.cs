@@ -195,7 +195,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
                     foreach (string sourceFile in assembly.sourceFiles)
                     {
                         MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(sourceFile);
-                        sourceFiles.Add(SourceFileInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile)), asset.GetClass()));
+                        sourceFiles.Add(SourceFileInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile)), asset.GetClass())); 
                     }
                 }
                 else
