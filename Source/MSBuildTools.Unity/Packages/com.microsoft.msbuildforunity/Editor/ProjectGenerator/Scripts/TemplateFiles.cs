@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.MSBuildForUnity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// A helper class to manage (and locate) all the templates.

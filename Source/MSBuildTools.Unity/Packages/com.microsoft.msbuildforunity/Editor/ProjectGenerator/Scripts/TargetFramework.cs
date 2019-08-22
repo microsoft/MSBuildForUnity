@@ -5,7 +5,7 @@
 using System;
 using UnityEditor;
 
-namespace Microsoft.MSBuildForUnity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// Represents TargetFrameworks that Unity supports.

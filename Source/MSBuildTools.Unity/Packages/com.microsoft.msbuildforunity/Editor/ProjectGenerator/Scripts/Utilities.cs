@@ -13,7 +13,7 @@ using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.MSBuildForUnity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// Represents where a Unity project reference asset is located.

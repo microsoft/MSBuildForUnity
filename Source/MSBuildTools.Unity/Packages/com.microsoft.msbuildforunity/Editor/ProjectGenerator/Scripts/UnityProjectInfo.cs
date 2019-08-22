@@ -12,7 +12,7 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
-namespace Microsoft.MSBuildForUnity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
