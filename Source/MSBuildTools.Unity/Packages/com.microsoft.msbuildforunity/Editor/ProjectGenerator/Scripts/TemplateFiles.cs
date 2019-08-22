@@ -78,7 +78,7 @@ namespace Microsoft.MSBuildForUnity.ProjectGeneration
             }
 
             string[] files = AssetDatabase.FindAssets("*", templateFolders);
-            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true); 
+            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true);
 
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 

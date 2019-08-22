@@ -197,12 +197,6 @@ namespace Microsoft.MSBuildForUnity.ProjectGeneration
             {
                 string assetRelativePath = Utilities.GetAssetsRelativePathFrom(assetAssemblyPath);
                 PluginImporter importer = (PluginImporter)AssetImporter.GetAtPath(assetRelativePath);
-                if (importer == null)
-                {
-                    Debug.LogWarning($"Didn't get an importer for '{assetRelativePath}', most likely due to it being in a Unity hidden folder (prefixed by a .)");
-                    continue;
-                }
-
                 PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetAssemblyPath, importer.isNativePlugin ? PluginType.Native : PluginType.Managed);
                 toReturn.Add(toAdd);
             }

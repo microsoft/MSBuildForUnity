@@ -84,10 +84,10 @@ namespace Microsoft.MSBuildForUnity.ProjectGeneration
             UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
 
             // Read the solution template
-            string solutionTemplateText = File.ReadAllText(TemplateFiles.Instance.MSBuildSolutionTemplatePath);
+            string solutionTemplateText = File.ReadAllText(Utilities.GetAssetsRelativePathFrom(TemplateFiles.Instance.MSBuildSolutionTemplatePath));
 
             // Read the project template
-            string projectTemplateText = File.ReadAllText(TemplateFiles.Instance.SDKProjectFileTemplatePath);
+            string projectTemplateText = File.ReadAllText(Utilities.GetAssetsRelativePathFrom(TemplateFiles.Instance.SDKProjectFileTemplatePath));
 
             unityProjectInfo.ExportSolution(solutionTemplateText, projectTemplateText, generatedProjectPath);
 
@@ -107,7 +107,7 @@ namespace Microsoft.MSBuildForUnity.ProjectGeneration
 
             foreach (string directory in directories)
             {
-                Utilities.CopyDirectory(directory, Path.Combine(outputDirectory, Path.GetFileName(directory).Split('@')[0]), ".asmdef", ".asmdef.meta", ".cs", ".cs.meta", ".template", ".template.meta", ".dll", ".dll.meta");
+                Utilities.CopyDirectory(directory, Path.Combine(outputDirectory, Path.GetFileName(directory).Split('@')[0]));
             }
         }
 
