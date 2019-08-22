@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.MSBuildForUnity.ProjectGeneration
 {
     /// <summary>
     /// A helper class to manage (and locate) all the templates.
@@ -78,7 +78,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
             }
 
             string[] files = AssetDatabase.FindAssets("*", templateFolders);
-            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true);
+            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true); 
 
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 

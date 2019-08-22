@@ -5,7 +5,7 @@
 using System;
 using UnityEditor;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.MSBuildForUnity.ProjectGeneration
 {
     /// <summary>
     /// Represents TargetFrameworks that Unity supports.
