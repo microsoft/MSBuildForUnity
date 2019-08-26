@@ -58,3 +58,5 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Custom MSBuildForUnity Project Related ignore entries
+/MSBuild/

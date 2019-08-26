@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Compilation;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// This contains parsed information using Unity configuration about a specific compilation platform.

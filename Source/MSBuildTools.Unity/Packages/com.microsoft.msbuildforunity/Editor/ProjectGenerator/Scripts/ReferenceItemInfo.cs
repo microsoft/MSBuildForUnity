@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// A common base class for reference items such as C# Projects and DLLs to be added to MSBuild.

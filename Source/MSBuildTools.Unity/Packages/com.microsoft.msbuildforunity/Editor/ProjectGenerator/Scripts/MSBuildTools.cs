@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// Class that exposes the MSBuild project generation operation.
@@ -27,7 +27,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
         };
 
         public const string CSharpVersion = "7.3";
-        public readonly static Version DefaultMinUWPSDK = new Version("10.0.14393.0");
+        public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static readonly string uwpMinPlatformVersion = EditorUserBuildSettings.wsaMinUWPSDK;
         private static readonly string uwpTargetPlatformVersion = EditorUserBuildSettings.wsaUWPSDK;
@@ -84,10 +84,10 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
             UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
 
             // Read the solution template
-            string solutionTemplateText = File.ReadAllText(Utilities.GetAssetsRelativePathFrom(TemplateFiles.Instance.MSBuildSolutionTemplatePath));
+            string solutionTemplateText = File.ReadAllText(TemplateFiles.Instance.MSBuildSolutionTemplatePath);
 
             // Read the project template
-            string projectTemplateText = File.ReadAllText(Utilities.GetAssetsRelativePathFrom(TemplateFiles.Instance.SDKProjectFileTemplatePath));
+            string projectTemplateText = File.ReadAllText(TemplateFiles.Instance.SDKProjectFileTemplatePath);
 
             unityProjectInfo.ExportSolution(solutionTemplateText, projectTemplateText, generatedProjectPath);
 
@@ -107,7 +107,7 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
 
             foreach (string directory in directories)
             {
-                Utilities.CopyDirectory(directory, Path.Combine(outputDirectory, Path.GetFileName(directory).Split('@')[0]));
+                Utilities.CopyDirectory(directory, Path.Combine(outputDirectory, Path.GetFileName(directory).Split('@')[0]), ".asmdef", ".asmdef.meta", ".cs", ".cs.meta", ".template", ".template.meta", ".dll", ".dll.meta");
             }
         }
 

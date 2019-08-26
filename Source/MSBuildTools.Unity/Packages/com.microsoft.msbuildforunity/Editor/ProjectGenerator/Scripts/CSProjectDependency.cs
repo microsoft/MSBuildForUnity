@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// A helper common class to reference dependencies for a CS Project.

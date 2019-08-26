@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// From which source was the project created.
@@ -250,6 +250,9 @@ namespace Microsoft.MixedReality.Toolkit.MSBuild
                     relativeSourcePath = $"..\\..\\{Utilities.GetAssetsRelativePathFrom(sourceFile.File.FullName)}";
                     break;
                 case AssetLocation.Package:
+                    relativeSourcePath = $"..\\..\\{Utilities.GetPackagesRelativePathFrom(sourceFile.File.FullName)}";
+                    break;
+                case AssetLocation.PackageCopy:
                     relativeSourcePath = $"..\\{Utilities.GetPackagesRelativePathFrom(sourceFile.File.FullName)}";
                     break;
                 default: throw new InvalidDataException("Unknown asset location.");

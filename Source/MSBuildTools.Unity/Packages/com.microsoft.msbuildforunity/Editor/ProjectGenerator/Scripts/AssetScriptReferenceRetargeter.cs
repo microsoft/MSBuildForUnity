@@ -15,7 +15,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Microsoft.MixedReality.Toolkit.MSBuild
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     public static class AssetScriptReferenceRetargeter
     {
