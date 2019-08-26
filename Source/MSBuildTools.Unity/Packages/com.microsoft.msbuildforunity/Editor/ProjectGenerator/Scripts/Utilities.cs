@@ -380,7 +380,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     foreach (string extensionFilter in extensionFilters)
                     {
-                        if (newPath.EndsWith(extensionFilter, StringComparison.InvariantCultureIgnoreCase))
+                        if (newPath.EndsWith(extensionFilter, StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }
