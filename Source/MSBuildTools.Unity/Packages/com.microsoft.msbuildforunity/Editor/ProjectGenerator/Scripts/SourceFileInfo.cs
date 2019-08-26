@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.MSBuildForUnity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration
 {
     /// <summary>
     /// Parsed information for a source file.
