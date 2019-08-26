@@ -362,6 +362,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Copies the source directory to the output directory creating all the directories first then copying.
         /// </summary>
+        /// <param name="extensionFilters">This list of extensions allow for double extensions such as .cs.meta.</param>
         public static void CopyDirectory(string sourcePath, string destinationPath, params string[] extensionFilters)
         {
             // Create the root directory itself
@@ -379,7 +380,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     foreach (string extensionFilter in extensionFilters)
                     {
-                        if (newPath.EndsWith(extensionFilter))
+                        if (newPath.EndsWith(extensionFilter, StringComparison.InvariantCultureIgnoreCase))
                         {
                             continue;
                         }
