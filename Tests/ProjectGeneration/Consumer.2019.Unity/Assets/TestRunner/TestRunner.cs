@@ -1,25 +1,38 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Microsoft.Build.Unity.ProjectGeneration.Test;
+using System;
 using TMPro;
 using UnityEngine;
 
 public class TestRunner : MonoBehaviour
 {
     [SerializeField]
-    private TextMeshPro platformText;
+    private TextMeshProUGUI platformText = null;
 
     [SerializeField]
-    private TextMeshPro resultsText;
+    private TextMeshProUGUI resultsText = null;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        
-    }
+        PlatformTest testClass = new PlatformTest();
+        platformText.text = testClass.Platform;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        try
+        {
+            var results = testClass.RunTest();
+            if (results == TestResult.Failure)
+            {
+                resultsText.color = Color.red;
+            }
+            else if (results == TestResult.PlatformNotTested)
+            {
+                resultsText.color = Color.yellow;
+            }
+            resultsText.text = results.ToString();
+        }
+        catch (Exception ex)
+        {
+            resultsText.text = $"Test Failed; exception:\r\n {ex.ToString()}";
+            resultsText.color = Color.red;
+        }
     }
 }
