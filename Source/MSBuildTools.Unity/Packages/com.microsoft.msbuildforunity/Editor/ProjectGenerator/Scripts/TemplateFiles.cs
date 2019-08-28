@@ -25,6 +25,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private const string EditorPropsTemplateName = "Editor.InEditor.Template.props.template";
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.Template\.props.template";
         private const string PluginMetaFileTemplateRegex = @"Plugin\.([a-zA-Z]*)\.meta.template";
+        private const string BuildProjectsTemplateName = "BuildProjects.proj.template";
 
         private static TemplateFiles instance;
 
@@ -47,6 +48,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets the MSBuild Platform Props file (.props) template path.
         /// </summary>
         public string PlatformPropsTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the BuildProjects.proj MSBuild file template path.
+        /// </summary>
+        public string BuildProjectsTemplatePath { get; }
 
         /// <summary>
         /// Gets a list of specialized platform templates.
@@ -78,13 +84,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             string[] files = AssetDatabase.FindAssets("*", templateFolders);
-            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true); 
+            Utilities.GetPathsFromGuidsInPlace(files, fullPaths: true);
 
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 
             MSBuildSolutionTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName);
             SDKProjectFileTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName);
             PlatformPropsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName);
+            BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
 
             // Get specific platforms
             Dictionary<string, string> platformTemplates = new Dictionary<string, string>();

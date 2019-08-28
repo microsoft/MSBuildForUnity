@@ -95,6 +95,56 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 File.Copy(otherFile, Path.Combine(generatedProjectPath, Path.GetFileName(otherFile)));
             }
+
+            string buildProjectsFile = "BuildProjects.proj";
+            if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
+            {
+                GenerateBuildProjectsFile(buildProjectsFile, unityProjectInfo.UnityProjectName, platforms);
+            }
+        }
+
+        private static void GenerateBuildProjectsFile(string fileName, string projectName, IEnumerable<CompilationPlatformInfo> compilationPlatforms)
+        {
+            string template = File.ReadAllText(TemplateFiles.Instance.BuildProjectsTemplatePath);
+            if (!Utilities.TryGetXMLTemplate(template, "PLATFORM_TARGET", out string platformTargetTemplate))
+            {
+                Debug.LogError($"Corrupt template for BuildProjects.proj file.");
+                return;
+            }
+
+            List<string> batBuildEntry = new List<string>();
+            List<string> entries = new List<string>();
+            foreach (CompilationPlatformInfo platform in compilationPlatforms)
+            {
+                // Add one for InEditor
+                entries.Add(Utilities.ReplaceTokens(platformTargetTemplate, new Dictionary<string, string>()
+                {
+                    {"##PLATFORM_TOKEN##", platform.Name },
+                    {"##CONFIGURATION_TOKEN##", "InEditor" }
+                }));
+
+                //Add one for Player, except WSA special case
+                if (platform.BuildTarget != BuildTarget.WSAPlayer)
+                {
+                    entries.Add(Utilities.ReplaceTokens(platformTargetTemplate, new Dictionary<string, string>()
+                    {
+                        {"##PLATFORM_TOKEN##", platform.Name },
+                        {"##CONFIGURATION_TOKEN##", "Player" }
+                    }));
+                }
+
+                batBuildEntry.Add($"dotnet msbuild {fileName} /t:Build{platform.Name}InEditor");
+                batBuildEntry.Add($"dotnet msbuild {fileName} /t:Build{platform.Name}Player");
+            }
+
+            string output = Utilities.ReplaceTokens(template, new Dictionary<string, string>()
+            {
+                {platformTargetTemplate, string.Join("\n", entries) },
+                {"<!--TARGET_PROJECT_NAME_TOKEN-->", projectName }
+            });
+
+            File.WriteAllText(Path.Combine(Utilities.MSBuildOutputFolder, fileName), output);
+            File.WriteAllText(Path.Combine(Utilities.MSBuildOutputFolder, "BuildAll.bat"), string.Join("\r\n", batBuildEntry));
         }
 
         private static void MakePackagesCopy(string msbuildFolder)
