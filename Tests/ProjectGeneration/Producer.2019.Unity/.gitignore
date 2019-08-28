@@ -59,5 +59,7 @@ sysinfo.txt
 crashlytics-build.properties
 
 # Custom MSBuildForUnity Project Related ignore entries
-/MSBuild/
-~/MSBuild/Publish/**.meta
+/MSBuild/*
+!/MSBuild/Publish/
+/MSBuild/Publish/**/*.dll
+/MSBuild/Publish/**/*.pdb
