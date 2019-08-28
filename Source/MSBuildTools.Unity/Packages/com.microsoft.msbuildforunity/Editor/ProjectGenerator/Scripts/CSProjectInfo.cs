@@ -255,6 +255,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 case AssetLocation.PackageCopy:
                     relativeSourcePath = $"..\\{Utilities.GetPackagesRelativePathFrom(sourceFile.File.FullName)}";
                     break;
+                case AssetLocation.External:
+                    relativeSourcePath = sourceFile.File.FullName;
+                    Debug.LogWarning($"Referencing external source file with full path '{sourceFile.File.FullName}'");
+                    break;
                 default: throw new InvalidDataException("Unknown asset location.");
             }
 

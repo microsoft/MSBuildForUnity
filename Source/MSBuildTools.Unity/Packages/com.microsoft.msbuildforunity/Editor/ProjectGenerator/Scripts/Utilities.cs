@@ -38,7 +38,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Inside the Packages folder shipped with the Unity version.
         /// </summary>
-        BuiltInPackage
+        BuiltInPackage,
+
+        /// <summary>
+        /// The asset is located external to any known projects, but is somehow pulled in.
+        /// </summary>
+        External
     }
 
     /// <summary>
@@ -174,7 +179,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
             else
             {
-                throw new InvalidDataException($"Unknown asset location for '{absolutePath}'");
+                Debug.LogWarning($"Unknown asset location for '{absolutePath}', marking as external.");
+                return AssetLocation.External;
             }
         }
 
