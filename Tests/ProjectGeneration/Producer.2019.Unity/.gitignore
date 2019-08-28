@@ -60,3 +60,4 @@ crashlytics-build.properties
 
 # Custom MSBuildForUnity Project Related ignore entries
 /MSBuild/
+~/MSBuild/Publish/**.meta
