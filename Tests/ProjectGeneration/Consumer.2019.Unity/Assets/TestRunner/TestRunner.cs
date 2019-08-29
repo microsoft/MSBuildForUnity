@@ -13,12 +13,12 @@ public class TestRunner : MonoBehaviour
 
     private void Awake()
     {
-        PlatformTest testClass = new PlatformTest();
-        platformText.text = testClass.Platform;
-
         try
         {
-            var results = testClass.RunTest();
+            PlatformTest testClass = new PlatformTest();
+            platformText.text = testClass.Platform;
+
+            TestResult results = testClass.RunTest();
             if (results == TestResult.Failure)
             {
                 resultsText.color = Color.red;
