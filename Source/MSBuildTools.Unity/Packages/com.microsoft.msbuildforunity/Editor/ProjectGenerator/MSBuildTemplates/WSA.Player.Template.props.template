@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
     
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
+    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
 
   <!-- This is for succesful building step from dotnet cli -->
@@ -34,7 +36,7 @@
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\System.Runtime.WindowsRuntime.dll</HintPath>
     </Reference>
 
-    <Reference Include="WinRTLegacy">
+    <Reference Include="WinRTLegacy" Condition="$(UnityMajorVersion) &lt; 2019">
       <HintPath>$(UnityEditorInstallFolder)Data\PlaybackEngines\MetroSupport\Managed\UAP\WinRTLegacy.dll</HintPath>
     </Reference>
 
