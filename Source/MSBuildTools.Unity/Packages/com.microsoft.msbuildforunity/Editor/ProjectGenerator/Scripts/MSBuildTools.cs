@@ -211,7 +211,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     minUWPPlatform = DefaultMinUWPSDK.ToString();
                 }
-
+                string[] versionParts = Application.unityVersion.Split('.');
                 Dictionary<string, string> platformTokens = new Dictionary<string, string>()
                 {
                     {"<!--TARGET_FRAMEWORK_TOKEN-->", targetFramework.AsMSBuildString() },
@@ -220,7 +220,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                     // These are UWP specific, but they will be no-op if not needed
                     { "<!--UWP_TARGET_PLATFORM_VERSION_TOKEN-->", targetUWPPlatform },
-                    { "<!--UWP_MIN_PLATFORM_VERSION_TOKEN-->", minUWPPlatform }
+                    { "<!--UWP_MIN_PLATFORM_VERSION_TOKEN-->", minUWPPlatform },
+
+                    { "<!--UNITY_MAJOR_VERSION_TOKEN-->", versionParts[0] },
+                    { "<!--UNITY_MINOR_VERSION_TOKEN-->", versionParts[1] }
                 };
 
                 platformTokens.Add(platformCommonReferenceTemplate, string.Join("\r\n", GetReferenceEntries(platformCommonReferenceTemplate, platformAssemblyReferencePaths)));
