@@ -12,7 +12,7 @@ namespace Microsoft.Build.Unity
         {
             private SerializedProperty projectPathProperty;
 
-            public override async void OnInspectorGUI()
+            public override void OnInspectorGUI()
             {
                 var msBuildProjectReference = (MSBuildProjectReference)this.target;
 
@@ -24,7 +24,7 @@ namespace Microsoft.Build.Unity
                 // Build & Rebuild buttons
                 else
                 {
-                    await msBuildProjectReference.DrawBuildButtons();
+                    msBuildProjectReference.DrawBuildButtons();
                 }
 
                 // Project path selection

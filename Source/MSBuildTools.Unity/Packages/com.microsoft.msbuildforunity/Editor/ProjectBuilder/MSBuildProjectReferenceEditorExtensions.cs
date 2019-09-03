@@ -6,18 +6,18 @@ namespace Microsoft.Build.Unity
 {
     internal static class MSBuildProjectReferenceEditorExtensions
     {
-        public static async Task DrawBuildButtons(this MSBuildProjectReference msBuildProjectReference)
+        public static void DrawBuildButtons(this MSBuildProjectReference msBuildProjectReference)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Build"))
                 {
-                    await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                 }
 
                 if (GUILayout.Button("Rebuild"))
                 {
-                    await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                 }
             }
         }
