@@ -9,7 +9,7 @@ namespace Microsoft.Build.Unity
     [ScriptedImporter(1, new[] { "csproj", "sln" })]
     internal sealed partial class MSBuildProjectImporter : ScriptedImporter
     {
-        public override async void OnImportAsset(AssetImportContext context)
+        public override void OnImportAsset(AssetImportContext context)
         {
             var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath);
             context.AddObjectToAsset(Path.GetFileNameWithoutExtension(context.assetPath), msBuildProjectReference);
@@ -21,7 +21,7 @@ namespace Microsoft.Build.Unity
             {
                 try
                 {
-                    await msBuildProjectReference.BuildProjectAsync();
+                    msBuildProjectReference.BuildProject();
                 }
                 catch (OperationCanceledException)
                 {
