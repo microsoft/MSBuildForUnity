@@ -4,24 +4,24 @@ using UnityEngine;
 
 namespace Microsoft.Build.Unity
 {
+    public enum WindowsBuildEngine
+    {
+        None,
+        DotNet,
+        VisualStudio2017,
+        VisualStudio2019,
+    }
+
+    public enum MacBuildEngine
+    {
+        None,
+        DotNet,
+        VisualStudioForMac,
+    }
+
     [CreateAssetMenu(fileName = nameof(MSBuildProjectReference), menuName = "MSBuild/Project Reference", order = 1)]
     public sealed partial class MSBuildProjectReference : ScriptableObject
     {
-        public enum WindowsBuildEngine
-        {
-            None,
-            DotNet,
-            VisualStudio2017,
-            VisualStudio2019,
-        }
-
-        public enum MacBuildEngine
-        {
-            None,
-            DotNet,
-            VisualStudioForMac,
-        }
-
         private string assetRelativePath;
 
         [SerializeField]
@@ -49,11 +49,13 @@ namespace Microsoft.Build.Unity
         /// <remarks>
         /// This is useful for creating and passing transient <see cref="MSBuildProjectReference"/> instances to <see cref="MSBuildProjectBuilder"/> when they don't exist in the <see cref="AssetDatabase"/>.
         /// </remarks>
-        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, bool autoBuild = true)
+        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, WindowsBuildEngine windowsBuildEngine = WindowsBuildEngine.DotNet, MacBuildEngine macBuildEngine = MacBuildEngine.DotNet, bool autoBuild = true)
         {
             var msBuildProjectReference = ScriptableObject.CreateInstance<MSBuildProjectReference>();
             msBuildProjectReference.assetRelativePath = assetRelativePath;
             msBuildProjectReference.projectPath = Path.GetFileName(assetRelativePath);
+            msBuildProjectReference.windowsBuildEngine = windowsBuildEngine;
+            msBuildProjectReference.macBuildEngine = macBuildEngine;
             msBuildProjectReference.autoBuild = autoBuild;
             return msBuildProjectReference;
         }
@@ -83,9 +85,10 @@ namespace Microsoft.Build.Unity
             }
         }
 
-        public bool AutoBuild
-        {
-            get => this.autoBuild;
-        }
+        public WindowsBuildEngine WindowsBuildEngine => this.windowsBuildEngine;
+
+        public MacBuildEngine MacBuildEngine => this.macBuildEngine;
+
+        public bool AutoBuild => this.autoBuild;
     }
 }

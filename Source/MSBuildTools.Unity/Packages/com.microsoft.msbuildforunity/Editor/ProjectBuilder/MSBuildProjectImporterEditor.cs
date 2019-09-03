@@ -15,6 +15,10 @@ namespace Microsoft.Build.Unity
 
                 // Build & Rebuild buttons
                 msBuildProjectReference.DrawBuildButtons();
+
+                Editor.DrawPropertiesExcluding(this.serializedObject, "m_Script");
+
+                this.ApplyRevertGUI();
             }
         }
     }
