@@ -9,7 +9,7 @@ namespace Microsoft.Build.Unity
         [CustomEditor(typeof(MSBuildProjectImporter))]
         public sealed class MSBuildProjectImporterEditor : ScriptedImporterEditor
         {
-            public override async void OnInspectorGUI()
+            public override void OnInspectorGUI()
             {
                 var msBuildProjectReference = (MSBuildProjectReference)this.assetTarget;
 
@@ -18,12 +18,12 @@ namespace Microsoft.Build.Unity
                 {
                     if (GUILayout.Button("Build"))
                     {
-                        await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                        MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                     }
 
                     if (GUILayout.Button("Rebuild"))
                     {
-                        await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                        MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                     }
                 }
                 EditorGUILayout.EndHorizontal();
