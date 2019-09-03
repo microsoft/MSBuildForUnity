@@ -7,11 +7,34 @@ namespace Microsoft.Build.Unity
     [CreateAssetMenu(fileName = nameof(MSBuildProjectReference), menuName = "MSBuild/Project Reference", order = 1)]
     public sealed partial class MSBuildProjectReference : ScriptableObject
     {
+        public enum WindowsBuildEngine
+        {
+            None,
+            DotNet,
+            VisualStudio2017,
+            VisualStudio2019,
+        }
+
+        public enum MacBuildEngine
+        {
+            None,
+            DotNet,
+            VisualStudioForMac,
+        }
+
         private string assetRelativePath;
 
         [SerializeField]
         [Tooltip("The path to the MSBuild project (or solution). The path can be absolute, or relative to this asset file.")]
         private string projectPath = null;
+
+        [SerializeField]
+        [Tooltip("The MSBuild build engine to use on Windows.")]
+        private WindowsBuildEngine windowsBuildEngine = WindowsBuildEngine.DotNet;
+
+        [SerializeField]
+        [Tooltip("The MSBuild build engine to use on Mac.")]
+        private MacBuildEngine macBuildEngine = MacBuildEngine.DotNet;
 
         [SerializeField]
         [Tooltip("Indicates whether the referenced MSBuild project should automatically be built.")]
