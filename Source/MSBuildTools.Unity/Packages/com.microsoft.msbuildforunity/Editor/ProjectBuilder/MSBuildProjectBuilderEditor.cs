@@ -11,11 +11,11 @@ namespace Microsoft.Build.Unity
         private const string RebuildAllProjectsMenuName = "MSBuild/Rebuild All Projects";
 
         [MenuItem(MSBuildProjectBuilder.BuildAllProjectsMenuName)]
-        private static async void BuildAllProjects()
+        private static void BuildAllProjects()
         {
             try
             {
-                await MSBuildProjectBuilder.BuildAllProjectsAsync(MSBuildProjectBuilder.BuildTargetArgument);
+                MSBuildProjectBuilder.BuildAllProjects(MSBuildProjectBuilder.BuildTargetArgument);
             }
             catch (OperationCanceledException)
             {
@@ -24,11 +24,11 @@ namespace Microsoft.Build.Unity
         }
 
         [MenuItem(MSBuildProjectBuilder.RebuildAllProjectsMenuName)]
-        private static async void RebuildAllProjects()
+        private static void RebuildAllProjects()
         {
             try
             {
-                await MSBuildProjectBuilder.BuildAllProjectsAsync(MSBuildProjectBuilder.RebuildTargetArgument);
+                MSBuildProjectBuilder.BuildAllProjects(MSBuildProjectBuilder.RebuildTargetArgument);
             }
             catch (OperationCanceledException)
             {
@@ -41,7 +41,7 @@ namespace Microsoft.Build.Unity
         private static bool ValidateBuildAllProjects()
         {
             // Only allow one build at a time (with the default UI).
-            return MSBuildProjectBuilder.buildLock.CurrentCount != 0;
+            return !MSBuildProjectBuilder.isBuildingWithDefaultUI;
         }
 
         [InitializeOnLoad]
@@ -57,15 +57,15 @@ namespace Microsoft.Build.Unity
                     void OnUpdate()
                     {
                         EditorApplication.update -= OnUpdate;
-                        BuildOnLoad.BuildAllAutoBuiltProjectsAsync();
+                        BuildOnLoad.BuildAllAutoBuiltProjects();
                     }
                 }
             }
 
-            //[MenuItem("MSBuild/Auto Build All Projects [testing only]")]
-            private static async void BuildAllAutoBuiltProjectsAsync()
+            [MenuItem("MSBuild/Auto Build All Projects [testing only]")]
+            private static void BuildAllAutoBuiltProjects()
             {
-                await MSBuildProjectBuilder.BuildProjectsAsync(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().Where(projectReference => projectReference.AutoBuild).ToArray());
+                MSBuildProjectBuilder.BuildProjects(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().Where(projectReference => projectReference.AutoBuild).ToArray());
             }
         }
     }

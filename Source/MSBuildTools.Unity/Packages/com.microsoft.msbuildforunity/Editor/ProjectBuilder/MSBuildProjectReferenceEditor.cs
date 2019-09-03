@@ -13,7 +13,7 @@ namespace Microsoft.Build.Unity
             private SerializedProperty autoBuildProperty;
             private SerializedProperty projectPathProperty;
 
-            public override async void OnInspectorGUI()
+            public override void OnInspectorGUI()
             {
                 var msBuildProjectReference = (MSBuildProjectReference)this.target;
 
@@ -29,12 +29,12 @@ namespace Microsoft.Build.Unity
                     {
                         if (GUILayout.Button("Build"))
                         {
-                            await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                         }
 
                         if (GUILayout.Button("Rebuild"))
                         {
-                            await MSBuildProjectBuilder.BuildProjectAsync(msBuildProjectReference);
+                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
                         }
                     }
                     EditorGUILayout.EndHorizontal();
