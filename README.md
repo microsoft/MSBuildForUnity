@@ -35,3 +35,7 @@ The MSBuild Project Builder provides a means of building MSBuild projects from w
 [![MSBuild Project Builder Progress Bar](Documentation/MSBuildProjectBuilder/MSBuildProgressBar.gif)](Documentation/MSBuildProjectBuilder/MSBuildProjectBuilder.md)
 
 For details, see the [documentation](Documentation/MSBuildProjectBuilder/MSBuildProjectBuilder.md), [source](Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder/Editor/MSBuildProjectBuilder.cs), and [samples](Source/MSBuildProjectBuilder/Assets/Samples/Samples.sln).
+
+### MSBuild Project Generator
+
+The MSBuild Project Generator will generate a Visual Studio solution configured for building the Unity project into DLLs outside of Unity. This solution is configured for each of the platforms installed with Unity and the InEditor/Player variants of the assemblies.
