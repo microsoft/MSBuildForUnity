@@ -177,7 +177,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             string configuration = inEditorConfiguration ? "InEditor" : "Player";
 
-            string platformTemplate = File.ReadAllText(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration));
+            string platformTemplate = File.ReadAllText(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.TargetFramework.AsTemplateString()));
 
             string platformPropsText;
             if (inEditorConfiguration)

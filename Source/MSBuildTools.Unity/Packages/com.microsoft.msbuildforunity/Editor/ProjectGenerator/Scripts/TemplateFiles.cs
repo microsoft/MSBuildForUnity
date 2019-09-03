@@ -21,9 +21,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private const string TemplateFilesFolderName = "MSBuildTemplates";
         private const string MSBuildSolutionTemplateName = "SolutionTemplate.sln.template";
         private const string SDKProjectFileTemplateName = "SDKProjectTemplate.csproj.template";
-        private const string PlatformPropsTemplateName = "Platform.Configuration.Template.props.template";
-        private const string EditorPropsTemplateName = "Editor.InEditor.Template.props.template";
-        private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.Template\.props.template";
+        private const string PlatformPropsTemplateName = "Platform.Configuration.Any.props.template";
+        private const string EditorPropsTemplateName = "Editor.InEditor.Any.props.template";
+        private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
         private const string PluginMetaFileTemplateRegex = @"Plugin\.([a-zA-Z]*)\.meta.template";
         private const string BuildProjectsTemplateName = "BuildProjects.proj.template";
 
@@ -147,10 +147,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="platform">The platform of the requested template.</param>
         /// <param name="configuration">The configuration of the requested template.</param>
         /// <returns>The absolute file path for the platform template to use.</returns>
-        public string GetTemplateFilePathForPlatform(string platform, string configuration)
+        public string GetTemplateFilePathForPlatform(string platform, string configuration, string apiLevel)
         {
-            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.Template.props.template", out string templatePath)
-                || PlatformTemplates.TryGetValue($"{platform}.Configuration.Template.props.template", out templatePath))
+            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{apiLevel}.props.template", out string templatePath)
+                || PlatformTemplates.TryGetValue($"{platform}.{configuration}.Any.props.template", out templatePath)
+                || PlatformTemplates.TryGetValue($"{platform}.Configuration.Any.props.template", out templatePath))
             {
                 return templatePath;
             }
