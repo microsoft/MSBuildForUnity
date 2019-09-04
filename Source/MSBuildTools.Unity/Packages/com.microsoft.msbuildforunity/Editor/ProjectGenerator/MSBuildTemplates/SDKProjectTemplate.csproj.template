@@ -76,8 +76,13 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   
   <PropertyGroup>
-      <AssemblySearchPaths>{CandidateAssemblyFiles};{HintPathFromItem};{RawFileName};</AssemblySearchPaths>
+    <!-- 
+      This overrides the default, and excludes the "{TargetFrameworkDirectory}" from the search path which gets added by the import above.
+      The purpose is to prevent MSBuild from using it to try and resolve assemblies from that location, as we use the Unity provided framework DLLs.
+    -->
+    <AssemblySearchPaths>{CandidateAssemblyFiles};{HintPathFromItem};{RawFileName};</AssemblySearchPaths>
   </PropertyGroup>
+  
   <Import Project="##PLATFORM_PROPS_FOLDER_PATH_TOKEN##\$(UnityPlatform).$(UnityConfiguration).props"/>
 
   <!-- This is a "special" platform that will override references -->
@@ -94,6 +99,7 @@
   
   <PropertyGroup>
     <DefaultItemExcludes>$(DefaultItemExcludes)obj;bin;*.asmdef;*.asmdef.meta;*.csmap;</DefaultItemExcludes>
+    <!-- This change prevents from System.Core dll to be removed and readded without the HintPath as is default behaviour for some MSBuild environments for System.Core.dll specifically.-->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
 
