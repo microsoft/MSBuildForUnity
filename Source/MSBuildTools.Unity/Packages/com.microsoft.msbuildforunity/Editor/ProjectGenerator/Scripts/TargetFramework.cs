@@ -43,6 +43,26 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
+        /// Converts a <see cref="TargetFramework"/> into a string our template files use..
+        /// </summary>
+        /// <param name="this">The <see cref="TargetFramework"/> to convert.</param>
+        /// <returns>The template file acceptable string representing the <see cref="TargetFramework"/>.</returns>
+        public static string AsTemplateString(this TargetFramework @this)
+        {
+            switch (@this)
+            {
+                case TargetFramework.NetStandard20:
+                    return "NetStandard20";
+                case TargetFramework.Net20:
+                    return "Net20";
+                case TargetFramework.Net46:
+                    return "Net46";
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(@this));
+        }
+
+        /// <summary>
         /// Returns the configured <see cref="TargetFramework"/> for the <see cref="BuildTargetGroup"/>.
         /// </summary>
         /// <param name="this">The <see cref="BuildTargetGroup"/> to get <see cref="TargetFramework"/> for.</param>
