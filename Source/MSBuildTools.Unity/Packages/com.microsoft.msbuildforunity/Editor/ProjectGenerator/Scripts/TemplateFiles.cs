@@ -147,9 +147,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="platform">The platform of the requested template.</param>
         /// <param name="configuration">The configuration of the requested template.</param>
         /// <returns>The absolute file path for the platform template to use.</returns>
-        public string GetTemplateFilePathForPlatform(string platform, string configuration, string apiLevel)
+        public string GetTemplateFilePathForPlatform(string platform, string configuration, ScriptingBackend scriptingBackend)
         {
-            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{apiLevel}.props.template", out string templatePath)
+            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{scriptingBackend.ToString()}.props.template", out string templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.{configuration}.Any.props.template", out templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.Configuration.Any.props.template", out templatePath))
             {

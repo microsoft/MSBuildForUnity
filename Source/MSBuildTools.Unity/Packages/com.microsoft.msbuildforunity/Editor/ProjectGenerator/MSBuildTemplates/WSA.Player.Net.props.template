@@ -16,6 +16,10 @@
     <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    
+  </PropertyGroup>
+
   <!-- This is for succesful building step from dotnet cli -->
   <Choose>
     <When Condition="'$(MSBuildExtensionsPathOverride)'!= ''">
