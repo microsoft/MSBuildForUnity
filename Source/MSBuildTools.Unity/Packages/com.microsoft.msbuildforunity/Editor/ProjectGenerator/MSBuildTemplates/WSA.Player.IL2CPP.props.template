@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN-->;C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5;$(UnityEditorInstallFolder)Data\PlaybackEngines\MetroSupport\Managed\UAP\</AssemblySearchPaths>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework><!--TARGET_FRAMEWORK_TOKEN--></TargetFramework>
     <DefaultLanguage>en-US</DefaultLanguage>
     <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS-->;NETFX_CORE;WINDOWS_UWP</DefineConstants>
     <TargetPlatformVersion><!--UWP_TARGET_PLATFORM_VERSION_TOKEN--></TargetPlatformVersion>
@@ -30,10 +30,6 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="5.0.0" />
     <Reference Include="System.Runtime.WindowsRuntime">
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\System.Runtime.WindowsRuntime.dll</HintPath>
-    </Reference>
-
-    <Reference Include="WinRTLegacy" Condition="$(UnityMajorVersion) &lt; 2019">
-      <HintPath>$(UnityEditorInstallFolder)Data\PlaybackEngines\MetroSupport\Managed\UAP\WinRTLegacy.dll</HintPath>
     </Reference>
 
     <Reference Include="Windows">
