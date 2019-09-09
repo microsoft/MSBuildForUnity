@@ -16,7 +16,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         Net20,
         Net46
     }
-    
+
+    public enum ScriptingBackend
+    {
+        Mono,
+        Net,
+        IL2CPP
+    }
+
     /// <summary>
     /// Helper extensions for the <see cref="TargetFramework"/> enum.
     /// </summary>
@@ -90,6 +97,32 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             throw new PlatformNotSupportedException("ApiCompatibilityLevel platform not matched.");
+        }
+
+        /// <summary>
+        /// Returns the configured <see cref="ScriptingBackend"/> for the <see cref="BuildTargetGroup"/>.
+        /// </summary>
+        /// <param name="this">The <see cref="BuildTargetGroup"/> to get <see cref="ScriptingBackend"/> for.</param>
+        /// <returns>The <see cref="ScriptingBackend"/> configured for given <see cref="BuildTargetGroup"/>.</returns>
+        public static ScriptingBackend GetScriptingBackend(this BuildTargetGroup @this)
+        {
+            if (@this == BuildTargetGroup.Unknown)
+            {
+                // This may be different on older unity versions
+                return ScriptingBackend.Mono;
+            }
+
+            switch (PlayerSettings.GetScriptingBackend(@this))
+            {
+                case ScriptingImplementation.Mono2x:
+                    return ScriptingBackend.Mono;
+                case ScriptingImplementation.IL2CPP:
+                    return ScriptingBackend.IL2CPP;
+                case ScriptingImplementation.WinRTDotNET:
+                    return ScriptingBackend.Net;
+            }
+
+            throw new PlatformNotSupportedException("ScriptingBackend platform not matched.");
         }
     }
 }

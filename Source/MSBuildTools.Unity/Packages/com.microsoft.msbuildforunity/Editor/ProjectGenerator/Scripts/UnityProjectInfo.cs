@@ -145,6 +145,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey, string projectOutputPath)
         {
+            if (projectKey.StartsWith("GUID:"))
+            {
+                projectKey = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(projectKey.Substring("GUID:".Length)));
+            }
+
             if (projectsMap.TryGetValue(projectKey, out CSProjectInfo value))
             {
                 return value;
@@ -152,7 +157,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!asmDefInfoMap.TryGetValue(projectKey, out AssemblyDefinitionInfo assemblyDefinitionInfo))
             {
-                throw new InvalidOperationException($"Can't find an asmdef for project: {projectKey}");
+                Debug.LogError($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
+                return null;
             }
 
             CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo, projectOutputPath);
@@ -183,7 +189,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     continue;
                 }
 
-                toReturn.AddDependency(GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference, projectOutputPath));
+                CSProjectInfo dependencyToAdd = GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference, projectOutputPath);
+                if (dependencyToAdd != null)
+                {
+                    toReturn.AddDependency(dependencyToAdd);
+                }
             }
 
             return toReturn;

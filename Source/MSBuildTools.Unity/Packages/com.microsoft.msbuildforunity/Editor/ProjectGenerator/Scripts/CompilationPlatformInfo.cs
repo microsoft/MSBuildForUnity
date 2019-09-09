@@ -118,6 +118,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public TargetFramework TargetFramework { get; }
 
         /// <summary>
+        /// Gets the scripting backend for this platform (Mono, .NET, IL2CPP)
+        /// </summary>
+        public ScriptingBackend ScriptingBackend { get; }
+
+        /// <summary>
         ///  These defines are specific for this platform and common or player/editor.
         /// </summary>
         public HashSet<string> CommonPlatformDefines { get; }
@@ -156,6 +161,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             BuildTargetGroup = Utilities.GetBuildTargetGroup(BuildTarget);
 
             TargetFramework = BuildTargetGroup.GetTargetFramework();
+            ScriptingBackend = BuildTargetGroup.GetScriptingBackend();
 
             CommonPlatformDefines = commonPlatformDefines;
             AdditionalPlayerDefines = additionalPlayerDefines;
