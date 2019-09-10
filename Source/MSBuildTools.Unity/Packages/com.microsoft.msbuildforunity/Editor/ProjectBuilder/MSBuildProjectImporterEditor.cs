@@ -14,7 +14,15 @@ namespace Microsoft.Build.Unity
                 var msBuildProjectReference = (MSBuildProjectReference)this.assetTarget;
 
                 // Build & Rebuild buttons
-                msBuildProjectReference.DrawBuildButtons();
+                GUI.enabled = !this.serializedObject.hasModifiedProperties;
+                try
+                {
+                    msBuildProjectReference.DrawBuildButtons();
+                }
+                finally
+                {
+                    GUI.enabled = true;
+                }
 
                 Editor.DrawPropertiesExcluding(this.serializedObject, "m_Script");
 

@@ -17,7 +17,7 @@ namespace Microsoft.Build.Unity
 
                 if (GUILayout.Button("Rebuild"))
                 {
-                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
+                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference, MSBuildProjectBuilder.RebuildTargetArgument);
                 }
             }
         }

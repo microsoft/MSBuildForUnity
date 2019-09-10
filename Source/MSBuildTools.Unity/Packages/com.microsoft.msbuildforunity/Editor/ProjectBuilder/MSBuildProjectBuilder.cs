@@ -27,9 +27,82 @@ namespace Microsoft.Build.Unity
         public const string RebuildTargetArgument = "-t:Rebuild";
         public const string DefaultBuildArguments = MSBuildProjectBuilder.BuildTargetArgument;
 
+        private static readonly Lazy<Task<string>> msBuildPathTask;
         private static readonly Regex msBuildErrorFormat = new Regex(@"^\s*(((?<ORIGIN>(((\d+>)?[a-zA-Z]?:[^:]*)|([^:]*))):)|())(?<SUBCATEGORY>(()|([^:]*? )))(?<CATEGORY>(error|warning))( \s*(?<CODE>[^: ]*))?\s*:(?<TEXT>.*)$", RegexOptions.Compiled);
 
         private static bool isBuildingWithDefaultUI = false;
+
+        static MSBuildProjectBuilder()
+        {
+            MSBuildProjectBuilder.msBuildPathTask = new Lazy<Task<string>>(async () =>
+            {
+                string vswherePath = Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)"), "Microsoft Visual Studio", "Installer", "vswhere.exe");
+                if (!File.Exists(vswherePath))
+                {
+                    throw new FileNotFoundException("Visual Studio Installer not found.", vswherePath);
+                }
+
+                string vswhereArguments = $"-latest -requires Microsoft.Component.MSBuild -find {Path.Combine("MSBuild", "**", "Bin", "MSBuild.exe")}";
+
+                using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
+                {
+                    process.StartInfo.FileName = vswherePath;
+                    process.StartInfo.Arguments = vswhereArguments;
+
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+
+                    bool succeeded = false;
+                    string result = null;
+                    var taskCompletionSource = new TaskCompletionSource<string>();
+
+                    process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            succeeded = true;
+                            result = e.Data;
+                        }
+                    };
+
+                    process.ErrorDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            succeeded = false;
+                            result = e.Data;
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    process.Exited += delegate
+                    {
+                        process.WaitForExit();
+
+                        if (succeeded)
+                        {
+                            taskCompletionSource.SetResult(result);
+                        }
+                        else
+                        {
+                            string message = "Could not find Visual Studio MSBuild engine.";
+                            if (!string.IsNullOrEmpty(result))
+                            {
+                                message = $"{message} ({result})";
+                            }
+                            taskCompletionSource.SetException(new Exception(message));
+                        }
+                    };
+
+                    return await taskCompletionSource.Task.ConfigureAwait(false);
+                }
+            });
+        }
 
         /// <summary>
         /// Builds all MSBuild projects referenced by a <see cref="MSBuildProjectReference"/> within the Unity project with the default UI.
@@ -227,78 +300,7 @@ namespace Microsoft.Build.Unity
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        string vswherePath = Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)"), "Microsoft Visual Studio", "Installer", "vswhere.exe");
-                        if (!File.Exists(vswherePath))
-                        {
-                            throw new InvalidOperationException($"{buildEngine} was specified for {projectPath} but Visual Studio is not installed.");
-                        }
-
-                        string vswhereArguments = $"-latest -requires Microsoft.Component.MSBuild -find {Path.Combine("MSBuild", "**", "Bin", "MSBuild.exe")}";
-
-                        using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
-                        {
-                            process.StartInfo.FileName = vswherePath;
-                            process.StartInfo.Arguments = vswhereArguments;
-
-                            process.StartInfo.UseShellExecute = false;
-                            process.StartInfo.CreateNoWindow = true;
-                            process.StartInfo.RedirectStandardOutput = true;
-                            process.StartInfo.RedirectStandardError = true;
-
-                            bool succeeded = false;
-                            string result = null;
-                            var taskCompletionSource = new TaskCompletionSource<string>();
-
-                            process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data))
-                                {
-                                    succeeded = true;
-                                    result = e.Data;
-                                }
-                            };
-
-                            process.ErrorDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data))
-                                {
-                                    succeeded = false;
-                                    result = e.Data;
-                                }
-                            };
-
-                            using (cancellationToken.Register(process.Kill))
-                            {
-                                process.Start();
-                                process.BeginOutputReadLine();
-                                process.BeginErrorReadLine();
-
-                                process.Exited += delegate
-                                {
-                                    System.Diagnostics.Debugger.Break();
-
-                                    process.WaitForExit();
-
-                                    if (succeeded)
-                                    {
-                                        taskCompletionSource.SetResult(result);
-                                    }
-                                    else
-                                    {
-                                        string message = "Could not find Visual Studio MSBuild engine.";
-                                        if (!string.IsNullOrEmpty(result))
-                                        {
-                                            message = $"{message} ({result})";
-                                        }
-                                        taskCompletionSource.SetException(new Exception(message));
-                                    }
-                                };
-                            }
-
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            msBuildPath = await taskCompletionSource.Task.ConfigureAwait(false);
-                        }
+                        msBuildPath = await MSBuildProjectBuilder.msBuildPathTask.Value.ConfigureAwait(false);
                     }
                     else
                     {
