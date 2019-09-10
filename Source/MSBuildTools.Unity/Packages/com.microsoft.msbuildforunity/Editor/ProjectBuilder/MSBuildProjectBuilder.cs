@@ -283,7 +283,7 @@ namespace Microsoft.Build.Unity
 
         private static async Task<int> BuildProjectAsync(string projectPath, BuildEngine buildEngine, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
-            arguments = $"{projectPath} {arguments}";
+            arguments = $"{Path.GetFileName(projectPath)} {arguments}";
             string msBuildPath = null;
 
             switch (buildEngine)
@@ -323,6 +323,8 @@ namespace Microsoft.Build.Unity
         private static async Task<int> ExecuteMSBuildAsync(string msBuildPath, string workingDirectory, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            Debug.Log($"{workingDirectory}> {msBuildPath} {arguments}");
 
             using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
             {
