@@ -10,16 +10,12 @@ namespace Microsoft.Build.Unity
     internal sealed partial class MSBuildProjectImporter : ScriptedImporter
     {
         [SerializeField]
-        [Tooltip("The MSBuild build engine to use on Windows.")]
-        private WindowsBuildEngine windowsBuildEngine = WindowsBuildEngine.DotNet;
-
-        [SerializeField]
-        [Tooltip("The MSBuild build engine to use on Mac.")]
-        private MacBuildEngine macBuildEngine = MacBuildEngine.DotNet;
+        [Tooltip("The MSBuild build engine to use to build the project.")]
+        private BuildEngine buildEngine = BuildEngine.DotNet;
 
         public override void OnImportAsset(AssetImportContext context)
         {
-            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.windowsBuildEngine, this.macBuildEngine);
+            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine);
 
             context.AddObjectToAsset(Path.GetFileNameWithoutExtension(context.assetPath), msBuildProjectReference);
             context.SetMainObject(msBuildProjectReference);
