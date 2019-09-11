@@ -283,7 +283,7 @@ namespace Microsoft.Build.Unity
 
         private static async Task<int> BuildProjectAsync(string projectPath, BuildEngine buildEngine, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
-            arguments = $"{Path.GetFileName(projectPath)} {arguments}";
+            arguments = $"{Path.GetFileName(projectPath)} -restore {arguments}";
             string msBuildPath = null;
 
             switch (buildEngine)
