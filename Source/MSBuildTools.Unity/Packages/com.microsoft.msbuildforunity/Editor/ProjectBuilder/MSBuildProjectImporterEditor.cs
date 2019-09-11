@@ -7,26 +7,26 @@ namespace Microsoft.Build.Unity
     partial class MSBuildProjectImporter
     {
         [CustomEditor(typeof(MSBuildProjectImporter))]
-        public sealed class MSBuildProjectImporterEditor : ScriptedImporterEditor
+        private sealed class MSBuildProjectImporterEditor : ScriptedImporterEditor
         {
             public override void OnInspectorGUI()
             {
                 var msBuildProjectReference = (MSBuildProjectReference)this.assetTarget;
 
                 // Build & Rebuild buttons
-                EditorGUILayout.BeginHorizontal();
+                GUI.enabled = !this.serializedObject.hasModifiedProperties;
+                try
                 {
-                    if (GUILayout.Button("Build"))
-                    {
-                        MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
-                    }
-
-                    if (GUILayout.Button("Rebuild"))
-                    {
-                        MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
-                    }
+                    msBuildProjectReference.DrawBuildButtons();
                 }
-                EditorGUILayout.EndHorizontal();
+                finally
+                {
+                    GUI.enabled = true;
+                }
+
+                Editor.DrawPropertiesExcluding(this.serializedObject, "m_Script");
+
+                this.ApplyRevertGUI();
             }
         }
     }

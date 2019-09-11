@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,13 +23,86 @@ namespace Microsoft.Build.Unity
             Error,
         }
 
-        public const string BuildTargetArgument = "/t:Build";
-        public const string RebuildTargetArgument = "/t:Rebuild";
+        public const string BuildTargetArgument = "-t:Build";
+        public const string RebuildTargetArgument = "-t:Rebuild";
         public const string DefaultBuildArguments = MSBuildProjectBuilder.BuildTargetArgument;
 
+        private static readonly Lazy<Task<string>> msBuildPathTask;
         private static readonly Regex msBuildErrorFormat = new Regex(@"^\s*(((?<ORIGIN>(((\d+>)?[a-zA-Z]?:[^:]*)|([^:]*))):)|())(?<SUBCATEGORY>(()|([^:]*? )))(?<CATEGORY>(error|warning))( \s*(?<CODE>[^: ]*))?\s*:(?<TEXT>.*)$", RegexOptions.Compiled);
 
         private static bool isBuildingWithDefaultUI = false;
+
+        static MSBuildProjectBuilder()
+        {
+            MSBuildProjectBuilder.msBuildPathTask = new Lazy<Task<string>>(async () =>
+            {
+                string vswherePath = Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)"), "Microsoft Visual Studio", "Installer", "vswhere.exe");
+                if (!File.Exists(vswherePath))
+                {
+                    throw new FileNotFoundException("Visual Studio Installer not found.", vswherePath);
+                }
+
+                string vswhereArguments = $"-latest -requires Microsoft.Component.MSBuild -find {Path.Combine("MSBuild", "**", "Bin", "MSBuild.exe")}";
+
+                using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
+                {
+                    process.StartInfo.FileName = vswherePath;
+                    process.StartInfo.Arguments = vswhereArguments;
+
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+
+                    bool succeeded = false;
+                    string result = null;
+                    var taskCompletionSource = new TaskCompletionSource<string>();
+
+                    process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            succeeded = true;
+                            result = e.Data;
+                        }
+                    };
+
+                    process.ErrorDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            succeeded = false;
+                            result = e.Data;
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    process.Exited += delegate
+                    {
+                        process.WaitForExit();
+
+                        if (succeeded)
+                        {
+                            taskCompletionSource.SetResult(result);
+                        }
+                        else
+                        {
+                            string message = "Could not find Visual Studio MSBuild engine.";
+                            if (!string.IsNullOrEmpty(result))
+                            {
+                                message = $"{message} ({result})";
+                            }
+                            taskCompletionSource.SetException(new Exception(message));
+                        }
+                    };
+
+                    return await taskCompletionSource.Task.ConfigureAwait(false);
+                }
+            });
+        }
 
         /// <summary>
         /// Builds all MSBuild projects referenced by a <see cref="MSBuildProjectReference"/> within the Unity project with the default UI.
@@ -70,7 +144,7 @@ namespace Microsoft.Build.Unity
                 {
                     return MSBuildProjectBuilder.BuildProjectsAsync(
                         msBuildProjectReferences,
-                        $"{arguments} /v:diagnostic",
+                        $"{arguments} -v:diagnostic",
                         new DelegateProgress<(int, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report => MSBuildProjectBuilder.LogProgressMessage(report.progressUpdate.progressMessage, report.progressUpdate.progressMessageType)),
                         CancellationToken.None).GetAwaiter().GetResult();
                 }
@@ -87,7 +161,7 @@ namespace Microsoft.Build.Unity
 
                         Task<bool> buildTask = MSBuildProjectBuilder.BuildProjectsAsync(
                             msBuildProjectReferences,
-                            $"{arguments} /v:minimal",
+                            $"{arguments} -v:minimal",
                             new DelegateProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report =>
                             {
                                 if (report.progressUpdate.progressMessageType != ProgressMessageType.Information)
@@ -146,10 +220,11 @@ namespace Microsoft.Build.Unity
             int completedProjects = 0;
 
             // NOTE: The ToArray is intentional because we need to access the ProjectPath property from the Unity UI thread, but the continuations will run on a ThreadPool thread (to enable callers to block on the returned Task if needed).
-            foreach (string projectPath in msBuildProjectReferences.Select(projectReference => projectReference.ProjectPath).ToArray())
+            foreach (var projectInfo in msBuildProjectReferences.Select(projectReference => (projectPath: projectReference.ProjectPath, buildEngine: projectReference.BuildEngine)).ToArray())
             {
                 succeeded &= (await MSBuildProjectBuilder.BuildProjectAsync(
-                    projectPath,
+                    projectInfo.projectPath,
+                    projectInfo.buildEngine,
                     arguments,
                     new DelegateProgress<(string progressMessage, ProgressMessageType progressMessageType)>(report => progress.Report((completedProjects, report))),
                     cancellationToken).ConfigureAwait(false)) == 0;
@@ -206,27 +281,61 @@ namespace Microsoft.Build.Unity
             }
         }
 
-        private static Task<int> BuildProjectAsync(string projectPath, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
+        private static async Task<int> BuildProjectAsync(string projectPath, BuildEngine buildEngine, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
-            return MSBuildProjectBuilder.RunDotNetAsync(projectPath, "msbuild", $"-restore {arguments}", progress, cancellationToken);
+            arguments = $"{Path.GetFileName(projectPath)} -restore {arguments}";
+            string msBuildPath = null;
+
+            switch (buildEngine)
+            {
+                case BuildEngine.DotNet:
+                    msBuildPath = "dotnet";
+                    arguments = $"msbuild {arguments}";
+                    break;
+
+                case BuildEngine.VisualStudio:
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        msBuildPath = "msbuild";
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        msBuildPath = await MSBuildProjectBuilder.msBuildPathTask.Value.ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"{nameof(BuildEngine.VisualStudio)} is not supported on this platform.");
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException($"{buildEngine} was specified for {projectPath} but support for {buildEngine} has not been implemented.");
+            }
+
+            if (progress != null)
+            {
+                progress.Report(($"Building {projectPath}...", ProgressMessageType.Information));
+            }
+
+            return await MSBuildProjectBuilder.ExecuteMSBuildAsync(msBuildPath, Path.GetDirectoryName(projectPath), arguments, progress, cancellationToken).ConfigureAwait(false);
         }
 
-        private static async Task<int> RunDotNetAsync(string projectPath, string command, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
+        private static async Task<int> ExecuteMSBuildAsync(string msBuildPath, string workingDirectory, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            Debug.Log($"{workingDirectory}> {msBuildPath} {arguments}");
+
             using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
             {
-                process.StartInfo.FileName = "dotnet";
-                process.StartInfo.Arguments = $"{command} {projectPath} {arguments} -nologo ";
+                process.StartInfo.FileName = msBuildPath;
+                process.StartInfo.Arguments = $"{arguments} -nologo";
 
                 process.StartInfo.UseShellExecute = false;
-                process.StartInfo.WorkingDirectory = Path.GetDirectoryName(projectPath);
+                process.StartInfo.WorkingDirectory = workingDirectory;
 
                 if (progress != null)
                 {
-                    progress.Report(($"Building {projectPath}...", ProgressMessageType.Information));
-
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;

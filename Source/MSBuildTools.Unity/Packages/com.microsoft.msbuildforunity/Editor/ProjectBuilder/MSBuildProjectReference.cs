@@ -4,6 +4,12 @@ using UnityEngine;
 
 namespace Microsoft.Build.Unity
 {
+    public enum BuildEngine
+    {
+        DotNet,
+        VisualStudio,
+    }
+
     [CreateAssetMenu(fileName = nameof(MSBuildProjectReference), menuName = "MSBuild/Project Reference", order = 1)]
     public sealed partial class MSBuildProjectReference : ScriptableObject
     {
@@ -12,6 +18,10 @@ namespace Microsoft.Build.Unity
         [SerializeField]
         [Tooltip("The path to the MSBuild project (or solution). The path can be absolute, or relative to this asset file.")]
         private string projectPath = null;
+
+        [SerializeField]
+        [Tooltip("The MSBuild build engine to use to build the project.")]
+        private BuildEngine buildEngine = BuildEngine.DotNet;
 
         [SerializeField]
         [Tooltip("Indicates whether the referenced MSBuild project should automatically be built.")]
@@ -26,11 +36,12 @@ namespace Microsoft.Build.Unity
         /// <remarks>
         /// This is useful for creating and passing transient <see cref="MSBuildProjectReference"/> instances to <see cref="MSBuildProjectBuilder"/> when they don't exist in the <see cref="AssetDatabase"/>.
         /// </remarks>
-        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, bool autoBuild = true)
+        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, BuildEngine buildEngine = BuildEngine.DotNet, bool autoBuild = true)
         {
             var msBuildProjectReference = ScriptableObject.CreateInstance<MSBuildProjectReference>();
             msBuildProjectReference.assetRelativePath = assetRelativePath;
             msBuildProjectReference.projectPath = Path.GetFileName(assetRelativePath);
+            msBuildProjectReference.buildEngine = buildEngine;
             msBuildProjectReference.autoBuild = autoBuild;
             return msBuildProjectReference;
         }
@@ -60,9 +71,8 @@ namespace Microsoft.Build.Unity
             }
         }
 
-        public bool AutoBuild
-        {
-            get => this.autoBuild;
-        }
+        public BuildEngine BuildEngine => this.buildEngine;
+
+        public bool AutoBuild => this.autoBuild;
     }
 }

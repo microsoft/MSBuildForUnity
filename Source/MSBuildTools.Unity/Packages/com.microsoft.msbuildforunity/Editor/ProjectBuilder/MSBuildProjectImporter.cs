@@ -9,9 +9,14 @@ namespace Microsoft.Build.Unity
     [ScriptedImporter(1, new[] { "csproj", "sln" })]
     internal sealed partial class MSBuildProjectImporter : ScriptedImporter
     {
+        [SerializeField]
+        [Tooltip("The MSBuild build engine to use to build the project.")]
+        private BuildEngine buildEngine = BuildEngine.DotNet;
+
         public override void OnImportAsset(AssetImportContext context)
         {
-            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath);
+            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine);
+
             context.AddObjectToAsset(Path.GetFileNameWithoutExtension(context.assetPath), msBuildProjectReference);
             context.SetMainObject(msBuildProjectReference);
 

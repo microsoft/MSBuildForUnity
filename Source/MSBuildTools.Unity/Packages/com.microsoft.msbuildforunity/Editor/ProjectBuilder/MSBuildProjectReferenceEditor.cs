@@ -10,7 +10,6 @@ namespace Microsoft.Build.Unity
         [CustomEditor(typeof(MSBuildProjectReference))]
         private sealed class MSBuildProjectReferenceEditor : Editor
         {
-            private SerializedProperty autoBuildProperty;
             private SerializedProperty projectPathProperty;
 
             public override void OnInspectorGUI()
@@ -25,23 +24,11 @@ namespace Microsoft.Build.Unity
                 // Build & Rebuild buttons
                 else
                 {
-                    EditorGUILayout.BeginHorizontal();
-                    {
-                        if (GUILayout.Button("Build"))
-                        {
-                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
-                        }
-
-                        if (GUILayout.Button("Rebuild"))
-                        {
-                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
-                        }
-                    }
-                    EditorGUILayout.EndHorizontal();
+                    msBuildProjectReference.DrawBuildButtons();
                 }
 
                 // Project path selection
-                EditorGUILayout.BeginHorizontal();
+                using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.LabelField($"Project Path: {msBuildProjectReference.ProjectPath}");
 
@@ -61,17 +48,14 @@ namespace Microsoft.Build.Unity
                         }
                     }
                 }
-                EditorGUILayout.EndHorizontal();
 
-                // AutoBuild check box
-                EditorGUILayout.PropertyField(this.autoBuildProperty);
+                Editor.DrawPropertiesExcluding(this.serializedObject, "m_Script", nameof(msBuildProjectReference.projectPath));
 
                 this.serializedObject.ApplyModifiedProperties();
             }
 
             private void OnEnable()
             {
-                this.autoBuildProperty = this.serializedObject.FindProperty(nameof(MSBuildProjectReference.autoBuild));
                 this.projectPathProperty = this.serializedObject.FindProperty(nameof(MSBuildProjectReference.projectPath));
             }
         }
