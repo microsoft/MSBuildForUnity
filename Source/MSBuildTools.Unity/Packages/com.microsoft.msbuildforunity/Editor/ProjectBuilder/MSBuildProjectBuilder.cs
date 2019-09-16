@@ -27,8 +27,10 @@ namespace Microsoft.Build.Unity
         public const string RebuildTargetArgument = "-t:Rebuild";
         public const string DefaultBuildArguments = MSBuildProjectBuilder.BuildTargetArgument;
 
+        private const string adoAuthenticationUrl = "https://microsoft.com/devicelogin";
         private static readonly Lazy<Task<string>> msBuildPathTask;
         private static readonly Regex msBuildErrorFormat = new Regex(@"^\s*(((?<ORIGIN>(((\d+>)?[a-zA-Z]?:[^:]*)|([^:]*))):)|())(?<SUBCATEGORY>(()|([^:]*? )))(?<CATEGORY>(error|warning))( \s*(?<CODE>[^: ]*))?\s*:(?<TEXT>.*)$", RegexOptions.Compiled);
+        private static readonly Regex adoAuthenticationFormat = new Regex($"\\s*(\\[CredentialProvider\\])?(?<Message>.*({MSBuildProjectBuilder.adoAuthenticationUrl}).*(?<Code>[A-Z|0-9]{{9}}).*)", RegexOptions.Compiled);
 
         private static bool isBuildingWithDefaultUI = false;
 
@@ -155,20 +157,28 @@ namespace Microsoft.Build.Unity
                     {
                         int completedProjects = 0;
                         string progressMessage = string.Empty;
+                        Match adoAuthenticationMatch = null;
                         var cancellationTokenSource = new CancellationTokenSource();
 
                         DisplayProgress();
 
                         Task<bool> buildTask = MSBuildProjectBuilder.BuildProjectsAsync(
                             msBuildProjectReferences,
-                            $"{arguments} -v:minimal",
+                            $"{arguments} -v:minimal -p:NuGetInteractive=true",
                             new DelegateProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report =>
                             {
                                 if (report.progressUpdate.progressMessageType != ProgressMessageType.Information)
                                 {
                                     MSBuildProjectBuilder.LogProgressMessage(report.progressUpdate.progressMessage, report.progressUpdate.progressMessageType);
                                 }
+
                                 (completedProjects, progressMessage) = (report.completedProjects, report.progressUpdate.progressMessage);
+
+                                // Check whether the build is blocked on Azure DevOps package feed authentication
+                                if (MSBuildProjectBuilder.adoAuthenticationFormat.Match(progressMessage) is Match candidateAdoAuthenticationMatch && candidateAdoAuthenticationMatch.Success)
+                                {
+                                    adoAuthenticationMatch = candidateAdoAuthenticationMatch;
+                                }
                             }),
                             cancellationTokenSource.Token);
 
@@ -188,6 +198,27 @@ namespace Microsoft.Build.Unity
                             if (EditorUtility.DisplayCancelableProgressBar("Building MSBuild projects...", status, progress))
                             {
                                 cancellationTokenSource.Cancel();
+                            }
+
+                            if (adoAuthenticationMatch?.Success == true)
+                            {
+                                string message = $"{adoAuthenticationMatch.Groups["Message"].Value}{Environment.NewLine}{Environment.NewLine}Click OK to copy the authentication code to the clipboard and open {MSBuildProjectBuilder.adoAuthenticationUrl} in your default browser, or click Cancel to abort the build.";
+                                string azureAuthenticationCode = adoAuthenticationMatch.Groups["Code"].Value;
+
+                                if (EditorUtility.DisplayDialog("Azure DevOps Package Feed Authentication Required", message, "OK", "Cancel"))
+                                {
+                                    // Copy the authentication code to the clipboard for convenience
+                                    EditorGUIUtility.systemCopyBuffer = azureAuthenticationCode;
+
+                                    // Launch the Azure DevOps device login web page
+                                    Application.OpenURL(MSBuildProjectBuilder.adoAuthenticationUrl);
+                                }
+                                else
+                                {
+                                    cancellationTokenSource.Cancel();
+                                }
+
+                                adoAuthenticationMatch = null;
                             }
                         }
                     }
