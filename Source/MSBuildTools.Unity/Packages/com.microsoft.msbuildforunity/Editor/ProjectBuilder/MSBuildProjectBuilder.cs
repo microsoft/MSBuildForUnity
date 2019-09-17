@@ -174,10 +174,10 @@ namespace Microsoft.Build.Unity
 
                                 (completedProjects, progressMessage) = (report.completedProjects, report.progressUpdate.progressMessage);
 
-                                // Check whether the build is blocked on Azure DevOps package feed authentication
-                                if (MSBuildProjectBuilder.adoAuthenticationFormat.Match(progressMessage) is Match candidateAdoAuthenticationMatch && candidateAdoAuthenticationMatch.Success)
+                                // Check whether the build is blocked on Azure DevOps package feed authentication (but be careful not to try to match if there is a pending successful match that has not been observed by DisplayProgress)
+                                if (!(adoAuthenticationMatch?.Success == true))
                                 {
-                                    adoAuthenticationMatch = candidateAdoAuthenticationMatch;
+                                    adoAuthenticationMatch = MSBuildProjectBuilder.adoAuthenticationFormat.Match(progressMessage);
                                 }
                             }),
                             cancellationTokenSource.Token);
@@ -205,6 +205,9 @@ namespace Microsoft.Build.Unity
                                 string message = $"{adoAuthenticationMatch.Groups["Message"].Value}{Environment.NewLine}{Environment.NewLine}Click OK to copy the authentication code to the clipboard and open {MSBuildProjectBuilder.adoAuthenticationUrl} in your default browser, or click Cancel to abort the build.";
                                 string azureAuthenticationCode = adoAuthenticationMatch.Groups["Code"].Value;
 
+                                // Clear the match before asking the user the authenticate, since once this completes the build will continue and a new match can be made for an auth request on another feed.
+                                adoAuthenticationMatch = null;
+
                                 if (EditorUtility.DisplayDialog("Azure DevOps Package Feed Authentication Required", message, "OK", "Cancel"))
                                 {
                                     // Copy the authentication code to the clipboard for convenience
@@ -217,8 +220,6 @@ namespace Microsoft.Build.Unity
                                 {
                                     cancellationTokenSource.Cancel();
                                 }
-
-                                adoAuthenticationMatch = null;
                             }
                         }
                     }
