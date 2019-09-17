@@ -27,10 +27,11 @@ namespace Microsoft.Build.Unity
         public const string RebuildTargetArgument = "-t:Rebuild";
         public const string DefaultBuildArguments = MSBuildProjectBuilder.BuildTargetArgument;
 
-        private const string adoAuthenticationUrl = "https://microsoft.com/devicelogin";
+        private const string AdoAuthenticationUrl = "https://microsoft.com/devicelogin";
+
         private static readonly Lazy<Task<string>> msBuildPathTask;
         private static readonly Regex msBuildErrorFormat = new Regex(@"^\s*(((?<ORIGIN>(((\d+>)?[a-zA-Z]?:[^:]*)|([^:]*))):)|())(?<SUBCATEGORY>(()|([^:]*? )))(?<CATEGORY>(error|warning))( \s*(?<CODE>[^: ]*))?\s*:(?<TEXT>.*)$", RegexOptions.Compiled);
-        private static readonly Regex adoAuthenticationFormat = new Regex($"\\s*(\\[CredentialProvider\\])?(?<Message>.*({MSBuildProjectBuilder.adoAuthenticationUrl}).*(?<Code>[A-Z|0-9]{{9}}).*)", RegexOptions.Compiled);
+        private static readonly Regex adoAuthenticationFormat = new Regex($"\\s*(\\[CredentialProvider\\])?(?<Message>.*({MSBuildProjectBuilder.AdoAuthenticationUrl}).*(?<Code>[A-Z|0-9]{{9}}).*)", RegexOptions.Compiled);
 
         private static bool isBuildingWithDefaultUI = false;
 
@@ -202,7 +203,7 @@ namespace Microsoft.Build.Unity
 
                             if (adoAuthenticationMatch?.Success == true)
                             {
-                                string message = $"{adoAuthenticationMatch.Groups["Message"].Value}{Environment.NewLine}{Environment.NewLine}Click OK to copy the authentication code to the clipboard and open {MSBuildProjectBuilder.adoAuthenticationUrl} in your default browser, or click Cancel to abort the build.";
+                                string message = $"{adoAuthenticationMatch.Groups["Message"].Value}{Environment.NewLine}{Environment.NewLine}Click OK to copy the authentication code to the clipboard and open {MSBuildProjectBuilder.AdoAuthenticationUrl} in your default browser, or click Cancel to abort the build.";
                                 string azureAuthenticationCode = adoAuthenticationMatch.Groups["Code"].Value;
 
                                 // Clear the match before asking the user the authenticate, since once this completes the build will continue and a new match can be made for an auth request on another feed.
@@ -214,7 +215,7 @@ namespace Microsoft.Build.Unity
                                     EditorGUIUtility.systemCopyBuffer = azureAuthenticationCode;
 
                                     // Launch the Azure DevOps device login web page
-                                    Application.OpenURL(MSBuildProjectBuilder.adoAuthenticationUrl);
+                                    Application.OpenURL(MSBuildProjectBuilder.AdoAuthenticationUrl);
                                 }
                                 else
                                 {
