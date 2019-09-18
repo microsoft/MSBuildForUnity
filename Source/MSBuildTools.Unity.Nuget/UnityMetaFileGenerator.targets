@@ -1,0 +1,200 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <!-- Examples of the metadata file formats these targets will generate:
+
+       For simplicity, assume @(UnityPlayerDefinition) (from UnityMetaFileGenerator.props) is defined as follows:
+
+       <UnityPlayerDefinition Include="Standalone">
+         <PlayerId>Standalone</PlayerId>
+         <Platforms>Win;Win64</Platforms>
+       </UnityPlayerDefinition>
+
+       If $(UnityPlayer) is set to 'Standalone', then the following meta would be generated:
+
+       fileFormatVersion: 2
+       guid: 87b68593ca807e43a9c563219c01db9e
+       PluginImporter:
+         serializedVersion: 2
+         platformData:
+         - first:
+             Standalone: Win
+           second:
+             enabled: 1
+             settings:
+         - first:
+             Standalone: Win64
+           second:
+             enabled: 1
+             settings:
+
+       If $(UnityPlayer) is undefined, and $(ExcludedUnityPlayers) is set to 'Standalone', then the following meta would be generated:
+
+       fileFormatVersion: 2
+       guid: 6c5abff73ac24347c98cfa2ad789debc
+       PluginImporter:
+         serializedVersion: 2
+         platformData:
+         - first:
+             Any:
+           second:
+             enabled: 1
+             settings:
+         - first:
+             "": Any
+           second:
+             enabled: 0
+             settings:
+               Exclude Win: 1
+               Exclude Win64: 1
+
+  -->
+
+  <!-- These properties are defined in the targets as they are not intended to be configurable. -->
+  <PropertyGroup>
+
+    <!-- This is the standard .meta file header and is inserted into the top of the generated .meta file. -->
+    <UnityMetaFileHeader>
+      <![CDATA[
+fileFormatVersion: 2
+guid: {0}
+PluginImporter:
+  serializedVersion: 2
+  platformData:
+]]>
+    </UnityMetaFileHeader>
+
+    <!-- This is the .meta configuration per supported player. It is inserted into the file for each entry in the Platforms metadata of appropriate UnityPlayerDefinition. -->
+    <UnityMetaFilePlayerEnabledFormat>
+      <![CDATA[
+  - first:
+      {0}
+    second:
+      enabled: {1}
+      settings:
+]]>
+    </UnityMetaFilePlayerEnabledFormat>
+
+    <!-- This is the .meta configuration per excluded platform. It is inserted into the "Any" player exclusion block for each entry in the Platforms metadata of UnityPlayerDefinition that match the $(ExcludedUnityPlayers) property. -->
+    <UnityMetaFilePlatformExcludedFormat>
+      <![CDATA[
+        Exclude {0}: {1}
+]]>
+    </UnityMetaFilePlatformExcludedFormat>
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PrepareForRunDependsOn>$(PrepareForRunDependsOn);DetermineRequiredUnityMetaFiles</PrepareForRunDependsOn>    
+  </PropertyGroup>
+
+  <!-- This target looks at the output directory for files that are missing a .meta file. -->
+  <Target Name="DetermineRequiredUnityMetaFiles">
+    <ItemGroup>
+      <BuiltUnityPlugins Include="$(TargetDir)*.%(UnityPluginFileExtensions.Identity)" />
+    </ItemGroup>
+    
+    <ItemGroup Condition=" '@(BuiltUnityPlugins)' != '' ">
+      <!-- If an associated .meta file already exists, do not generate one. -->
+      <RequiredUnityMetaFiles Include="%(BuiltUnityPlugins.FullPath).meta" Condition=" !Exists('%(FullPath).meta') " >
+        <DllName>%(Filename)%(Extension)</DllName>
+      </RequiredUnityMetaFiles>
+
+      <!-- Include any pre-existing .meta files into the FileWrites item group so that they aren't removed during the incremental clean (which would cause Unity to re-parse them) -->
+      <FileWrites Include="%(BuiltUnityPlugins.FullPath).meta" Condition=" Exists('%(FullPath).meta') " />
+    </ItemGroup>
+  </Target>
+
+  <!-- This target generates the missing .meta files. -->
+  <Target Name="GenerateMetaFiles" AfterTargets="DetermineRequiredUnityMetaFiles" Outputs="%(RequiredUnityMetaFiles.FullPath)" Condition=" '@(RequiredUnityMetaFiles)' != '' ">
+    <PropertyGroup>
+      <!-- Destination path of the meta file. -->
+      <MetaFilePath>%(RequiredUnityMetaFiles.FullPath)</MetaFilePath>
+      <DllName>%(RequiredUnityMetaFiles.DllName)</DllName>
+    </PropertyGroup>
+
+    <!-- If $(UnityPlayer) is defined, then exactly one player is supported. -->
+    <ItemGroup Condition=" '$(UnityPlayer)' != '' ">
+      <!-- The unity player meta entries associated with the current $(UnityPlayer). The format should match: {PlayerId}: {Platform} -->
+      <IncludedUnityPlatform Include="%(UnityPlayerDefinition.Platforms)" Condition=" '%(Identity)' == '$(UnityPlayer)' ">
+        <PlayerId>%(PlayerId)</PlayerId>
+      </IncludedUnityPlatform>
+      <PlatformInclusion Include="@(IncludedUnityPlatform -> '%(PlayerId): %(Identity)')">
+        <IsEnabled>1</IsEnabled>
+      </PlatformInclusion>
+    </ItemGroup>
+
+    <!-- Otherwise assume we are targeting Any player, with possible exclusions. -->
+    <ItemGroup Condition=" '$(UnityPlayer)' == '' ">
+      <!-- The format should match: {PlayerId}: {Platform} -->
+      <PlatformInclusion Include="Any: ">
+        <IsEnabled>1</IsEnabled>
+      </PlatformInclusion>
+      <PlatformInclusion Include="&quot;&quot;: Any">
+        <IsEnabled>0</IsEnabled>
+      </PlatformInclusion>
+
+      <!-- Intersect the list of Unity players in $(ExcludedUnityPlayers) with the @(UnityPlayerDefinition) to get the final list of excluded platforms. -->
+      <UnityPlayerExclusionMask Include="$(ExcludedUnityPlayers)" />
+      <ExcludedUnityPlayer Include="@(UnityPlayerDefinition)" Condition=" '@(UnityPlayerExclusionMask)' == '@(UnityPlayerDefinition)' AND '%(Identity)' != '' " />
+      <PlatformExclusion Include="%(ExcludedUnityPlayer.Platforms)" />
+    </ItemGroup>
+
+    <!-- Generate a deterministic asset id. -->
+    <GenerateAssetId AssetName="%(RequiredUnityMetaFiles.Filename)$(UnityPlayer)">
+      <Output TaskParameter="AssetId" PropertyName="AssetId" />
+    </GenerateAssetId>
+
+    <!-- Write the standard .meta header. -->
+    <WriteLinesToFile File="$(MetaFilePath)" Lines="$([System.String]::Format($(UnityMetaFileHeader), '$(AssetId)'))" />
+
+    <!-- Write an entry in the .meta for each supported Unity player. -->
+    <WriteLinesToFile File="$(MetaFilePath)" Lines="@(PlatformInclusion->'$([System.String]::Format($(UnityMetaFilePlayerEnabledFormat), '%(PlatformInclusion.Identity)', '%(PlatformInclusion.IsEnabled)'))')" />
+
+    <!-- Write an entry for each excluded platform. -->
+    <WriteLinesToFile File="$(MetaFilePath)" Lines="@(PlatformExclusion->'$([System.String]::Format($(UnityMetaFilePlatformExcludedFormat), '%(PlatformExclusion.Identity)', '1'))')" />
+
+    <!-- Gather DLL specific MonoBehaviour execution order settings -->
+    <ItemGroup>
+      <DllScriptExecutionOrders Include="@(DllExecutionOrderOverrides)" Condition="'%(DllExecutionOrderOverrides.Identity)'=='$(DllName)'"/>
+      <MonoBehaviourExecutionOrders Include="%(DllScriptExecutionOrders.MonoBehaviourSpecificOverrides)" />
+    </ItemGroup>
+
+    <!-- Write an entry for each MonoBehaviour with a non-default execution order in this precompiled DLL -->
+    <WriteLinesToFile File="$(MetaFilePath)" Lines="%20%20executionOrder:" />
+    <WriteLinesToFile File="$(MetaFilePath)" Lines="@(MonoBehaviourExecutionOrders->'    %(Identity)')"/>
+
+    <!-- Add the generated .meta file to the FileWrites so it gets cleaned up properly and handles incremental builds. -->
+    <ItemGroup>
+      <FileWrites Include="$(MetaFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <!--Generates a Unity asset id (formatted guid) from an asset name (text).
+      Since Unity asset ids are guids (128 bit), use an MD5 hash (also 128 bits) formatted as a hex string. -->
+  <UsingTask TaskName="GenerateAssetId" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <AssetName ParameterType="System.String" Required="true" />
+      <AssetId ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Security.Cryptography" />
+      <Using Namespace="System.Text" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+            byte[] inputBytes = Encoding.UTF8.GetBytes(this.AssetName);
+            using (var md5 = MD5.Create())
+            {
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+                this.AssetId = string.Join(string.Empty, hashBytes.Select(b => b.ToString("x2")));
+            }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+</Project>

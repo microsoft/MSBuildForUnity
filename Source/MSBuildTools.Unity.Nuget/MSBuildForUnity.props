@@ -1,0 +1,10 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <Import Project="..\buildCommon\UnityMetaFileGenerator.props" />
+  <Import Project="..\buildCommon\Publish.props" />
+
+</Project>

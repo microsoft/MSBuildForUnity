@@ -1,0 +1,40 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <!-- These are the extensions that should have associated .meta files. -->
+  <ItemGroup>
+    <UnityPluginFileExtensions Include="dll;winmd" />
+  </ItemGroup>
+
+  <!-- These are the Unity player definitions. They are matched against $(UnityPlayer). -->
+  <ItemGroup>
+    <UnityPlayerDefinition Include="Editor">
+      <PlayerId>Editor</PlayerId>
+      <Platforms>Editor</Platforms>
+    </UnityPlayerDefinition>
+
+    <UnityPlayerDefinition Include="Standalone">
+      <PlayerId>Standalone</PlayerId>
+      <Platforms>Win;Win64;Linux;Linux64;LinuxUniversal;OSXUniversal</Platforms>
+    </UnityPlayerDefinition>
+
+    <UnityPlayerDefinition Include="UAP">
+      <PlayerId>Windows Store Apps</PlayerId>
+      <Platforms>WindowsStoreApps</Platforms>
+    </UnityPlayerDefinition>
+
+    <UnityPlayerDefinition Include="iOS">
+      <PlayerId>iPhone</PlayerId>
+      <Platforms>iOS</Platforms>
+    </UnityPlayerDefinition>
+
+    <UnityPlayerDefinition Include="Android">
+      <PlayerId>Android</PlayerId>
+      <Platforms>Android</Platforms>
+    </UnityPlayerDefinition>
+  </ItemGroup>
+
+</Project>
