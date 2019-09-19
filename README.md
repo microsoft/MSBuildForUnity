@@ -24,6 +24,8 @@ The following tools are required to contribute to this project:
 - [Visual Studio 2017+](https://visualstudio.microsoft.com/downloads)
 - [Unity 2018+](https://unity3d.com/get-unity/download)
 
+To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
+
 ## Features
 
 MSBuildForUnity has several features that can be used independently or in conjunction.
@@ -34,7 +36,17 @@ The MSBuild Project Builder provides a means of building MSBuild projects from w
 
 [![MSBuild Project Builder Progress Bar](Documentation/MSBuildProjectBuilder/MSBuildProgressBar.gif)](Documentation/MSBuildProjectBuilder/MSBuildProjectBuilder.md)
 
-For details, see the [documentation](Documentation/MSBuildProjectBuilder/MSBuildProjectBuilder.md), [source](Source/MSBuildProjectBuilder/Assets/MSBuildProjectBuilder/Editor/MSBuildProjectBuilder.cs), and [samples](Source/MSBuildProjectBuilder/Assets/Samples/Samples.sln).
+For details, see the [documentation](Documentation/MSBuildProjectBuilder/MSBuildProjectBuilder.md), [source](Source/MSBuildTools.Unity/Packages/com.microsoft.msbuildforunity/Editor/ProjectBuilder/MSBuildProjectBuilder.cs), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
+
+### MSBuildForUnity NuGet Package
+
+The MSBuildForUnity NuGet package enhances the default MSBuild build logic to ensure the build output is suitable for Unity consumption. This package can be referenced from MSBuild projects that are built by the [MSBuild Project Builder](#msbuild-project-builder) to add these features:
+
+- Meta file generation - generates .meta files for build output such as .dlls.
+- Dependency resolution - all dependencies (through `PackageReference`s or `ProjectReference`s) are resolved and sent to the output directory (which is typically under the Unity project's Assets directory).
+- Debug symbol patching - enables debugging pre-built dlls (e.g. from NuGet packages) while running in the Unity Editor.
+
+For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
 
 ### MSBuild Project Generator
 
