@@ -27,6 +27,8 @@
              UnityMetaFileGenerator.targets;
              Publish.props;
              Publish.targets;
+             RemapSymbolSources.props;
+             RemapSymbolSources.targets;
              ">
       <PackagePath>buildCommon</PackagePath>
     </Content>
