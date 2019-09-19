@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <!-- These NuGet packages need to be filtered out as Unity has special handling for them. -->
-    <NuGetPackageIdExclusionList Condition=" $(TargetFramework).StartsWith('uap') " Include="
+    <NuGetPackageIdExclusionList Condition=" $(TargetFramework.StartsWith('uap')) " Include="
       Microsoft.CSharp;
       Microsoft.NETCore.Portable.Compatibility;
       Microsoft.VisualBasic;
