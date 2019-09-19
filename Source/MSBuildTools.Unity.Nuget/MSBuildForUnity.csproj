@@ -38,19 +38,19 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
 
-  <!-- <ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Mono.Cecil\Mono.Cecil.csproj" />
     <ProjectReference Include="..\Mono.Cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
-  </ItemGroup> -->
+  </ItemGroup>
 
   <!--
       There is a runtime dependency on Mono.Cecil and Newtonsoft for the tasks. Unfortunately there is no way to express that as a NuGet package dependency for build tasks.
       The only real option is to bundle the Mono.Cecil DLL's into our own package.
     -->
-  <!-- <Target Name="EmbedMonoCecil" AfterTargets="ResolveReferences">
+  <Target Name="EmbedMonoCecil" AfterTargets="ResolveReferences">
     <ItemGroup>
       <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Mono.Cecil'))" PackagePath="buildCommon" />
       <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Newtonsoft'))" PackagePath="buildCommon" />
     </ItemGroup>
-  </Target> -->
+  </Target>
 </Project>
