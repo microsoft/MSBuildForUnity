@@ -1,6 +1,6 @@
 ﻿using Microsoft.Build.Utilities;
 
-namespace MRW.Shared.Build.UnityApp.Tasks
+namespace MSBuildForUnity.Tasks
 {
     public sealed class AttachDebugger : Task
     {

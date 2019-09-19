@@ -4,18 +4,6 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!--
-      Because this project will be the main location to debug and browse package source it's useful to show the Unity scripts in the same context.
-      That way you can use the UnityApp project as a full debug experience wihtout having to juggle multiple VS instances. $(UnityProjectPath) is
-      a property that goes with the MRW.Shared.Build.UnityEditorInterface package. It may not exist in all instances, but that is okay, we just
-      want be able to provide the link to unity scripts in that case.
-    -->
-    <None Include="$(UnityProjectPath)\Assets\**\*.cs" Condition="'$(UnityProjectPath)' != ''">
-      <Link>.UnityProjectScripts\%(RecursiveDir)%(FileName)%(Extension)</Link>
-    </None>
-  </ItemGroup>
-
   <UsingTask TaskName="AppendNuGetInformation" AssemblyFile="$(MSBuildThisFileDirectory)MSBuildForUnity.dll" />
   <UsingTask TaskName="RemapSymbolSources" AssemblyFile="$(MSBuildThisFileDirectory)MSBuildForUnity.dll" />
 

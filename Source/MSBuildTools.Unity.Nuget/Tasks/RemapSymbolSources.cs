@@ -11,7 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace MRW.Shared.Build.UnityApp.Tasks
+namespace MSBuildForUnity.Tasks
 {
     /// <summary>
     /// Remap the paths to source files within a PDB file. This is useful for scenarios where you cannot use Source Indexing or Source Linking,

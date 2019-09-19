@@ -3,7 +3,7 @@ using Microsoft.Build.Utilities;
 using System.IO;
 using System.Xml.Linq;
 
-namespace MRW.Shared.Build.UnityApp.Tasks
+namespace MSBuildForUnity.Tasks
 {
     /// <summary>
     /// This task searches up from the given filepath to find a nuspec file. If one is found
