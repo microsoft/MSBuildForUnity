@@ -13,5 +13,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
     - name: Build
       run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
+    - name: Environment Variables
+      run: set
+    - name: MSBuildForUnity
+      run: MSBuild -?
