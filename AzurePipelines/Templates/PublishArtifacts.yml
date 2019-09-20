@@ -1,0 +1,19 @@
+steps:
+
+- task: CopyFiles@2
+  displayName: "Stage Build Outputs"
+  condition: succeededOrFailed()
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      **\bin\**
+      **\*.*log
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\Artifacts'
+
+- task: PublishBuildArtifacts@1
+  displayName: "Publish Artifacts"
+  condition: succeededOrFailed()
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Artifacts'
+    ArtifactName: 'Artifacts'
+    publishLocation: 'Container'

@@ -1,0 +1,7 @@
+steps:
+- checkout: self
+  clean: all
+  submodules: recursive
+
+- task: NuGetToolInstaller@1
+  displayName: "Use Latest NuGet"

@@ -1,0 +1,26 @@
+name: $(date:yyMM).$(date:dd)$(rev:rrr)
+
+# Do not trigger this build for any push operations
+trigger: none
+
+# Trigger this branch on any PR into master if the code changes are to
+# the submodules or the nuget project folder
+pr:
+  branches:
+    include: master
+  paths:
+    include:
+    - .gitmodules
+    - Source/MSBuildTools.Unity.Nuget
+
+- job:
+  displayName: "Build MSBuildForUnity.Nuget"
+  pool:
+    vmImage: 'windows-latest'
+  workspace:
+   clean: all
+
+  steps:
+  - template: Templates/CommonInitialization.yml
+  - template: Templates/BuildMSBuildForUnityNuget.yml
+  - template: Templates/PublishArtifacts.yml
