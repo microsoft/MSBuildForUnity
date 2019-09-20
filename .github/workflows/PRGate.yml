@@ -1,16 +1,19 @@
 name: $(date:yyMM).$(date:dd)$(rev:rrr)
 
 on:
+  push:
+    branches:
+    - master
   pull_request:
     branches:
-      - master
+    - master
 
 jobs:
-  build_nuget_solution:
+  build-nuget-solution:
     name: "Build NuGet Solution"
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v1
-      - name: Build
-        run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
+    - uses: actions/checkout@v1
+    - name: Build
+      run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
