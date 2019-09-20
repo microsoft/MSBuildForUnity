@@ -1,4 +1,4 @@
-name: $(date:yyMM).$(date:dd)$(rev:rrr)
+name: MSBuildForUnity NuGet Build
 
 on:
   push:
@@ -20,4 +20,4 @@ jobs:
     - name: Environment Variables
       run: set
     - name: MSBuildForUnity
-      run: MSBuild -?
+      run: dir /b 
