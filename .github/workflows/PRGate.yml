@@ -13,6 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      name: Checkout
       with:
         submodules: true
     - name: Build
@@ -27,6 +28,7 @@ jobs:
             Copy-Item $binFolder.FullName -Recurse -Destination ([System.IO.Path]::Combine("$targetFolder", "$(Resolve-Path -Relative $binFolder.FullName)"))
         }
     - uses: actions/upload-artifact@v1
+      name: Upload Artifacts
       with:
         name: Artifacts
         path: Artifacts
