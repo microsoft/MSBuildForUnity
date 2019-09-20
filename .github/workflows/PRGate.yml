@@ -17,7 +17,17 @@ jobs:
         submodules: true
     - name: Build
       run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
-    - name: Environment Variables
-      run: set
-    - name: MSBuildForUnity
-      run: dir /b "C:\Program Files (x86)\Microsoft Visual Studio"
+    - name: Stage Artifacts
+      shell: pwsh
+      run: |
+        $targetFolder = [System.IO.Path]::Combine("$env:GITHUB_WORKSPACE","Artifacts")
+        $binFolders = Get-ChildItem -Directory -Filter bin -Recurse
+        foreach ($binFolder in $binFolders)
+        {
+            Copy-Item $binFolder.FullName -Recurse -Destination ([System.IO.Path]::Combine("$targetFolder", "$(Resolve-Path -Relative $binFolder.FullName)"))
+        }
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Artifacts
+        path: Artifacts
+        
