@@ -2,8 +2,6 @@ name: $(date:yyMM).$(date:dd)$(rev:rrr)
 
 on:
   push:
-    branches:
-    - master
   pull_request:
     branches:
     - master
