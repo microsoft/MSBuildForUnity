@@ -26,13 +26,47 @@ The following tools are required to contribute to this project:
 
 To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
 
-## Quck Start
+## Quick Start
 
-Following are basic instructions for taking advantage of MSBuildForUnity for some basic scenarios.
+Following are basic instructions for taking advantage of MSBuildForUnity for some common scenarios.
 
 ### Scenario 1: Bring NuGet packages and MSBuild projects into a Unity project
 
-This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-builder) and the [MSBuildForUnity NuGet Package](#msbuildforunity-nuget-package) NuGet package.
+This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-builder) and the MSBuildForUnity [NuGet Package](#msbuildforunity-nuget-package).
+
+1. Add the `com.microsoft.msbuildforunity` UPM (Unity Package Manager) package.
+    - Edit the `Packages/manifest.json` file in your Unity project.
+    - Add the following near the top of the file:
+        ```json
+        "scopedRegistries": [
+            {
+                "name": "Microsoft",
+                "url": "https://pkgs.dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging/UnityDeveloperTools/npm/registry/",
+                "scopes": [
+                    "com.microsoft"
+                ]
+            }
+        ],
+        ```
+    - Add the following to the `dependencies` section of the file:
+        ```json
+          "com.microsoft.msbuildforunity": "0.1.1-20190816.2.0"
+        ```
+1. Create a "SDK style" MSBuild project (e.g. csproj) somewhere under your `Assets` directory of your Unity project that references the `MSBuildForUnity` NuGet package. Here is an example:
+    ```xml
+    <Project Sdk="Microsoft.NET.Sdk">
+        <PropertyGroup>
+            <TargetFramework>netstandard2.0</TargetFramework>
+        </PropertyGroup>
+        <ItemGroup>
+            <PackageReference Include="MSBuildForUnity" Version="1.0.0">
+                <PrivateAssets>all</PrivateAssets>
+                <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+            </PackageReference>
+        </ItemGroup>
+    </Project>
+    ```
+1. Add additional references to any NuGet packages you want to use in your Unity project.
 
 ## Features
 
@@ -52,7 +86,7 @@ The MSBuild Project Generator will generate a Visual Studio solution configured 
 
 ### MSBuildForUnity NuGet Package
 
-The `MSBuildForUnity` NuGet package enhances the default MSBuild build logic to ensure the build output is suitable for Unity consumption. This package can be referenced from MSBuild projects that are built by the [MSBuild Project Builder](#msbuild-project-builder) to add these features:
+The `MSBuildForUnity` NuGet package augments the default MSBuild build logic to ensure the build output is suitable for Unity consumption. This package can be referenced from MSBuild projects that are built by the [MSBuild Project Builder](#msbuild-project-builder) to add these features:
 
 - Meta file generation - generates .meta files for build output such as .dlls.
 - Dependency resolution - all dependencies (through `PackageReference`s or `ProjectReference`s) are resolved and sent to the output directory (which is typically under the Unity project's Assets directory).
