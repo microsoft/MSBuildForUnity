@@ -26,6 +26,12 @@ The following tools are required to contribute to this project:
 
 To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
 
+### Builds and Package Repositories
+
+MSBuildForUnity UPM packages are built via an [ADO (Azure Dev Ops) build pipeline](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build?definitionId=1&_a=summary), and the built packages are hosted on an [ADO package feed](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools).
+
+[![Build Status](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/microsoft.MSBuildForUnity?branchName=master)](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=1&branchName=master)
+
 ## Quick Start
 
 Following are basic instructions for taking advantage of MSBuildForUnity for some common scenarios.
