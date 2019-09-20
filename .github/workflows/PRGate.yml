@@ -6,11 +6,11 @@ on:
       - master
 
 jobs:
-- build_nuget_solution:
-  name: "Build NuGet Solution"
-  runs-on: windows-latest
+  build_nuget_solution:
+    name: "Build NuGet Solution"
+    runs-on: windows-latest
 
-  steps:
-    - uses: actions/checkout@v1
-    - name: Build
-      run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: dotnet build -c Debug Source/MSBuildTools.Unity.Nuget/MSBuildForUnity.NuGet.sln
