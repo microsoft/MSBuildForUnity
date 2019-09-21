@@ -14,7 +14,7 @@ pr:
     - .gitmodules
     - Source/MSBuildTools.Unity.Nuget
 
-- job: MSBuildForUnity-Build-NuGet
+- job: MSBuildForUnity_Build_NuGet
   displayName: "Build MSBuildForUnity.Nuget"
   pool:
     vmImage: 'windows-latest'
