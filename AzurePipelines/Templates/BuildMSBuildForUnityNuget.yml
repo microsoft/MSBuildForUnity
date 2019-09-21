@@ -1,31 +1,7 @@
 steps:
-- task: "333b11bd-d341-40d9-afcf-b32d5ce6f23b@2"
-  displayName: "Restore NuGet Packages"
-  inputs:
-    command: 'restore'
-    restoreSolution: 'MRW.Acme.sln'
-    feedsToUse: 'config'
-    nugetConfigPath: 'NuGet.config'
-    externalFeedCredentials: 'MRW Arcana (via MSCODEHUB)'
-
 - task: MSBuild@1
-  displayName: "Build Dependencies"
+  displayName: "Build Solution"
   inputs:
-    solution: 'MRW.Acme.sln'
-    configuration: $(BuildConfigurationVS)
-    msbuildArguments: '/bl:$(Build.SourcesDirectory)\DependencyBuild.binlog'
-
-- task: MSBuild@1
-  displayName: "Build Unity Project"
-  inputs:
-    solution: 'VSProjects/UnityApp.Acme.UAP/UnityApp.Acme.UAP.csproj'
-    configuration: $(BuildConfigurationVS)
-    msbuildArguments: '/t:BuildUnityProject /bl:$(Build.SourcesDirectory)\UnityBuild.binlog'
-
-- task: MSBuild@1
-  displayName: "Build UWP Application"
-  inputs:
-    solution: 'Acme\WindowsStoreApp\Acme.sln'
-    platform: $(BuildPlatform)
-    configuration: $(BuildConfigurationUnity)
-    msbuildArguments: '/bl:$(Build.SourcesDirectory)\UWPBuild.binlog'
+    solution: 'Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.NuGet.sln'
+    configuration: Release
+    msbuildArguments: '/restore /bl:$(Build.SourcesDirectory)\MSBuildForUnity.NuGet.binlog'
