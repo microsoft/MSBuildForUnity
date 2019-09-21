@@ -14,14 +14,13 @@ pr:
     - .gitmodules
     - Source/MSBuildTools.Unity.Nuget
 
-- job: MSBuildForUnity_Build_NuGet
-  displayName: "Build MSBuildForUnity.Nuget"
-  pool:
-    vmImage: 'windows-latest'
-  workspace:
-   clean: all
+displayName: "Build MSBuildForUnity.Nuget"
+pool:
+  vmImage: 'windows-latest'
+workspace:
+ clean: all
 
-  steps:
-  - template: Templates/CommonInitialization.yml
-  - template: Templates/BuildMSBuildForUnityNuget.yml
-  - template: Templates/PublishArtifacts.yml
+steps:
+- template: Templates/CommonInitialization.yml
+- template: Templates/BuildMSBuildForUnityNuget.yml
+- template: Templates/PublishArtifacts.yml
