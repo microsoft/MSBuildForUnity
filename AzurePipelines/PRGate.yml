@@ -7,7 +7,8 @@ trigger: none
 # the submodules or the nuget project folder
 pr:
   branches:
-    include: master
+    include:
+    - master
   paths:
     include:
     - .gitmodules
