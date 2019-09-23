@@ -1,11 +1,8 @@
 name: $(date:yyMM).$(date:dd)$(rev:rrr)
 
-# Do not trigger this build for any push operations
-trigger: none
-
-# Trigger this branch on any PR into master if the code changes are to
-# the submodules or the nuget project folder
-pr:
+# Trigger on commits to the master branch, but only if the changes
+# were in a location that affects the NuGet package.
+trigger:
   branches:
     include:
     - master
@@ -13,6 +10,9 @@ pr:
     include:
     - Source/Mono.Cecil
     - Source/MSBuildTools.Unity.Nuget
+
+# Do not trigger for PRGate builds
+pr: none
 
 pool:
   vmImage: 'windows-latest'

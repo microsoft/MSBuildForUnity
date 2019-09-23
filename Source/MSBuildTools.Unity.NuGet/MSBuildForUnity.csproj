@@ -17,6 +17,28 @@
     <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
+  <!-- Setup the versioning for the package based on the build number if provided -->
+  <PropertyGroup>
+    <!-- Major is hard-coded and should be incremented on breaking changes -->
+    <MajorVersion>0</MajorVersion>
+    
+    <!--
+      Minor is defaulted to 0, but if running in the lab where BuildNumber is specified then default to the first number segment
+      of the lab build number. Should be Year, Year, Month, Month.
+    -->
+    <MinorVersion>0</MinorVersion>
+    <MinorVersion Condition="'$(BuildNumber)' != ''">$(BuildNumber.Split('.')[0])</MinorVersion>
+
+    <!--
+      Minor is defaulted to 0, but if running in the lab where BuildNumber is specified then default to the second number segment
+      of the lab build number. Should be Day, Day, Revision, Revision, Revision.
+    -->
+    <RevisionVersion>0</RevisionVersion>
+    <RevisionVersion Condition="'$(BuildNumber)' != ''">$(BuildNumber.Split('.')[1])</RevisionVersion>
+
+    <PackageVersion>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</PackageVersion>
+  </PropertyGroup>
+
   <ItemGroup>
    <Content Include="$(PackageId).props;$(PackageId).targets;">
       <PackagePath>build;buildCrossTargeting</PackagePath>
