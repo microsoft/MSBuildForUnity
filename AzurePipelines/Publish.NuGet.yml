@@ -1,5 +1,3 @@
-name: $(date:yyMM).$(date:dd)$(rev:rrr)
-
 # Trigger on commits to the master branch, but only if the changes
 # were in a location that affects the NuGet package.
 trigger:
@@ -16,6 +14,7 @@ pr: none
 
 pool:
   vmImage: 'windows-latest'
+
 workspace:
  clean: all
 
