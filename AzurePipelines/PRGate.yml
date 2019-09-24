@@ -9,10 +9,6 @@ pr:
   branches:
     include:
     - master
-  paths:
-    include:
-    - Source/Mono.Cecil
-    - Source/MSBuildTools.Unity.Nuget
 
 pool:
   vmImage: 'windows-latest'

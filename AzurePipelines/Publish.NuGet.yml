@@ -23,3 +23,4 @@ steps:
 - template: Templates/CommonInitialization.yml
 - template: Templates/BuildMSBuildForUnityNuget.yml
 - template: Templates/PublishArtifacts.yml
+- template: Templates/PublishNuGetPackages.yml
