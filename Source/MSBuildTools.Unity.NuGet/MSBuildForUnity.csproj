@@ -21,20 +21,14 @@
   <PropertyGroup>
     <!-- Major is hard-coded and should be incremented on breaking changes -->
     <MajorVersion>0</MajorVersion>
-    
-    <!--
-      Minor is defaulted to 0, but if running in the lab where BuildNumber is specified then default to the first number segment
-      of the lab build number. Should be Year, Year, Month, Month.
-    -->
-    <MinorVersion>0</MinorVersion>
-    <MinorVersion Condition="'$(BUILD_BUILDNUMBER)' != ''">$(BUILD_BUILDNUMBER.Split('.')[0])</MinorVersion>
+
+    <MinorVersion>1</MinorVersion>
 
     <!--
-      Minor is defaulted to 0, but if running in the lab where BuildNumber is specified then default to the second number segment
-      of the lab build number. Should be Day, Day, Revision, Revision, Revision.
+      Minor is defaulted to 0, but if running in the lab where BuildID is specified then default the revision to that value.
     -->
     <RevisionVersion>0</RevisionVersion>
-    <RevisionVersion Condition="'$(BUILD_BUILDNUMBER)' != ''">$(BUILD_BUILDNUMBER.Split('.')[1])</RevisionVersion>
+    <RevisionVersion Condition="'$(BUILD_BUILDID)' != ''">$(BUILD_BUILDID)</RevisionVersion>
 
     <PackageVersion>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</PackageVersion>
   </PropertyGroup>
