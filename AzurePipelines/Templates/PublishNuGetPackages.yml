@@ -3,5 +3,6 @@ steps:
   inputs:
     command: 'push'
     packagesToPush: '$(Build.SourcesDirectory)/**/bin/**/*.nupkg;!$(Build.SourcesDirectory)/**/bin/**/*.symbols.nupkg'
-    nuGetFeedType: 'internal'
-    publishVstsFeed: '0cb95e25-9194-4ccd-9afb-439b25ecb93a/a3d1c3cc-6042-4e05-b699-39a947e75639'
+    # Publish only to the secure internal feed until we get approval from legal
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'MRW.Shared NuGet Credentials'
