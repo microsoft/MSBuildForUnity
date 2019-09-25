@@ -62,7 +62,7 @@ namespace Microsoft.Build.Unity
                 }
             }
 
-            [MenuItem("MSBuild/Auto Build All Projects [testing only]")]
+            //[MenuItem("MSBuild/Auto Build All Projects [testing only]")]
             private static void BuildAllAutoBuiltProjects()
             {
                 MSBuildProjectBuilder.BuildProjects(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().Where(projectReference => projectReference.AutoBuild).ToArray());

@@ -26,11 +26,17 @@ The following tools are required to contribute to this project:
 
 To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
 
-### Builds and Package Repositories
+### Builds and Packages
 
-MSBuildForUnity UPM packages are built via an [ADO (Azure Dev Ops) build pipeline](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build?definitionId=1&_a=summary), and the built packages are hosted on an [ADO package feed](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools).
+| Build | Status                                               |
+|-------|------------------------------------------------------|
+| PR    | [![PR Build Status][PRBuildBadge]][PRBuild]          |
+| UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       |
+| NuGet | [![NuGet Build Status][NuGetBuildBadge]][NuGetBuild] |
 
-[![Build Status](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/microsoft.MSBuildForUnity?branchName=master)](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=1&branchName=master)
+| Package | Feed                                                                                                                  |
+|---------|-----------------------------------------------------------------------------------------------------------------------|
+| UPM     | [Azure DevOps](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools) |
 
 ## Quick Start
 
@@ -99,3 +105,13 @@ The `MSBuildForUnity` NuGet package augments the default MSBuild build logic to 
 - Debug symbol patching - enables debugging pre-built dlls (e.g. from NuGet packages) while running in the Unity Editor.
 
 For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
+
+
+[PRBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.PRGate?branchName=master
+[PRBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=2&branchName=master
+
+[UPMBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.Publish.UPM?branchName=master
+[UPMBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=1&branchName=master
+
+[NuGetBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.Publish.NuGet?branchName=master
+[NuGetBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=3&branchName=master
