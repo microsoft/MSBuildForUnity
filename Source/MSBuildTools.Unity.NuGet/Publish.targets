@@ -1,0 +1,23 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <!-- This target filters the @(AllCopyLocalItems) item list based on the provided publish file exclusion list. -->
+  <Target Name="FilterCopyLocal" DependsOnTargets="PrepareForBuild" BeforeTargets="ResolveLockFileCopyLocalProjectDeps" Condition=" '@(NuGetPackageIdExclusionList)' != '' ">
+    <ItemGroup>
+      <!-- This duplicates each item in @(AllCopyLocalItems), once per item in @(NuGetPackageIdExclusionList). -->
+      <AllCopyLocalItemsWithExclusionListMetadata Include="@(AllCopyLocalItems)">
+        <NuGetPackageIdExclusionList>%(NuGetPackageIdExclusionList.Identity)</NuGetPackageIdExclusionList>
+      </AllCopyLocalItemsWithExclusionListMetadata>
+
+      <!-- This filters the list back down to just the items where the NuGetPackageId matches one of the items in NuGetPackageIdExclusionList (e.g. the excluded items of @(AllCopyLocalItems)). -->
+      <ExcludedAllCopyLocalItems Include="@(AllCopyLocalItemsWithExclusionListMetadata)" Condition=" '%(AllCopyLocalItemsWithExclusionListMetadata.NuGetPackageId)' == '%(AllCopyLocalItemsWithExclusionListMetadata.NuGetPackageIdExclusionList)' " />
+
+      <!-- Finally, actually remove the items that have been identified as excluded. -->
+      <AllCopyLocalItems Remove="@(ExcludedAllCopyLocalItems)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

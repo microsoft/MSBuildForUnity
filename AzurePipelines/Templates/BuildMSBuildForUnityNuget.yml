@@ -1,0 +1,7 @@
+steps:
+- task: MSBuild@1
+  displayName: "Build Solution"
+  inputs:
+    solution: 'Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.NuGet.sln'
+    configuration: Release
+    msbuildArguments: '/restore /bl:$(Build.SourcesDirectory)\MSBuildForUnity.NuGet.binlog'

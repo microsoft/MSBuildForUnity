@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <UsingTask TaskName="AppendNuGetInformation" AssemblyFile="$(MSBuildThisFileDirectory)MSBuildForUnity.dll" />
+  <UsingTask TaskName="RemapSymbolSources" AssemblyFile="$(MSBuildThisFileDirectory)MSBuildForUnity.dll" />
+
+</Project>

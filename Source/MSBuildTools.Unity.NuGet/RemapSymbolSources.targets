@@ -1,0 +1,172 @@
+<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Default to only enabling symbol remapping for the Editor player -->
+    <MSBuildForUnityRemapSymbolSources Condition="'$(MSBuildForUnityRemapSymbolSources)' == '' AND '$(UnityPlayer)' == 'Editor'">true</MSBuildForUnityRemapSymbolSources>
+  </PropertyGroup>
+
+  <Target Name="_CalculateReferenceNuGetAssemblies">
+    <ItemGroup>
+      <!--
+        Create a new Item _ReferenceCopyLocalAssemblies from the original ReferenceCopyLocalPaths with metadata for the target path after patching and the original
+        itemspec so we can map the items back after we've manipulated them.
+      -->
+      <_ReferenceCopyLocalAssemblies Include="@(ReferenceCopyLocalPaths)">
+        <ReferenceCopyLocalItemSpec>%(Identity)</ReferenceCopyLocalItemSpec>
+        <PatchedTargetPath>$([System.IO.Path]::Combine('$(ProjectDir)','$(IntermediateOutputPath)','PatchedAssemblies','%(_ReferenceCopyLocalAssemblies.DestinationSubDirectory)%(Filename)%(Extension)'))</PatchedTargetPath>
+      </_ReferenceCopyLocalAssemblies>
+
+      <!--
+        Get the list of assemblies that came from project references. We'll need to query the original project to find out if they came from a NuGet package. Add some
+        metadata so we can map back to the original list of assemblies.
+      -->
+      <_ProjectReferenceAssemblies Include="@(_ReferenceCopyLocalAssemblies)" Condition="'%(_ReferenceCopyLocalAssemblies.ReferenceSourceTarget)' == 'ProjectReference'" />
+    </ItemGroup>
+
+    <!--
+      Call the ResolveAssemblyReferences target on the source project which will return the list of references that the project brought in, which we can then match
+      against the items this project is copying to it's output.
+    -->
+    <MSBuild
+      Projects="%(_ProjectReferenceAssemblies.MSBuildSourceProjectFile)"
+      Targets="ResolveAssemblyReferences"
+      Properties="%(_ProjectReferenceAssemblies.SetTargetFramework)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceAssembliesOrigin"/>
+    </MSBuild>
+
+    <!--
+      Join our original list of _ProjectReferenceAssemblies with the resolved ones from the source project. That should leave us with the list of _ProjectReferenceAssemblies
+      that the source project pulled in from an external source itself.
+    -->
+    <JoinItems
+      Left="@(_ProjectReferenceAssemblies)"
+      LeftKey="FusionName"
+      LeftMetadata="*"
+      Right="@(_ProjectReferenceAssembliesOrigin)"
+      RightKey="FusionName"
+      RightMetadata="*"
+      ItemSpecToUse="Left">
+      <Output TaskParameter="JoinResult" ItemName="_ProjectReferenceAssembliesResolved" />
+    </JoinItems>
+
+    <ItemGroup>
+      <!-- _ProjectReferenceAssembliesResolved doesn't include info about the PDB files, we want to add them in if they exist -->
+      <_ProjectReferenceAssembliesResolved Include="@(_ProjectReferenceAssembliesResolved->'$([System.IO.Path]::ChangeExtension(%(Identity),'.pdb'))')" Condition="Exists($([System.IO.Path]::ChangeExtension(%(Identity),'.pdb')))">
+        <HintPath>$([System.IO.Path]::ChangeExtension(%(_ProjectReferenceAssembliesResolved.HintPath),'.pdb'))</HintPath>
+        <ReferenceCopyLocalItemSpec>$([System.IO.Path]::ChangeExtension(%(_ProjectReferenceAssembliesResolved.ReferenceCopyLocalItemSpec),'.pdb'))</ReferenceCopyLocalItemSpec>
+        <PatchedTargetPath>$([System.IO.Path]::ChangeExtension(%(_ProjectReferenceAssembliesResolved.PatchedTargetPath),'.pdb'))</PatchedTargetPath>
+      </_ProjectReferenceAssembliesResolved>
+
+      <!-- Update _ReferenceCopyLocalAssemblies to point to the _ProjectReferenceAssembliesResolved paths -->
+      <_ReferenceCopyLocalAssemblies Remove="@(_ProjectReferenceAssembliesResolved)" />
+      <_ReferenceCopyLocalAssemblies Include="@(_ProjectReferenceAssembliesResolved->'%(HintPath)')" />
+    </ItemGroup>
+
+    <!-- Find any references copied to the output that originated from a NuGet package -->
+    <FindUnderPath Files="@(_ReferenceCopyLocalAssemblies)" Path="$(NuGetPackageRoot)">
+      <Output TaskParameter="InPath" ItemName="_NuGetAssemblyReference"/>
+    </FindUnderPath>
+
+    <!-- Collect NuGet package information for those assemblies -->
+    <AppendNuGetInformation Items="@(_NuGetAssemblyReference)">
+      <Output TaskParameter="Items" ItemName="RemapSourceAssembly" />
+    </AppendNuGetInformation>
+
+    <ItemGroup>
+      <!-- Populate the default mapping of packages to source roots based on <PackageReferece> elments that specify the SourceRoot metadata -->
+      <MSBuildForUnityPackageSourceMapping Include="@(PackageReference)" Condition="'%(PackageReference.SourceRoot)' != ''" />
+    </ItemGroup>
+
+    <!-- Combine the DLL's to remap with the matching MSBuildForUnityPackageSourceMapping SourceRoot metadata -->
+    <JoinItems
+      Left="@(RemapSourceAssembly)"
+      LeftKey="NuGetPackageId"
+      LeftMetadata="*"
+      Right="@(MSBuildForUnityPackageSourceMapping)"
+      RightKey=""
+      RightMetadata="SourceRoot"
+      ItemSpecToUse="Left">
+      <Output TaskParameter="JoinResult" ItemName="_UserMappedSourceRoot" />
+    </JoinItems>
+
+    <ItemGroup>
+      <!--
+        Update the user mapped packages with their source root. Only packages that had an explicit SourceRoot attribute
+        will be removed and then re-added as the version with SourceRoot.
+      -->
+      <RemapSourceAssembly Remove="@(_UserMappedSourceRoot)" />
+      <RemapSourceAssembly Include="@(_UserMappedSourceRoot)" />
+
+      <!-- Assign a default source root for packages that weren't explicitly given one -->
+      <RemapSourceAssembly Condition="'%(RemapSourceAssembly.SourceRoot)' == ''">
+        <SourceRoot>%(RemapSourceAssembly.NuGetPackagePath)</SourceRoot>
+      </RemapSourceAssembly>
+
+      <!-- Remove any assemblies where the SourceRoot doesn't actually exist, there is nothing we can do to patch them -->
+      <RemapSourceAssembly Remove="%(RemapSourceAssembly.Identity)" Condition="!Exists(%(RemapSourceAssembly.SourceRoot))"/>
+
+      <!-- Add default assembly search paths for any of the NuGet references and references of project references -->
+      <MSBuildForUnityReferenceAssemblySearchPaths Include="$([System.IO.Path]::GetDirectoryName('%(ReferencePath.FullPath)'))" Condition="'%(ReferencePath.FullPath)' != ''"/>
+      <MSBuildForUnityReferenceAssemblySearchPaths Include="$([System.IO.Path]::GetDirectoryName('%(_ProjectReferenceAssembliesOrigin.FullPath)'))" Condition="'%(_ProjectReferenceAssembliesOrigin.FullPath)' != ''"/>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <!-- Add the main target in as the first task of PrepareForRun so that we can swap out where the references are copied from -->
+    <PrepareForRunDependsOn>RemapSymbolSources;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
+  </PropertyGroup>
+
+  <!-- In order to support incremental builds we need to patch the DLL's and save them into the intermediates folder so subsequent runs don't try to re-patch them -->
+  <Target
+    Name="RemapSymbolSources"
+    BeforeTargets="CopyFilesToOutputDirectory"
+    DependsOnTargets="_CalculateReferenceNuGetAssemblies"
+    Inputs="@(RemapSourceAssembly)"
+    Outputs="@(RemapSourceAssembly->'%(PatchedTargetPath)')"
+    Condition="'$(MSBuildForUnityRemapSymbolSources)' == 'true'">
+    <Copy
+      SourceFiles="@(RemapSourceAssembly)"
+      DestinationFiles="@(RemapSourceAssembly->'%(PatchedTargetPath)')"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="false"
+      UseSymboliclinksIfPossible="false">
+      <!-- Add the patched symbols to the FileWrites group so they are removed during a clean/rebuild operation -->
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+
+    <!-- Call the task to do the actual assembly patching to remap the symbols -->
+    <RemapSymbolSources
+      Assemblies="@(RemapSourceAssembly->'%(PatchedTargetPath)')"
+      ReferenceAssemblySearchPaths="@(MSBuildForUnityReferenceAssemblySearchPaths->Distinct())"
+      Condition="'%(RemapSourceAssembly.Extension)' == '.dll'" />
+
+    <ItemGroup>
+      <!-- Update the ReferenceCopyLocalPaths to point to the patched assemblies and PDBs -->
+      <ReferenceCopyLocalPaths Remove="@(RemapSourceAssembly->'%(ReferenceCopyLocalItemSpec)')" />
+      <ReferenceCopyLocalPaths Include="@(RemapSourceAssembly->'%(PatchedTargetPath)')" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    NuGet packages that have PDBs in their lib folder do not get automatically added to the output as they should be.
+    This target is a work-around provided by the .Net Foundation team from the tracking issue found here:
+    https://github.com/dotnet/sdk/issues/1458#issuecomment-401497095
+  -->
+  <Target Name="_ResolveCopyLocalNuGetPackagePdbsAndXml"
+       Condition="$(CopyLocalLockFileAssemblies) == true"
+       AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths
+        Include="@(ReferenceCopyLocalPaths->'%(RootDir)%(Directory)%(Filename).pdb')"
+        Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' != ''
+                    and Exists('%(RootDir)%(Directory)%(Filename).pdb')" />
+    </ItemGroup>
+  </Target>
+</Project>

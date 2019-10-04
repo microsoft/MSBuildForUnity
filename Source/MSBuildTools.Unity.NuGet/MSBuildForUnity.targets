@@ -1,0 +1,11 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <Import Project="..\buildCommon\UnityMetaFileGenerator.targets" />
+  <Import Project="..\buildCommon\Publish.targets" />
+  <Import Project="..\buildCommon\RemapSymbolSources.targets" />
+
+</Project>

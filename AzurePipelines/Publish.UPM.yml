@@ -1,7 +1,12 @@
-# CI Pipeline
-
+# Trigger on commits to the master branch, but only if the changes
+# were in a location that affects the UPM package.
 trigger:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - Source/MSBuildTools.Unity/Packages
 
 pr: none
 

@@ -1,0 +1,20 @@
+# Do not trigger this build for any push operations
+trigger: none
+
+# Trigger this branch on any PR into master
+pr:
+  branches:
+    include:
+    - master
+
+pool:
+  vmImage: 'windows-latest'
+
+workspace:
+ clean: all
+
+steps:
+- template: Templates/CommonInitialization.yml
+- template: Templates/BuildMSBuildForUnityNuget.yml
+# Commenting out the ability to publish the NuGet packages until we get approval from legal
+#- template: Templates/PublishArtifacts.yml
