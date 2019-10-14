@@ -30,7 +30,6 @@ To get started, clone the repo, and then run `git submodule update --init` to in
 
 | Build | Status                                               |
 |-------|------------------------------------------------------|
-| PR    | [![PR Build Status][PRBuildBadge]][PRBuild]          |
 | UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       |
 | NuGet | [![NuGet Build Status][NuGetBuildBadge]][NuGetBuild] |
 
