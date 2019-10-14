@@ -23,10 +23,6 @@ namespace Microsoft.Build.Unity
             Error,
         }
 
-        public const string BuildTargetArgument = "-t:Build";
-        public const string RebuildTargetArgument = "-t:Rebuild";
-        public const string DefaultBuildArguments = MSBuildProjectBuilder.BuildTargetArgument;
-
         private const string AdoAuthenticationUrl = "https://microsoft.com/devicelogin";
 
         private static readonly Lazy<Task<string>> msBuildPathTask;
@@ -110,32 +106,42 @@ namespace Microsoft.Build.Unity
         /// <summary>
         /// Builds all MSBuild projects referenced by a <see cref="MSBuildProjectReference"/> within the Unity project with the default UI.
         /// </summary>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <returns>A task that will have a result of true if the build succeeds.</returns>
-        public static bool BuildAllProjects(string arguments = MSBuildProjectBuilder.DefaultBuildArguments)
+        public static bool BuildAllProjects(string configuration, string additionalArguments = "")
         {
-            return MSBuildProjectBuilder.BuildProjects(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().ToArray(), arguments);
+            (IEnumerable<MSBuildProjectReference> withConfiguration, IEnumerable<MSBuildProjectReference> withoutConfiguration) = MSBuildProjectBuilder.SplitByConfiguration(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences(), configuration);
+
+            foreach (MSBuildProjectReference msBuildProjectReference in withoutConfiguration)
+            {
+                Debug.Log($"Skipping {msBuildProjectReference.ProjectPath} because it does not have a configuration named {configuration}.", msBuildProjectReference);
+            }
+
+            return MSBuildProjectBuilder.BuildProjects(withConfiguration.ToArray(), configuration, additionalArguments);
         }
 
         /// <summary>
         /// Builds all MSBuild projects referenced by a <see cref="MSBuildProjectReference"/> within the Unity project.
         /// </summary>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <param name="progress">Receives progress of the build.</param>
         /// <param name="cancellationToken">The cancellation token used to cancel the build.</param>
         /// <returns></returns>
-        public static Task<bool> BuildAllProjectsAsync(string arguments, IProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType))> progress, CancellationToken cancellationToken)
+        public static Task<bool> BuildAllProjectsAsync(string configuration, string additionalArguments, IProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType))> progress, CancellationToken cancellationToken)
         {
-            return MSBuildProjectBuilder.BuildProjectsAsync(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().ToArray(), arguments, progress, cancellationToken);
+            return MSBuildProjectBuilder.BuildProjectsAsync(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences().ToArray(), configuration, additionalArguments, progress, cancellationToken);
         }
 
         /// <summary>
         /// Builds the specified MSBuild projects with the default UI.
         /// </summary>
         /// <param name="msBuildProjectReferences">The collection of MSBuild projects to build.</param>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <returns>A task that will have a result of true if the build succeeds.</returns>
-        public static bool BuildProjects(this IReadOnlyCollection<MSBuildProjectReference> msBuildProjectReferences, string arguments = MSBuildProjectBuilder.DefaultBuildArguments)
+        public static bool BuildProjects(this IReadOnlyCollection<MSBuildProjectReference> msBuildProjectReferences, string configuration, string additionalArguments = "")
         {
             // This method blocks so it should only be possible to have one call at a time (unless it is called from the wrong thread).
             Debug.Assert(!MSBuildProjectBuilder.isBuildingWithDefaultUI);
@@ -147,7 +153,8 @@ namespace Microsoft.Build.Unity
                 {
                     return MSBuildProjectBuilder.BuildProjectsAsync(
                         msBuildProjectReferences,
-                        $"{arguments} -v:diagnostic",
+                        configuration,
+                        $" -v:diagnostic {additionalArguments}",
                         new DelegateProgress<(int, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report => MSBuildProjectBuilder.LogProgressMessage(report.progressUpdate.progressMessage, report.progressUpdate.progressMessageType)),
                         CancellationToken.None).GetAwaiter().GetResult();
                 }
@@ -165,7 +172,8 @@ namespace Microsoft.Build.Unity
 
                         Task<bool> buildTask = MSBuildProjectBuilder.BuildProjectsAsync(
                             msBuildProjectReferences,
-                            $"{arguments} -v:minimal -p:NuGetInteractive=true",
+                            configuration,
+                            $" -v:minimal -p:NuGetInteractive=true {additionalArguments}",
                             new DelegateProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report =>
                             {
                                 if (report.progressUpdate.progressMessageType != ProgressMessageType.Information)
@@ -243,22 +251,45 @@ namespace Microsoft.Build.Unity
         /// Builds the specified MSBuild projects.
         /// </summary>
         /// <param name="msBuildProjectReferences">The collection of MSBuild projects to build.</param>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <param name="progress">Receives progress of the build.</param>
         /// <param name="cancellationToken">The cancellation token used to cancel the build.</param>
         /// <returns>A task that will have a result of true if the build succeeds.</returns>
-        public static async Task<bool> BuildProjectsAsync(this IReadOnlyCollection<MSBuildProjectReference> msBuildProjectReferences, string arguments, IProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)> progress, CancellationToken cancellationToken)
+        public static async Task<bool> BuildProjectsAsync(this IReadOnlyCollection<MSBuildProjectReference> msBuildProjectReferences, string configuration, string additionalArguments, IProgress<(int completedProjects, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)> progress, CancellationToken cancellationToken)
         {
             bool succeeded = true;
             int completedProjects = 0;
 
-            // NOTE: The ToArray is intentional because we need to access the ProjectPath property from the Unity UI thread, but the continuations will run on a ThreadPool thread (to enable callers to block on the returned Task if needed).
-            foreach (var projectInfo in msBuildProjectReferences.Select(projectReference => (projectPath: projectReference.ProjectPath, buildEngine: projectReference.BuildEngine)).ToArray())
+            (IEnumerable<MSBuildProjectReference> withConfiguration, IEnumerable<MSBuildProjectReference> withoutConfiguration) = MSBuildProjectBuilder.SplitByConfiguration(msBuildProjectReferences, configuration);
+
+            foreach (MSBuildProjectReference msBuildProjectReference in withoutConfiguration)
+            {
+                Debug.LogWarning($"A configuration named '{configuration}' is not defined for the specified {typeof(MSBuildProjectReference).Name}.", msBuildProjectReference);
+                completedProjects++;
+            }
+
+            var validConfiguredProjects = new List<(string projectPath, string arguments, BuildEngine buildEngine)>();
+            foreach (MSBuildProjectReference msBuildProjectReference in withConfiguration)
+            {
+                var configurations = msBuildProjectReference.Configurations.Where(config => string.Equals(config.name, configuration, StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                if (configurations.Length > 1)
+                {
+                    Debug.LogError($"Multiple configurations named '{configuration}' are defined for the specified {typeof(MSBuildProjectReference).Name}.", msBuildProjectReference);
+                    completedProjects++;
+                }
+                else
+                {
+                    validConfiguredProjects.Add((msBuildProjectReference.ProjectPath, configurations[0].arguments, msBuildProjectReference.BuildEngine));
+                }
+            }
+
+            foreach (var projectInfo in validConfiguredProjects)
             {
                 succeeded &= (await MSBuildProjectBuilder.BuildProjectAsync(
                     projectInfo.projectPath,
                     projectInfo.buildEngine,
-                    arguments,
+                    $"{additionalArguments} {projectInfo.arguments}",
                     new DelegateProgress<(string progressMessage, ProgressMessageType progressMessageType)>(report => progress.Report((completedProjects, report))),
                     cancellationToken).ConfigureAwait(false)) == 0;
                 completedProjects++;
@@ -271,24 +302,26 @@ namespace Microsoft.Build.Unity
         /// Builds the specified MSBuild project with the default UI.
         /// </summary>
         /// <param name="msBuildProjectReference">The MSBuild project to build.</param>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <returns>A task that will have a result of true if the build succeeds.</returns>
-        public static bool BuildProject(this MSBuildProjectReference mSBuildProjectReference, string arguments = MSBuildProjectBuilder.DefaultBuildArguments)
+        public static bool BuildProject(this MSBuildProjectReference mSBuildProjectReference, string configuration, string additionalArguments = "")
         {
-            return MSBuildProjectBuilder.BuildProjects(new[] { mSBuildProjectReference }, arguments);
+            return MSBuildProjectBuilder.BuildProjects(new[] { mSBuildProjectReference }, configuration, additionalArguments);
         }
 
         /// <summary>
         /// Builds the specified MSBuild project.
         /// </summary>
         /// <param name="msBuildProjectReference">The MSBuild project to build.</param>
-        /// <param name="arguments">The additional arguments passed to MSBuild.</param>
+        /// <param name="configuration">The name of the configuration to build.</param>
+        /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
         /// <param name="progress">Receives progress of the build.</param>
         /// <param name="cancellationToken">The cancellation token used to cancel the build.</param>
         /// <returns>A task that will have a result of true if the build succeeds.</returns>
-        public static Task<bool> BuildProjectAsync(this MSBuildProjectReference msBuildProjectReference, string arguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
+        public static Task<bool> BuildProjectAsync(this MSBuildProjectReference msBuildProjectReference, string configuration, string additionalArguments, IProgress<(string progressMessage, ProgressMessageType progressMessageType)> progress, CancellationToken cancellationToken)
         {
-            return MSBuildProjectBuilder.BuildProjectsAsync(new[] { msBuildProjectReference }, arguments, new DelegateProgress<(int, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report => progress.Report(report.progressUpdate)), cancellationToken);
+            return MSBuildProjectBuilder.BuildProjectsAsync(new[] { msBuildProjectReference }, configuration, additionalArguments, new DelegateProgress<(int, (string progressMessage, ProgressMessageType progressMessageType) progressUpdate)>(report => progress.Report(report.progressUpdate)), cancellationToken);
         }
 
         private static IEnumerable<MSBuildProjectReference> EnumerateAllMSBuildProjectReferences()
@@ -296,6 +329,16 @@ namespace Microsoft.Build.Unity
             return from assetGuid in AssetDatabase.FindAssets($"t:{nameof(MSBuildProjectReference)}")
                    let assetPath = AssetDatabase.GUIDToAssetPath(assetGuid)
                    select AssetDatabase.LoadAssetAtPath<MSBuildProjectReference>(assetPath);
+        }
+
+        private static (IEnumerable<MSBuildProjectReference> withConfiguration, IEnumerable<MSBuildProjectReference> withoutConfiguration) SplitByConfiguration(IEnumerable<MSBuildProjectReference> msBuildProjectReferences, string configuration)
+        {
+            var groupedProjectReferences = msBuildProjectReferences.GroupBy(msBuildProjectReference => msBuildProjectReference.Configurations?.Any(config => string.Equals(config.name, configuration, StringComparison.CurrentCultureIgnoreCase)) == true);
+            return
+            (
+                withConfiguration: groupedProjectReferences.SingleOrDefault(grouping => grouping.Key == true) ?? Enumerable.Empty<MSBuildProjectReference>(),
+                withoutConfiguration: groupedProjectReferences.SingleOrDefault(grouping => grouping.Key == false) ?? Enumerable.Empty<MSBuildProjectReference>()
+            );
         }
 
         private static void LogProgressMessage(string message, ProgressMessageType type)

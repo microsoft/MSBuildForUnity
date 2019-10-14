@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,14 +11,19 @@ namespace Microsoft.Build.Unity
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Build"))
+                if (!msBuildProjectReference.Configurations.Any())
                 {
-                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference);
+                    EditorGUILayout.HelpBox($"Define configurations below.", MessageType.Error);
                 }
-
-                if (GUILayout.Button("Rebuild"))
+                else
                 {
-                    MSBuildProjectBuilder.BuildProject(msBuildProjectReference, MSBuildProjectBuilder.RebuildTargetArgument);
+                    foreach (var configuration in msBuildProjectReference.Configurations)
+                    {
+                        if (GUILayout.Button(configuration.name))
+                        {
+                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference, configuration.name);
+                        }
+                    }
                 }
             }
         }

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,6 +29,10 @@ namespace Microsoft.Build.Unity
         [Tooltip("Indicates whether the referenced MSBuild project should automatically be built.")]
         private bool autoBuild = true;
 
+        [SerializeField]
+        [Tooltip("Named argument sets to configure different build options.")]
+        private MSBuildBuildConfiguration[] configurations = null;
+
         /// <summary>
         /// Creates an in-memory instance that can resolve the full path to the MSBuild project.
         /// </summary>
@@ -36,13 +42,14 @@ namespace Microsoft.Build.Unity
         /// <remarks>
         /// This is useful for creating and passing transient <see cref="MSBuildProjectReference"/> instances to <see cref="MSBuildProjectBuilder"/> when they don't exist in the <see cref="AssetDatabase"/>.
         /// </remarks>
-        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, BuildEngine buildEngine = BuildEngine.DotNet, bool autoBuild = true)
+        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, BuildEngine buildEngine = BuildEngine.DotNet, bool autoBuild = true, IEnumerable<MSBuildBuildConfiguration> configurations = null)
         {
             var msBuildProjectReference = ScriptableObject.CreateInstance<MSBuildProjectReference>();
             msBuildProjectReference.assetRelativePath = assetRelativePath;
             msBuildProjectReference.projectPath = Path.GetFileName(assetRelativePath);
             msBuildProjectReference.buildEngine = buildEngine;
             msBuildProjectReference.autoBuild = autoBuild;
+            msBuildProjectReference.configurations = configurations.ToArray();
             return msBuildProjectReference;
         }
 
@@ -74,5 +81,7 @@ namespace Microsoft.Build.Unity
         public BuildEngine BuildEngine => this.buildEngine;
 
         public bool AutoBuild => this.autoBuild;
+
+        public IEnumerable<(string name, string arguments)> Configurations => this.configurations == null ? Enumerable.Empty<(string, string)>() : this.configurations.Select(configuration => (configuration.Name, configuration.Arguments));
     }
 }
