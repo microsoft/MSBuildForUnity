@@ -89,32 +89,8 @@ namespace Microsoft.Build.Unity
             //[MenuItem("MSBuild/Auto Build All Projects [testing only]", priority = int.MaxValue)]
             private static void BuildAllAutoBuiltProjects()
             {
-                // TODO: Expose an editor setting where the user can specify default configuration(s) to build on load
                 (IEnumerable<MSBuildProjectReference> withConfiguration, _) = MSBuildProjectBuilder.SplitByConfiguration(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences(), "Build");
                 MSBuildProjectBuilder.BuildProjects(withConfiguration.Where(projectReference => projectReference.AutoBuild).ToArray(), "Build");
-            }
-        }
-
-        private static partial class MSBuildForUnitySettings
-        {
-            [SettingsProvider]
-            public static SettingsProvider CreateMSBuildForUnitySettingsProvider()
-            {
-                return new SettingsProvider("Project/MSBuildForUnity", SettingsScope.Project)
-                {
-                    label = "MSBuildForUnity",
-
-                    keywords = new HashSet<string>(new[]
-                    {
-                        "MSBuild",
-                        "Auto Build",
-                    }),
-
-                    guiHandler = (searchContext) =>
-                    {
-
-                    },
-                };
             }
         }
     }
