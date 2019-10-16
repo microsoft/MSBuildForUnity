@@ -31,7 +31,11 @@ namespace Microsoft.Build.Unity
 
         [SerializeField]
         [Tooltip("Named argument sets to configure different build options.")]
-        private MSBuildBuildConfiguration[] configurations = null;
+        private MSBuildBuildConfiguration[] configurations = new[]
+        {
+            MSBuildBuildConfiguration.Create("Build", "-t:Build -p:Configuration=Release"),
+            MSBuildBuildConfiguration.Create("Rebuild", "-t:Rebuild -p:Configuration=Release"),
+        };
 
         /// <summary>
         /// Creates an in-memory instance that can resolve the full path to the MSBuild project.
@@ -49,7 +53,12 @@ namespace Microsoft.Build.Unity
             msBuildProjectReference.projectPath = Path.GetFileName(assetRelativePath);
             msBuildProjectReference.buildEngine = buildEngine;
             msBuildProjectReference.autoBuild = autoBuild;
-            msBuildProjectReference.configurations = configurations.ToArray();
+
+            if (configurations != null && configurations.Any())
+            {
+                msBuildProjectReference.configurations = configurations.ToArray();
+            }
+
             return msBuildProjectReference;
         }
 

@@ -15,11 +15,7 @@ namespace Microsoft.Build.Unity
 
         [SerializeField]
         [Tooltip("Named argument sets to configure different build options.")]
-        private MSBuildBuildConfiguration[] configurations = new []
-        {
-            MSBuildBuildConfiguration.Create("Build", "-t:Build"),
-            MSBuildBuildConfiguration.Create("Rebuild", "-t:Rebuild"),
-        };
+        private MSBuildBuildConfiguration[] configurations = null;
 
         public override void OnImportAsset(AssetImportContext context)
         {
