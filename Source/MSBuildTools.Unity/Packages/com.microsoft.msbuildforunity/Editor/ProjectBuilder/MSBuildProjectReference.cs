@@ -30,23 +30,25 @@ namespace Microsoft.Build.Unity
         private bool autoBuild = true;
 
         [SerializeField]
-        [Tooltip("Named argument sets to configure different build options.")]
-        private MSBuildBuildConfiguration[] configurations = new[]
+        [Tooltip("Named profiles to configure different build options.")]
+        private MSBuildBuildProfile[] profiles = new[]
         {
-            MSBuildBuildConfiguration.Create("Build", "-t:Build -p:Configuration=Release"),
-            MSBuildBuildConfiguration.Create("Rebuild", "-t:Rebuild -p:Configuration=Release"),
+            MSBuildBuildProfile.Create("Build", "-t:Build -p:Configuration=Release"),
+            MSBuildBuildProfile.Create("Rebuild", "-t:Rebuild -p:Configuration=Release"),
         };
 
         /// <summary>
         /// Creates an in-memory instance that can resolve the full path to the MSBuild project.
         /// </summary>
         /// <param name="assetRelativePath">The path to the <see cref="MSBuildProjectReference"/> asset.</param>
+        /// <param name="buildEngine">The MSBuild build engine that should be used to build the referenced project.</param>
         /// <param name="autoBuild">True to enable auto build of the referenced project.</param>
+        /// <param name="profiles">The set of profiles used to configure different build options.</param>
         /// <returns>An <see cref="MSBuildProjectReference"/> instance.</returns>
         /// <remarks>
         /// This is useful for creating and passing transient <see cref="MSBuildProjectReference"/> instances to <see cref="MSBuildProjectBuilder"/> when they don't exist in the <see cref="AssetDatabase"/>.
         /// </remarks>
-        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, BuildEngine buildEngine = BuildEngine.DotNet, bool autoBuild = true, IEnumerable<MSBuildBuildConfiguration> configurations = null)
+        public static MSBuildProjectReference FromMSBuildProject(string assetRelativePath, BuildEngine buildEngine = BuildEngine.DotNet, bool autoBuild = true, IEnumerable<MSBuildBuildProfile> profiles = null)
         {
             var msBuildProjectReference = ScriptableObject.CreateInstance<MSBuildProjectReference>();
             msBuildProjectReference.assetRelativePath = assetRelativePath;
@@ -54,9 +56,9 @@ namespace Microsoft.Build.Unity
             msBuildProjectReference.buildEngine = buildEngine;
             msBuildProjectReference.autoBuild = autoBuild;
 
-            if (configurations != null && configurations.Any())
+            if (profiles != null && profiles.Any())
             {
-                msBuildProjectReference.configurations = configurations.ToArray();
+                msBuildProjectReference.profiles = profiles.ToArray();
             }
 
             return msBuildProjectReference;
@@ -91,6 +93,6 @@ namespace Microsoft.Build.Unity
 
         public bool AutoBuild => this.autoBuild;
 
-        public IEnumerable<(string name, string arguments)> Configurations => this.configurations == null ? Enumerable.Empty<(string, string)>() : this.configurations.Select(configuration => (configuration.Name, configuration.Arguments));
+        public IEnumerable<(string name, string arguments)> Profiles => this.profiles == null ? Enumerable.Empty<(string, string)>() : this.profiles.Select(profile => (profile.Name, profile.Arguments));
     }
 }

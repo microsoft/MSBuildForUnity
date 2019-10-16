@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Microsoft.Build.Unity
 {
     [Serializable]
-    public sealed class MSBuildBuildConfiguration
+    public sealed class MSBuildBuildProfile
     {
         [SerializeField]
         private string name = null;
@@ -16,6 +16,6 @@ namespace Microsoft.Build.Unity
 
         public string Arguments => this.arguments;
 
-        public static MSBuildBuildConfiguration Create(string name, string arguments) => new MSBuildBuildConfiguration { name = name, arguments = arguments };
+        public static MSBuildBuildProfile Create(string name, string arguments) => new MSBuildBuildProfile { name = name, arguments = arguments };
     }
 }

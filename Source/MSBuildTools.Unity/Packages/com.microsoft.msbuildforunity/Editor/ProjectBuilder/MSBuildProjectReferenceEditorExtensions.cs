@@ -11,17 +11,17 @@ namespace Microsoft.Build.Unity
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (!msBuildProjectReference.Configurations.Any())
+                if (!msBuildProjectReference.Profiles.Any())
                 {
-                    EditorGUILayout.HelpBox($"Define configurations below.", MessageType.Error);
+                    EditorGUILayout.HelpBox($"Define profiles below.", MessageType.Error);
                 }
                 else
                 {
-                    foreach (var configuration in msBuildProjectReference.Configurations)
+                    foreach (var profile in msBuildProjectReference.Profiles)
                     {
-                        if (GUILayout.Button(configuration.name))
+                        if (GUILayout.Button(profile.name))
                         {
-                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference, configuration.name);
+                            MSBuildProjectBuilder.BuildProject(msBuildProjectReference, profile.name);
                         }
                     }
                 }

@@ -14,12 +14,12 @@ namespace Microsoft.Build.Unity
         private BuildEngine buildEngine = BuildEngine.DotNet;
 
         [SerializeField]
-        [Tooltip("Named argument sets to configure different build options.")]
-        private MSBuildBuildConfiguration[] configurations = null;
+        [Tooltip("Named profiles to configure different build options.")]
+        private MSBuildBuildProfile[] profiles = null;
 
         public override void OnImportAsset(AssetImportContext context)
         {
-            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine, true, this.configurations);
+            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine, true, this.profiles);
 
             context.AddObjectToAsset(Path.GetFileNameWithoutExtension(context.assetPath), msBuildProjectReference);
             context.SetMainObject(msBuildProjectReference);
