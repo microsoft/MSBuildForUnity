@@ -103,7 +103,7 @@ The `MSBuildForUnity` NuGet package augments the default MSBuild build logic to 
 - Dependency resolution - all dependencies (through `PackageReference`s or `ProjectReference`s) are resolved and sent to the output directory (which is typically under the Unity project's Assets directory).
 - Debug symbol patching - enables debugging pre-built dlls (e.g. from NuGet packages) while running in the Unity Editor.
 
-For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
+For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source/MSBuildTools.Unity.NuGet/MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
 
 
 [PRBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.PRGate?branchName=master
