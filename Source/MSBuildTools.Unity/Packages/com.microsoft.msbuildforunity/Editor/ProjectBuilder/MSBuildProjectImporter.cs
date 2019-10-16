@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
@@ -26,15 +27,18 @@ namespace Microsoft.Build.Unity
 
             // Automatically build this project if the import is happening after the Unity project has been opened.
             // If the import is happening as part of loading the project, then the generated asset will automatically be built by MSBuildProjectBuilder.
-            if (EditorAnalyticsSessionInfo.elapsedTime != 0)
+            if (EditorAnalyticsSessionInfo.elapsedTime != 0 && msBuildProjectReference.Profiles != null)
             {
-                try
+                foreach (var profile in msBuildProjectReference.Profiles.Where(profile => profile.autoBuild))
                 {
-                    msBuildProjectReference.BuildProject("Build");
-                }
-                catch (OperationCanceledException)
-                {
-                    Debug.LogWarning($"Canceled building {msBuildProjectReference.ProjectPath}.");
+                    try
+                    {
+                        msBuildProjectReference.BuildProject(profile.name);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Debug.LogWarning($"Canceled building {msBuildProjectReference.ProjectPath}.");
+                    }
                 }
             }
         }

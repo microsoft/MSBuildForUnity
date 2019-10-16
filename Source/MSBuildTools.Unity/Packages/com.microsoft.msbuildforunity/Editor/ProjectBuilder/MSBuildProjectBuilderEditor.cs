@@ -89,8 +89,16 @@ namespace Microsoft.Build.Unity
             //[MenuItem("MSBuild/Auto Build All Projects [testing only]", priority = int.MaxValue)]
             private static void BuildAllAutoBuiltProjects()
             {
-                (IEnumerable<MSBuildProjectReference> withProfile, _) = MSBuildProjectBuilder.SplitByProfile(MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences(), "Build");
-                MSBuildProjectBuilder.BuildProjects(withProfile.Where(projectReference => projectReference.AutoBuild).ToArray(), "Build");
+                IEnumerable<IGrouping<string, MSBuildProjectReference>> autoBuildProfiles =
+                    from projectReference in MSBuildProjectBuilder.EnumerateAllMSBuildProjectReferences()
+                    from profile in projectReference.Profiles
+                    where profile.autoBuild
+                    group projectReference by profile.name;
+
+                foreach (IGrouping<string, MSBuildProjectReference> autoBuildProfile in autoBuildProfiles)
+                {
+                    MSBuildProjectBuilder.BuildProjects(autoBuildProfile.ToArray(), autoBuildProfile.Key);
+                }
             }
         }
     }
