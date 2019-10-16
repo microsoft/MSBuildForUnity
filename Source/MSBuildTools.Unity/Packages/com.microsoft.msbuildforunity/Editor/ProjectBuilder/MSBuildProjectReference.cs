@@ -26,15 +26,11 @@ namespace Microsoft.Build.Unity
         private BuildEngine buildEngine = BuildEngine.DotNet;
 
         [SerializeField]
-        [Tooltip("Indicates whether the referenced MSBuild project should automatically be built.")]
-        private bool autoBuild = true;
-
-        [SerializeField]
         [Tooltip("Named profiles to configure different build options.")]
         private MSBuildBuildProfile[] profiles = new[]
         {
-            MSBuildBuildProfile.Create("Build", "-t:Build -p:Configuration=Release"),
-            MSBuildBuildProfile.Create("Rebuild", "-t:Rebuild -p:Configuration=Release"),
+            MSBuildBuildProfile.Create(name: "Build", autoBuild: true, arguments: "-t:Build -p:Configuration=Release"),
+            MSBuildBuildProfile.Create(name: "Rebuild", autoBuild: false, arguments: "-t:Rebuild -p:Configuration=Release"),
         };
 
         /// <summary>
@@ -54,7 +50,6 @@ namespace Microsoft.Build.Unity
             msBuildProjectReference.assetRelativePath = assetRelativePath;
             msBuildProjectReference.projectPath = Path.GetFileName(assetRelativePath);
             msBuildProjectReference.buildEngine = buildEngine;
-            msBuildProjectReference.autoBuild = autoBuild;
 
             if (profiles != null && profiles.Any())
             {
@@ -91,8 +86,6 @@ namespace Microsoft.Build.Unity
 
         public BuildEngine BuildEngine => this.buildEngine;
 
-        public bool AutoBuild => this.autoBuild;
-
-        public IEnumerable<(string name, string arguments)> Profiles => this.profiles == null ? Enumerable.Empty<(string, string)>() : this.profiles.Select(profile => (profile.Name, profile.Arguments));
+        public IEnumerable<(string name, bool autoBuild, string arguments)> Profiles => this.profiles == null ? Enumerable.Empty<(string, bool, string)>() : this.profiles.Select(profile => (profile.Name, profile.AutoBuild, profile.Arguments));
     }
 }
