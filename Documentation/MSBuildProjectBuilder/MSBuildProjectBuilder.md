@@ -10,7 +10,7 @@ The simplest way to use the MSBuild Project Builder is to simply drop a .csproj 
 
 ## Manual Asset Creation
 
-It's also possible to manually create a reference to an MSBuild project/solution, which may even live outside of the Unity project. Simply create an *MSBuild Project Reference* asset and point it to an MSBuild project/solution.
+It's also possible to manually create a reference to an MSBuild project/solution, which may even live outside of the Unity project. Simply create an *MSBuild Project Reference* asset, point it to an MSBuild project/solution, and configure it with the target build engine and arguments.
 
 ![MSBuild Importer](CreateMSBuildProjectReference.gif)
 

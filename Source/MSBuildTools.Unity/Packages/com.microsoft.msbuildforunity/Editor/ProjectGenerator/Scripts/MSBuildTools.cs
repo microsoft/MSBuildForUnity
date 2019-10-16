@@ -32,7 +32,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private static readonly string uwpMinPlatformVersion = EditorUserBuildSettings.wsaMinUWPSDK;
         private static readonly string uwpTargetPlatformVersion = EditorUserBuildSettings.wsaUWPSDK;
 
-        [MenuItem("MSBuild/Generate C# SDK Projects")]
+        [MenuItem("MSBuild/Generate C# SDK Projects", priority = 101)]
         public static void GenerateSDKProjects()
         {
             try

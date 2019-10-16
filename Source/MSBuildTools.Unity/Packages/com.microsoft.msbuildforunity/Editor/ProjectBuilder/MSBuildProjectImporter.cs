@@ -13,9 +13,13 @@ namespace Microsoft.Build.Unity
         [Tooltip("The MSBuild build engine to use to build the project.")]
         private BuildEngine buildEngine = BuildEngine.DotNet;
 
+        [SerializeField]
+        [Tooltip("Named profiles to configure different build options.")]
+        private MSBuildBuildProfile[] profiles = null;
+
         public override void OnImportAsset(AssetImportContext context)
         {
-            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine);
+            var msBuildProjectReference = MSBuildProjectReference.FromMSBuildProject(context.assetPath, this.buildEngine, true, this.profiles);
 
             context.AddObjectToAsset(Path.GetFileNameWithoutExtension(context.assetPath), msBuildProjectReference);
             context.SetMainObject(msBuildProjectReference);
@@ -26,7 +30,7 @@ namespace Microsoft.Build.Unity
             {
                 try
                 {
-                    msBuildProjectReference.BuildProject();
+                    msBuildProjectReference.BuildProject("Build");
                 }
                 catch (OperationCanceledException)
                 {
