@@ -84,7 +84,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
             UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
 
-            IProjectExporter exporter = new TemplatedProjectExporter(new DirectoryInfo(generatedProjectPath), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath);
+            IProjectExporter exporter = new TemplatedProjectExporter(
+                new DirectoryInfo(generatedProjectPath), 
+                TemplateFiles.Instance.MSBuildSolutionTemplatePath, 
+                TemplateFiles.Instance.SDKProjectFileTemplatePath,
+                TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
+                TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath);
             exporter.ExportSolution(unityProjectInfo);
 
             foreach (string otherFile in TemplateFiles.Instance.OtherFiles)

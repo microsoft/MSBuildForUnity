@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,56 +41,95 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 File.Delete(projectInfo.ReferencePath.AbsolutePath);
             }
 
-            if (Utilities.TryGetXMLTemplate(projectFileTemplateText, "PROJECT_REFERENCE_SET", out string projectReferenceSetTemplate)
-                && Utilities.TryGetXMLTemplate(projectFileTemplateText, "SOURCE_INCLUDE", out string sourceIncludeTemplate)
-                && Utilities.TryGetXMLTemplate(projectFileTemplateText, "SUPPORTED_PLATFORM_BUILD_CONDITION", out string suportedPlatformBuildConditionTemplate))
+            if (!TryExportPropsFile(unityProjectInfo, projectInfo))
             {
-                List<string> sourceIncludes = new List<string>();
-                Dictionary<Guid, string> sourceGuidToClassName = new Dictionary<Guid, string>();
-                foreach (SourceFileInfo source in projectInfo.AssemblyDefinitionInfo.GetSources())
-                {
-                    ProcessSourceFile(projectInfo, source, sourceIncludeTemplate, sourceIncludes, sourceGuidToClassName);
-                }
+                Debug.LogError($"Error exporting the generated props file for {projectInfo.Name}");
+                return;
+            }
 
-                File.WriteAllLines(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Guid.ToString()}.csmap"), sourceGuidToClassName.Select(t => $"{t.Key.ToString("N")}:{t.Value}"));
+            if (!TryExportTargetsFile(unityProjectInfo, projectInfo))
+            {
+                Debug.LogError($"Error exporting the generated targets file for {projectInfo.Name}");
+                return;
+            }
 
-                List<string> supportedPlatformBuildConditions = new List<string>();
-                PopulateSupportedPlatformBuildConditions(supportedPlatformBuildConditions, suportedPlatformBuildConditionTemplate, "InEditor", projectInfo.InEditorPlatforms);
-                PopulateSupportedPlatformBuildConditions(supportedPlatformBuildConditions, suportedPlatformBuildConditionTemplate, "Player", projectInfo.PlayerPlatforms);
-
-                HashSet<string> inEditorSearchPaths = new HashSet<string>(), playerSearchPaths = new HashSet<string>();
-                string projectReferences = string.Join("\r\n", CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, inEditorSearchPaths, true), CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, playerSearchPaths, false));
-                Dictionary<string, string> tokens = new Dictionary<string, string>()
-                {
-                    { "<!--PROJECT_GUID_TOKEN-->", projectInfo.Guid.ToString() },
-                    { "<!--ALLOW_UNSAFE_TOKEN-->", projectInfo.AssemblyDefinitionInfo.allowUnsafeCode.ToString() },
-                    { "<!--LANGUAGE_VERSION_TOKEN-->", MSBuildTools.CSharpVersion },
-
-                    { "<!--DEVELOPMENT_BUILD_TOKEN-->", "false" }, // Default to false
-
-                    { "<!--IS_EDITOR_ONLY_TARGET_TOKEN-->", (projectInfo.ProjectType ==  ProjectType.EditorAsmDef || projectInfo.ProjectType == ProjectType.PredefinedEditorAssembly).ToString() },
-                    { "<!--UNITY_EDITOR_INSTALL_FOLDER-->", Path.GetDirectoryName(EditorApplication.applicationPath) + "\\"},
-
-                    { "<!--DEFAULT_PLATFORM_TOKEN-->", unityProjectInfo.AvailablePlatforms.First(t=>t.BuildTarget == BuildTarget.StandaloneWindows).Name },
-
-                    { "<!--SUPPORTED_PLATFORMS_TOKEN-->", string.Join(";", unityProjectInfo.AvailablePlatforms.Select(t=>t.Name)) },
-
-                    { "<!--INEDITOR_ASSEMBLY_SEARCH_PATHS_TOKEN-->", string.Join(";", inEditorSearchPaths) },
-                    { "<!--PLAYER_ASSEMBLY_SEARCH_PATHS_TOKEN-->", string.Join(";", playerSearchPaths) },
-
-                    { "##PLATFORM_PROPS_FOLDER_PATH_TOKEN##", propsOutputFolder.FullName },
-
-                    { projectReferenceSetTemplate, projectReferences },
-                    { sourceIncludeTemplate, string.Join("\r\n", sourceIncludes) },
-                    { suportedPlatformBuildConditionTemplate, string.Join("\r\n", supportedPlatformBuildConditions) }
-                };
-
-                File.WriteAllText(projectInfo.ReferencePath.AbsolutePath, Utilities.ReplaceTokens(projectFileTemplateText, tokens, true));
+            if (File.Exists(projectInfo.ReferencePath.AbsolutePath))
+            {
+                Debug.Log($"Skipping replacing the existing C# project file {projectInfo.Name}");
             }
             else
             {
-                Debug.LogError("Failed to find ProjectReferenceSet and/or Source_Include templates in the project template file.");
+                File.WriteAllText(projectInfo.ReferencePath.AbsolutePath, projectFileTemplateText);
             }
+        }
+
+        private bool TryExportPropsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
+        {
+            if (!Utilities.TryGetXMLTemplate(projectPropsFileTemplateText, "PROJECT_REFERENCE_SET", out string projectReferenceSetTemplate)
+                || !Utilities.TryGetXMLTemplate(projectPropsFileTemplateText, "SOURCE_INCLUDE", out string sourceIncludeTemplate))
+            {
+                return false;
+            }
+
+            List<string> sourceIncludes = new List<string>();
+            Dictionary<Guid, string> sourceGuidToClassName = new Dictionary<Guid, string>();
+            foreach (SourceFileInfo source in projectInfo.AssemblyDefinitionInfo.GetSources())
+            {
+                ProcessSourceFile(projectInfo, source, sourceIncludeTemplate, sourceIncludes, sourceGuidToClassName);
+            }
+
+            File.WriteAllLines(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Guid.ToString()}.csmap"), sourceGuidToClassName.Select(t => $"{t.Key.ToString("N")}:{t.Value}"));
+
+            HashSet<string> inEditorSearchPaths = new HashSet<string>(), playerSearchPaths = new HashSet<string>();
+            string projectReferences = string.Join("\r\n", CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, inEditorSearchPaths, true), CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, playerSearchPaths, false));
+            Dictionary<string, string> tokens = new Dictionary<string, string>()
+            {
+                { "<!--PROJECT_GUID_TOKEN-->", projectInfo.Guid.ToString() },
+                { "<!--ALLOW_UNSAFE_TOKEN-->", projectInfo.AssemblyDefinitionInfo.allowUnsafeCode.ToString() },
+                { "<!--LANGUAGE_VERSION_TOKEN-->", MSBuildTools.CSharpVersion },
+
+                { "<!--DEVELOPMENT_BUILD_TOKEN-->", "false" }, // Default to false
+
+                { "<!--IS_EDITOR_ONLY_TARGET_TOKEN-->", (projectInfo.ProjectType ==  ProjectType.EditorAsmDef || projectInfo.ProjectType == ProjectType.PredefinedEditorAssembly).ToString() },
+                { "<!--UNITY_EDITOR_INSTALL_FOLDER-->", Path.GetDirectoryName(EditorApplication.applicationPath) + "\\"},
+
+                { "<!--DEFAULT_PLATFORM_TOKEN-->", unityProjectInfo.AvailablePlatforms.First(t=>t.BuildTarget == BuildTarget.StandaloneWindows).Name },
+
+                { "<!--SUPPORTED_PLATFORMS_TOKEN-->", string.Join(";", unityProjectInfo.AvailablePlatforms.Select(t=>t.Name)) },
+
+                { "<!--INEDITOR_ASSEMBLY_SEARCH_PATHS_TOKEN-->", string.Join(";", inEditorSearchPaths) },
+                { "<!--PLAYER_ASSEMBLY_SEARCH_PATHS_TOKEN-->", string.Join(";", playerSearchPaths) },
+
+                { "##PLATFORM_PROPS_FOLDER_PATH_TOKEN##", propsOutputFolder.FullName },
+
+                { projectReferenceSetTemplate, projectReferences },
+                { sourceIncludeTemplate, string.Join("\r\n", sourceIncludes) }
+            };
+
+            File.WriteAllText(projectInfo.ReferencePath.AbsolutePath.Replace("csproj", "g.props"), Utilities.ReplaceTokens(projectPropsFileTemplateText, tokens, true));
+
+            return true;
+        }
+
+        private bool TryExportTargetsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
+        {
+            if (!Utilities.TryGetXMLTemplate(projectTargetsFileTemplateText, "SUPPORTED_PLATFORM_BUILD_CONDITION", out string suportedPlatformBuildConditionTemplate))
+            {
+                return false;
+            }
+
+            List<string> supportedPlatformBuildConditions = new List<string>();
+            PopulateSupportedPlatformBuildConditions(supportedPlatformBuildConditions, suportedPlatformBuildConditionTemplate, "InEditor", projectInfo.InEditorPlatforms);
+            PopulateSupportedPlatformBuildConditions(supportedPlatformBuildConditions, suportedPlatformBuildConditionTemplate, "Player", projectInfo.PlayerPlatforms);
+
+            Dictionary<string, string> tokens = new Dictionary<string, string>()
+            {
+                { suportedPlatformBuildConditionTemplate, string.Join("\r\n", supportedPlatformBuildConditions) }
+            };
+
+            File.WriteAllText(projectInfo.ReferencePath.AbsolutePath.Replace("csproj", "g.targets"), Utilities.ReplaceTokens(projectTargetsFileTemplateText, tokens, true));
+
+            return true;
         }
 
         public void ExportSolution(UnityProjectInfo unityProjectInfo)
@@ -345,3 +385,4 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         }
     }
 }
+#endif

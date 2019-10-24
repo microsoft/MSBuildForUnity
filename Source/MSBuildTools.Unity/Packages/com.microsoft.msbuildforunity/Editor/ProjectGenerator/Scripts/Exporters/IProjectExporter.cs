@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#if UNITY_EDITOR
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 {
     /// <summary>
@@ -13,3 +13,4 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         void ExportSolution(UnityProjectInfo unityProjectInfo);
     }
 }
+#endif
