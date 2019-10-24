@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using Microsoft.Build.Unity.ProjectGeneration.Exporters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -83,13 +84,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
             UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
 
-            // Read the solution template
-            string solutionTemplateText = File.ReadAllText(TemplateFiles.Instance.MSBuildSolutionTemplatePath);
-
-            // Read the project template
-            string projectTemplateText = File.ReadAllText(TemplateFiles.Instance.SDKProjectFileTemplatePath);
-
-            unityProjectInfo.ExportSolution(solutionTemplateText, projectTemplateText, generatedProjectPath);
+            IProjectExporter exporter = new TemplatedProjectExporter(new DirectoryInfo(generatedProjectPath), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath);
+            exporter.ExportSolution(unityProjectInfo);
 
             foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
             {

@@ -21,6 +21,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private const string TemplateFilesFolderName = "MSBuildTemplates";
         private const string MSBuildSolutionTemplateName = "SolutionTemplate.sln.template";
         private const string SDKProjectFileTemplateName = "SDKProjectTemplate.csproj.template";
+        private const string SDKProjectPropsFileTemplateName = "SDKProjectTemplate.g.props.template";
+        private const string SDKProjectTargetsFileTemplateName = "SDKProjectTemplate.g.targets.template";
         private const string PlatformPropsTemplateName = "Platform.Configuration.Any.props.template";
         private const string EditorPropsTemplateName = "Editor.InEditor.Any.props.template";
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
@@ -37,12 +39,22 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the MSBuild Solution file (.sln) template path.
         /// </summary>
-        public string MSBuildSolutionTemplatePath { get; }
+        public FileInfo MSBuildSolutionTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
         /// </summary>
-        public string SDKProjectFileTemplatePath { get; }
+        public FileInfo SDKProjectFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path.
+        /// </summary>
+        public FileInfo SDKProjectPropsFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path.
+        /// </summary>
+        public FileInfo SDKProjectTargetsFileTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild Platform Props file (.props) template path.
@@ -88,8 +100,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 
-            MSBuildSolutionTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName);
-            SDKProjectFileTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName);
+            MSBuildSolutionTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName));
+            SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
+            SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
+            SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
             PlatformPropsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName);
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
 
