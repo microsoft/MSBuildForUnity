@@ -5,11 +5,13 @@
 using Microsoft.Build.Unity.ProjectGeneration.Exporters;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
@@ -50,57 +52,67 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static void RunGenerateSDKProjects()
         {
-            // Create a copy of the packages as they might change after we create the MSBuild project
-            string generatedProjectPath = Path.Combine(Utilities.MSBuildOutputFolder, "Projects");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             try
             {
-                Utilities.EnsureCleanDirectory(generatedProjectPath);
-            }
-            catch (IOException ex)
-            {
-                if (ex.Message.Contains(@"db.lock"))
+                // Create a copy of the packages as they might change after we create the MSBuild project
+                string generatedProjectPath = Path.Combine(Utilities.MSBuildOutputFolder, "Projects");
+                try
                 {
-                    Debug.LogError("Generated project appears to be still open with Visual Studio.");
-                    throw new InvalidDataException("Generated project appears to be still open with Visual Studio.", ex);
+                    Utilities.EnsureCleanDirectory(generatedProjectPath);
                 }
-                else
+                catch (IOException ex)
                 {
-                    throw;
+                    if (ex.Message.Contains(@"db.lock"))
+                    {
+                        Debug.LogError("Generated project appears to be still open with Visual Studio.");
+                        throw new InvalidDataException("Generated project appears to be still open with Visual Studio.", ex);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                Utilities.EnsureCleanDirectory(Path.Combine(Utilities.MSBuildOutputFolder, "Output"));
+
+                MakePackagesCopy(Utilities.MSBuildOutputFolder);
+
+                List<CompilationPlatformInfo> platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
+                    .Select(CompilationPlatformInfo.GetCompilationPlatform)
+                    .OrderBy(t => t.Name)
+                    .ToList();
+
+                CompilationPlatformInfo editorPlatform = CompilationPlatformInfo.GetEditorPlatform();
+
+                CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
+                UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms);
+
+                IProjectExporter exporter = new TemplatedProjectExporter(
+                    new DirectoryInfo(generatedProjectPath),
+                    TemplateFiles.Instance.MSBuildSolutionTemplatePath,
+                    TemplateFiles.Instance.SDKProjectFileTemplatePath,
+                    TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
+                    TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath);
+                exporter.ExportSolution(unityProjectInfo);
+
+                foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
+                {
+                    File.Copy(otherFile, Path.Combine(generatedProjectPath, Path.GetFileName(otherFile)));
+                }
+
+                string buildProjectsFile = "BuildProjects.proj";
+                if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
+                {
+                    GenerateBuildProjectsFile(buildProjectsFile, unityProjectInfo.UnityProjectName, platforms);
                 }
             }
-
-            Utilities.EnsureCleanDirectory(Path.Combine(Utilities.MSBuildOutputFolder, "Output"));
-
-            MakePackagesCopy(Utilities.MSBuildOutputFolder);
-
-            List<CompilationPlatformInfo> platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms()
-                .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
-                .Select(CompilationPlatformInfo.GetCompilationPlatform)
-                .OrderBy(t => t.Name)
-                .ToList();
-
-            CompilationPlatformInfo editorPlatform = CompilationPlatformInfo.GetEditorPlatform();
-
-            CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
-            UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
-
-            IProjectExporter exporter = new TemplatedProjectExporter(
-                new DirectoryInfo(generatedProjectPath), 
-                TemplateFiles.Instance.MSBuildSolutionTemplatePath, 
-                TemplateFiles.Instance.SDKProjectFileTemplatePath,
-                TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
-                TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath);
-            exporter.ExportSolution(unityProjectInfo);
-
-            foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
+            finally
             {
-                File.Copy(otherFile, Path.Combine(generatedProjectPath, Path.GetFileName(otherFile)));
-            }
-
-            string buildProjectsFile = "BuildProjects.proj";
-            if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
-            {
-                GenerateBuildProjectsFile(buildProjectsFile, unityProjectInfo.UnityProjectName, platforms);
+                stopwatch.Stop();
+                Debug.Log($"Generate projects took {stopwatch.ElapsedMilliseconds} ms.");
             }
         }
 

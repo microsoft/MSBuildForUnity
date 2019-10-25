@@ -24,9 +24,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly string projectPropsFileTemplateText;
         private readonly string projectTargetsFileTemplateText;
 
-        public TemplatedProjectExporter(DirectoryInfo propsOuputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
+        public TemplatedProjectExporter(DirectoryInfo propsOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
         {
-            propsOutputFolder = propsOuputFolder;
+            this.propsOutputFolder = propsOutputFolder;
 
             solutionFileTemplateText = File.ReadAllText(solutionFileTemplatePath.FullName);
             projectFileTemplateText = File.ReadAllText(projectFileTemplatePath.FullName);
@@ -34,11 +34,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             projectTargetsFileTemplateText = File.ReadAllText(projectTargetsFileTemplatePath.FullName);
         }
 
+        public Uri GetProjectPath(CSProjectInfo projectInfo)
+        {
+            return new Uri(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Name}.csproj"));
+        }
+
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
-            if (File.Exists(projectInfo.ReferencePath.AbsolutePath))
+            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+
+            if (File.Exists(projectPath))
             {
-                File.Delete(projectInfo.ReferencePath.AbsolutePath);
+                File.Delete(projectPath);
             }
 
             if (!TryExportPropsFile(unityProjectInfo, projectInfo))
@@ -53,18 +60,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 return;
             }
 
-            if (File.Exists(projectInfo.ReferencePath.AbsolutePath))
+            if (File.Exists(projectPath))
             {
                 Debug.Log($"Skipping replacing the existing C# project file {projectInfo.Name}");
             }
             else
             {
-                File.WriteAllText(projectInfo.ReferencePath.AbsolutePath, projectFileTemplateText);
+                File.WriteAllText(projectPath, projectFileTemplateText);
             }
         }
 
         private bool TryExportPropsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
+            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+
             if (!Utilities.TryGetXMLTemplate(projectPropsFileTemplateText, "PROJECT_REFERENCE_SET", out string projectReferenceSetTemplate)
                 || !Utilities.TryGetXMLTemplate(projectPropsFileTemplateText, "SOURCE_INCLUDE", out string sourceIncludeTemplate))
             {
@@ -106,13 +115,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 { sourceIncludeTemplate, string.Join("\r\n", sourceIncludes) }
             };
 
-            File.WriteAllText(projectInfo.ReferencePath.AbsolutePath.Replace("csproj", "g.props"), Utilities.ReplaceTokens(projectPropsFileTemplateText, tokens, true));
+            File.WriteAllText(projectPath.Replace("csproj", "g.props"), Utilities.ReplaceTokens(projectPropsFileTemplateText, tokens, true));
 
             return true;
         }
 
         private bool TryExportTargetsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
+            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+
             if (!Utilities.TryGetXMLTemplate(projectTargetsFileTemplateText, "SUPPORTED_PLATFORM_BUILD_CONDITION", out string suportedPlatformBuildConditionTemplate))
             {
                 return false;
@@ -127,7 +138,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 { suportedPlatformBuildConditionTemplate, string.Join("\r\n", supportedPlatformBuildConditions) }
             };
 
-            File.WriteAllText(projectInfo.ReferencePath.AbsolutePath.Replace("csproj", "g.targets"), Utilities.ReplaceTokens(projectTargetsFileTemplateText, tokens, true));
+            File.WriteAllText(projectPath.Replace("csproj", "g.targets"), Utilities.ReplaceTokens(projectTargetsFileTemplateText, tokens, true));
 
             return true;
         }
@@ -266,7 +277,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     break;
                 case AssetLocation.External:
                     relativeSourcePath = sourceFile.File.FullName;
-                    Debug.LogWarning($"Referencing external source file with full path '{sourceFile.File.FullName}'");
                     break;
                 default: throw new InvalidDataException("Unknown asset location.");
             }
@@ -300,10 +310,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 {
                     List<string> platformConditions = GetPlatformConditions(inEditor ? projectInfo.InEditorPlatforms : projectInfo.PlayerPlatforms, inEditor ? dependency.InEditorSupportedPlatforms : dependency.PlayerSupportedPlatforms);
 
+                    string projectPath = GetProjectPath(dependency.Dependency).AbsolutePath;
                     projectReferences.Add(Utilities.ReplaceTokens(projectReferenceTemplate, new Dictionary<string, string>()
                     {
                         { "##REFERENCE_TOKEN##", $"{dependency.Dependency.Name}.csproj" },
-                        { "<!--HINT_PATH_TOKEN-->", dependency.Dependency.ReferencePath.AbsolutePath },
+                        { "<!--HINT_PATH_TOKEN-->", projectPath },
                         { "##CONDITION_TOKEN##", platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions)}
                     }));
                 }
@@ -359,11 +370,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private string GetProjectEntry(CSProjectInfo projectInfo, string projectEntryTemplateBody)
         {
+            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+
             StringBuilder toReturn = new StringBuilder();
 
             toReturn.AppendLine(Utilities.ReplaceTokens(projectEntryTemplateBody, new Dictionary<string, string>() {
                         { "<PROJECT_NAME>", projectInfo.Name },
-                        { "<PROJECT_RELATIVE_PATH>", Path.GetFileName(projectInfo.ReferencePath.AbsolutePath) },
+                        { "<PROJECT_RELATIVE_PATH>", Path.GetFileName(projectPath) },
                         { "<PROJECT_GUID>", projectInfo.Guid.ToString().ToUpper() } }));
 
             if (projectInfo.ProjectDependencies.Count > 0)

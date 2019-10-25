@@ -46,7 +46,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public IReadOnlyCollection<PluginAssemblyInfo> Plugins { get; }
 
-        public UnityProjectInfo(IEnumerable<CompilationPlatformInfo> availablePlatforms, string projectOutputPath)
+        public UnityProjectInfo(IEnumerable<CompilationPlatformInfo> availablePlatforms)
         {
             AvailablePlatforms = availablePlatforms;
 
@@ -67,10 +67,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects(projectOutputPath));
+            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects());
         }
 
-        private Dictionary<string, CSProjectInfo> CreateUnityProjects(string projectOutputPath)
+        private Dictionary<string, CSProjectInfo> CreateUnityProjects()
         {
             // Not all of these will be converted to C# objects, only the ones found to be referenced
             Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap = new Dictionary<string, AssemblyDefinitionInfo>();
@@ -135,14 +135,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 if (!projectsMap.ContainsKey(projectKey))
                 {
-                    GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, projectKey, projectOutputPath);
+                    GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, projectKey);
                 }
             }
 
             return projectsMap;
         }
 
-        private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey, string projectOutputPath)
+        private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey)
         {
             if (projectKey.StartsWith("GUID:"))
             {
@@ -160,7 +160,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 return null;
             }
 
-            CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo, projectOutputPath);
+            CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo);
             projectsMap.Add(projectKey, toReturn);
 
             if (!assemblyDefinitionInfo.BuiltInPackage)
@@ -188,7 +188,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     continue;
                 }
 
-                CSProjectInfo dependencyToAdd = GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference, projectOutputPath);
+                CSProjectInfo dependencyToAdd = GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference);
                 if (dependencyToAdd != null)
                 {
                     toReturn.AddDependency(dependencyToAdd);

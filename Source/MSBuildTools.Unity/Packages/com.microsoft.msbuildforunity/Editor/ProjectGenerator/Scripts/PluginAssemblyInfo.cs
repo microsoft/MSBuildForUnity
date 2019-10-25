@@ -44,6 +44,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public bool AutoReferenced { get; private set; }
 
         /// <summary>
+        /// Gets the output path to the reference.
+        /// </summary>
+        public Uri ReferencePath { get; }
+
+        /// <summary>
         /// If the plugin has define constraints, then it will only be referenced if the platform/project defines at least one of these constraints.
         /// ! operator means that the specified plugin must not be included
         /// https://docs.unity3d.com/ScriptReference/PluginImporter.DefineConstraints.html
@@ -54,9 +59,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Creates a new instance of the <see cref="PluginAssemblyInfo"/>.
         /// </summary>
         public PluginAssemblyInfo(UnityProjectInfo unityProjectInfo, Guid guid, string fullPath, PluginType type)
-             : base(unityProjectInfo, guid, new Uri(fullPath), Path.GetFileNameWithoutExtension(fullPath))
+             : base(unityProjectInfo, guid, Path.GetFileNameWithoutExtension(fullPath))
         {
             Type = type;
+            ReferencePath = new Uri(fullPath);
 
             if (Type == PluginType.Managed)
             {

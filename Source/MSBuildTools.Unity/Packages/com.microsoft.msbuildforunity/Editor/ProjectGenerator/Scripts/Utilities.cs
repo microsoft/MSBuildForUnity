@@ -179,7 +179,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
             else
             {
-                Debug.LogWarning($"Unknown asset location for '{absolutePath}', marking as external.");
                 return AssetLocation.External;
             }
         }
