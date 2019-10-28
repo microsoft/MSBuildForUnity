@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.Build.Unity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
     /// <summary>
     /// A helper class to manage (and locate) all the templates.
@@ -106,6 +106,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
             PlatformPropsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName);
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
+
+            FileTemplate.TryParseTemplate(SDKProjectPropsFileTemplatePath, out FileTemplate propsFileTemplate);
 
             // Get specific platforms
             Dictionary<string, string> platformTemplates = new Dictionary<string, string>();

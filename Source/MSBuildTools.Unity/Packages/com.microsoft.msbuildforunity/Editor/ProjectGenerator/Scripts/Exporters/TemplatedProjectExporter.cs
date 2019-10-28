@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using Microsoft.Build.Unity.ProjectGeneration.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     {
         private readonly DirectoryInfo propsOutputFolder;
 
+        private readonly FileTemplate propsFileTemplate;
+
         private readonly string solutionFileTemplateText;
         private readonly string projectFileTemplateText;
         private readonly string projectPropsFileTemplateText;
@@ -27,6 +30,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         public TemplatedProjectExporter(DirectoryInfo propsOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
         {
             this.propsOutputFolder = propsOutputFolder;
+
+            FileTemplate.TryParseTemplate(projectPropsFileTemplatePath, out propsFileTemplate);
 
             solutionFileTemplateText = File.ReadAllText(solutionFileTemplatePath.FullName);
             projectFileTemplateText = File.ReadAllText(projectFileTemplatePath.FullName);
@@ -72,6 +77,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private bool TryExportPropsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
+            ITemplatePart rootTemplatePart = propsFileTemplate.Root;
+            ITemplatePart projectReferenceSetTemplatePart = rootTemplatePart.Templates["PROJECT_REFERENCE_SET"];
+            ITemplatePart sourceIncludeTemplatePart = rootTemplatePart.Templates["SOURCE_INCLUDE"];
+
+            // Replace tokens
+            TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
+
             string projectPath = GetProjectPath(projectInfo).AbsolutePath;
 
             if (!Utilities.TryGetXMLTemplate(projectPropsFileTemplateText, "PROJECT_REFERENCE_SET", out string projectReferenceSetTemplate)
@@ -84,13 +96,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             Dictionary<Guid, string> sourceGuidToClassName = new Dictionary<Guid, string>();
             foreach (SourceFileInfo source in projectInfo.AssemblyDefinitionInfo.GetSources())
             {
-                ProcessSourceFile(projectInfo, source, sourceIncludeTemplate, sourceIncludes, sourceGuidToClassName);
+                ProcessSourceFile(projectInfo, source, sourceIncludeTemplate, sourceIncludeTemplatePart, rootReplacementSet, sourceIncludes, sourceGuidToClassName);
             }
 
             File.WriteAllLines(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Guid.ToString()}.csmap"), sourceGuidToClassName.Select(t => $"{t.Key.ToString("N")}:{t.Value}"));
 
             HashSet<string> inEditorSearchPaths = new HashSet<string>(), playerSearchPaths = new HashSet<string>();
-            string projectReferences = string.Join("\r\n", CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, inEditorSearchPaths, true), CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, playerSearchPaths, false));
+            string projectReferences = string.Join("\r\n", CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, projectReferenceSetTemplatePart, rootReplacementSet, inEditorSearchPaths, true), CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplate, projectReferenceSetTemplatePart, rootReplacementSet, playerSearchPaths, false));
             Dictionary<string, string> tokens = new Dictionary<string, string>()
             {
                 { "<!--PROJECT_GUID_TOKEN-->", projectInfo.Guid.ToString() },
@@ -100,7 +112,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 { "<!--DEVELOPMENT_BUILD_TOKEN-->", "false" }, // Default to false
 
                 { "<!--IS_EDITOR_ONLY_TARGET_TOKEN-->", (projectInfo.ProjectType ==  ProjectType.EditorAsmDef || projectInfo.ProjectType == ProjectType.PredefinedEditorAssembly).ToString() },
-                { "<!--UNITY_EDITOR_INSTALL_FOLDER-->", Path.GetDirectoryName(EditorApplication.applicationPath) + "\\"},
+                { "<!--UNITY_EDITOR_INSTALL_FOLDER_TOKEN-->", Path.GetDirectoryName(EditorApplication.applicationPath) + "\\"},
 
                 { "<!--DEFAULT_PLATFORM_TOKEN-->", unityProjectInfo.AvailablePlatforms.First(t=>t.BuildTarget == BuildTarget.StandaloneWindows).Name },
 
@@ -117,6 +129,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             File.WriteAllText(projectPath.Replace("csproj", "g.props"), Utilities.ReplaceTokens(projectPropsFileTemplateText, tokens, true));
 
+
+            rootTemplatePart.Tokens["PROJECT_GUID"].AssignValue(rootReplacementSet, projectInfo.Guid.ToString());
+            rootTemplatePart.Tokens["ALLOW_UNSAFE"].AssignValue(rootReplacementSet, projectInfo.AssemblyDefinitionInfo.allowUnsafeCode.ToString());
+            rootTemplatePart.Tokens["LANGUAGE_VERSION"].AssignValue(rootReplacementSet, MSBuildTools.CSharpVersion);
+            rootTemplatePart.Tokens["DEVELOPMENT_BUILD"].AssignValue(rootReplacementSet, "false");
+            rootTemplatePart.Tokens["IS_EDITOR_ONLY_TARGET"].AssignValue(rootReplacementSet, (projectInfo.ProjectType == ProjectType.EditorAsmDef || projectInfo.ProjectType == ProjectType.PredefinedEditorAssembly).ToString());
+            rootTemplatePart.Tokens["UNITY_EDITOR_INSTALL_FOLDER"].AssignValue(rootReplacementSet, Path.GetDirectoryName(EditorApplication.applicationPath) + "\\");
+            rootTemplatePart.Tokens["DEFAULT_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.AvailablePlatforms.First(t => t.BuildTarget == BuildTarget.StandaloneWindows).Name);
+            rootTemplatePart.Tokens["SUPPORTED_PLATFORMS"].AssignValue(rootReplacementSet, string.Join(";", unityProjectInfo.AvailablePlatforms.Select(t => t.Name)));
+            rootTemplatePart.Tokens["INEDITOR_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, string.Join(";", inEditorSearchPaths));
+            rootTemplatePart.Tokens["PLAYER_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, string.Join(";", playerSearchPaths));
+            rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, propsOutputFolder.FullName);
+
+
+            propsFileTemplate.Write(projectPath.Replace("csproj", "g.props.test"), rootReplacementSet);
             return true;
         }
 
@@ -252,7 +279,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             File.WriteAllText(solutionFilePath, solutionTemplateText);
         }
 
-        private void ProcessSourceFile(CSProjectInfo projectInfo, SourceFileInfo sourceFile, string sourceIncludeTemplate, List<string> sourceIncludes, Dictionary<Guid, string> sourceGuidToClassName)
+        private void ProcessSourceFile(CSProjectInfo projectInfo, SourceFileInfo sourceFile, string sourceIncludeTemplate, ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet, List<string> sourceIncludes, Dictionary<Guid, string> sourceGuidToClassName)
         {
             // Get the entry for the map
             sourceGuidToClassName.Add(sourceFile.Guid, sourceFile.ClassType?.FullName);
@@ -281,10 +308,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 default: throw new InvalidDataException("Unknown asset location.");
             }
 
+            TemplateReplacementSet replacementSet = templatePart.CreateReplacementSet(parentReplacementSet);
+            templatePart.Tokens["RELATIVE_SOURCE_PATH"].AssignValue(replacementSet, relativeSourcePath);
+            templatePart.Tokens["PROJECT_LINK_PATH"].AssignValue(replacementSet, linkPath);
+
             sourceIncludes.Add(Utilities.ReplaceTokens(sourceIncludeTemplate, new Dictionary<string, string>()
             {
-                {"##RELATIVE_SOURCE_PATH##", relativeSourcePath },
-                {"##PROJECT_LINK_PATH##", linkPath }
+                {"##RELATIVE_SOURCE_PATH_TOKEN##", relativeSourcePath },
+                {"##PROJECT_LINK_PATH_TOKEN##", linkPath }
             }));
         }
 
@@ -300,8 +331,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private string CreateProjectReferencesSet(CSProjectInfo projectInfo, string template, HashSet<string> additionalSearchPaths, bool inEditor)
+        private string CreateProjectReferencesSet(CSProjectInfo projectInfo, string template, ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet, HashSet<string> additionalSearchPaths, bool inEditor)
         {
+            TemplateReplacementSet templateReplacementSet = templatePart.CreateReplacementSet(parentReplacementSet);
+            ITemplatePart projectReferenceTemplatePart = templatePart.Templates["PROJECT_REFERENCE"];
+            ITemplatePart pluginReferenceTemplatePart = templatePart.Templates["PLUGIN_REFERENCE"];
+
             if (Utilities.TryGetXMLTemplate(template, "PROJECT_REFERENCE", out string projectReferenceTemplate)
                 && Utilities.TryGetXMLTemplate(template, "PLUGIN_REFERENCE", out string pluginReferenceTemplate))
             {
@@ -311,6 +346,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     List<string> platformConditions = GetPlatformConditions(inEditor ? projectInfo.InEditorPlatforms : projectInfo.PlayerPlatforms, inEditor ? dependency.InEditorSupportedPlatforms : dependency.PlayerSupportedPlatforms);
 
                     string projectPath = GetProjectPath(dependency.Dependency).AbsolutePath;
+                    TemplateReplacementSet replacementSet = projectReferenceTemplatePart.CreateReplacementSet(templateReplacementSet);
+                    projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, $"{dependency.Dependency.Name}.csproj");
+                    //projectReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, projectPath);
+                    projectReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
                     projectReferences.Add(Utilities.ReplaceTokens(projectReferenceTemplate, new Dictionary<string, string>()
                     {
                         { "##REFERENCE_TOKEN##", $"{dependency.Dependency.Name}.csproj" },
@@ -328,6 +367,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     }
                     List<string> platformConditions = GetPlatformConditions(inEditor ? projectInfo.InEditorPlatforms : projectInfo.PlayerPlatforms, inEditor ? dependency.InEditorSupportedPlatforms : dependency.PlayerSupportedPlatforms);
 
+                    TemplateReplacementSet replacementSet = pluginReferenceTemplatePart.CreateReplacementSet(templateReplacementSet);
+                    pluginReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, dependency.Dependency.Name);
+                    pluginReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, dependency.Dependency.ReferencePath.AbsolutePath);
+                    pluginReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
                     pluginReferences.Add(Utilities.ReplaceTokens(pluginReferenceTemplate, new Dictionary<string, string>()
                     {
                         { "##REFERENCE_TOKEN##", dependency.Dependency.Name },
@@ -338,6 +381,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     additionalSearchPaths.Add(Path.GetDirectoryName(dependency.Dependency.ReferencePath.AbsolutePath));
                 }
 
+                templatePart.Tokens["REFERENCE_CONFIGURATION"].AssignValue(templateReplacementSet, inEditor ? "InEditor" : "Player");
                 return Utilities.ReplaceTokens(template, new Dictionary<string, string>()
                 {
                     {"##REFERENCE_CONFIGURATION_TOKEN##", inEditor ? "InEditor" : "Player" },

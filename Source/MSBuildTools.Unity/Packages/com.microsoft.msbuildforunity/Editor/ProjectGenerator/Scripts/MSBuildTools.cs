@@ -3,6 +3,7 @@
 
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Exporters;
+using Microsoft.Build.Unity.ProjectGeneration.Templates;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
