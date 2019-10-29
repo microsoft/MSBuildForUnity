@@ -95,6 +95,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
+            Dictionary<string, string> packageCacheVersionedMap = new Dictionary<string, string>();
+            foreach (string directory in Directory.GetDirectories(Utilities.PackageLibraryCachePath))
+            {
+                string directoryName = Path.GetFileName(directory);
+                packageCacheVersionedMap.Add(directoryName.Split('@')[0], directoryName);
+            }
+
             Dictionary<string, Assembly> unityAssemblies = CompilationPipeline.GetAssemblies().ToDictionary(t => t.name);
             Dictionary<string, CSProjectInfo> projectsMap = new Dictionary<string, CSProjectInfo>();
             Queue<string> projectsToProcess = new Queue<string>();
@@ -216,7 +223,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 toReturn.Add(toAdd);
             }
 
-            foreach (string packageDllPath in Directory.GetFiles(Utilities.PackagesCopyPath, "*.dll", SearchOption.AllDirectories))
+            foreach (string packageDllPath in Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.dll", SearchOption.AllDirectories))
             {
                 string metaPath = packageDllPath + ".meta";
 

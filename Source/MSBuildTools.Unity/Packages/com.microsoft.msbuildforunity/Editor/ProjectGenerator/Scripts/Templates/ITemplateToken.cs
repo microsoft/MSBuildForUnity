@@ -10,7 +10,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
     public interface ITemplateToken
     {
-        void AssignValue(TemplateReplacementSet replacementSet, string value);
+        void AssignValue(TemplateReplacementSet replacementSet, object value);
 
         void PrepareForReplacement(TemplateReplacementSet replacementSet);
     }
@@ -19,7 +19,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
     {
         public List<ITemplateToken> Tokens { get; } = new List<ITemplateToken>();
 
-        public void AssignValue(TemplateReplacementSet replacementSet, string value)
+        public void AssignValue(TemplateReplacementSet replacementSet, object value)
         {
             Tokens.ForEach(t => t.AssignValue(replacementSet, value));
         }

@@ -59,7 +59,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// <summary>
         /// Gets the MSBuild Platform Props file (.props) template path.
         /// </summary>
-        public string PlatformPropsTemplatePath { get; }
+        public FileInfo PlatformPropsTemplatePath { get; }
 
         /// <summary>
         /// Gets the BuildProjects.proj MSBuild file template path.
@@ -69,7 +69,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// <summary>
         /// Gets a list of specialized platform templates.
         /// </summary>
-        public IReadOnlyDictionary<string, string> PlatformTemplates { get; }
+        public IReadOnlyDictionary<string, FileInfo> PlatformTemplates { get; }
 
         /// <summary>
         /// Gets a list of meta files for plugins templates.
@@ -104,13 +104,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
             SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
             SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
-            PlatformPropsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName);
+            PlatformPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName));
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
 
             FileTemplate.TryParseTemplate(SDKProjectPropsFileTemplatePath, out FileTemplate propsFileTemplate);
 
             // Get specific platforms
-            Dictionary<string, string> platformTemplates = new Dictionary<string, string>();
+            Dictionary<string, FileInfo> platformTemplates = new Dictionary<string, FileInfo>();
             Dictionary<BuildTargetGroup, FileInfo> metaFileTemplates = new Dictionary<BuildTargetGroup, FileInfo>();
 
             HashSet<string> toRemove = new HashSet<string>();
@@ -118,7 +118,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             {
                 if (Regex.IsMatch(pair.Key, SpecifcPlatformPropsTemplateRegex))
                 {
-                    platformTemplates.Add(pair.Key, pair.Value);
+                    platformTemplates.Add(pair.Key, new FileInfo(pair.Value));
                     toRemove.Add(pair.Key);
                 }
                 else
@@ -151,7 +151,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
                 fileNamesMaps.Remove(item);
             }
 
-            PlatformTemplates = new ReadOnlyDictionary<string, string>(platformTemplates);
+            PlatformTemplates = new ReadOnlyDictionary<string, FileInfo>(platformTemplates);
             PluginMetaTemplatePaths = new ReadOnlyDictionary<BuildTargetGroup, FileInfo>(metaFileTemplates);
 
             OtherFiles = new ReadOnlyCollection<string>(fileNamesMaps.Values.ToList());
@@ -163,9 +163,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// <param name="platform">The platform of the requested template.</param>
         /// <param name="configuration">The configuration of the requested template.</param>
         /// <returns>The absolute file path for the platform template to use.</returns>
-        public string GetTemplateFilePathForPlatform(string platform, string configuration, ScriptingBackend scriptingBackend)
+        public FileInfo GetTemplateFilePathForPlatform(string platform, string configuration, ScriptingBackend scriptingBackend)
         {
-            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{scriptingBackend.ToString()}.props.template", out string templatePath)
+            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{scriptingBackend.ToString()}.props.template", out FileInfo templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.{configuration}.Any.props.template", out templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.Configuration.Any.props.template", out templatePath))
             {

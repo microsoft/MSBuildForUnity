@@ -13,7 +13,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 
         IReadOnlyDictionary<string, ITemplatePart> Templates { get; }
 
-        TemplateReplacementSet CreateReplacementSet(TemplateReplacementSet parentReplacementSet = null);
+        TemplateReplacementSet CreateReplacementSet(TemplateReplacementSet parentReplacementSet = default);
+    }
+
+    public static class Extensions
+    {
+        public static bool TryReplaceToken(this ITemplatePart templatePart, string token, TemplateReplacementSet replacementSet, string value)
+        {
+            if (templatePart.Tokens.TryGetValue(token, out ITemplateToken templateToken))
+            {
+                templateToken.AssignValue(replacementSet, value);
+                return true;
+            }
+
+            return false;
+        }
     }
 }
 #endif

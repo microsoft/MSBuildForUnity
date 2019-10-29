@@ -1,7 +1,10 @@
 <Project>
   <PropertyGroup>
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
-    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS--></DefineConstants>
+    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN--></DefineConstants>
+    
+    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
+    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
 
   <ItemGroup>

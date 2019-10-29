@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -92,6 +91,56 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             element.WriteTo(xmlTemplateWriter);
         }
 
+        private bool TryParseAttributeValueForTokens(XName attributeName, string value, out XmlAttributeTemplateToken attributeToken)
+        {
+            attributeToken = null;
+
+            int nextTokenSeperator = value.IndexOf("##");
+            if (nextTokenSeperator == -1)
+            {
+                return false;
+
+            }
+
+            Guid tokenGuid = Guid.NewGuid();
+            int previousTokenSeperator = 0;
+            while (nextTokenSeperator != -1)
+            {
+                // We have potential token, if we don't return false
+                previousTokenSeperator = nextTokenSeperator + 2;
+                if (previousTokenSeperator >= value.Length)
+                {
+                    return false;
+                }
+
+                nextTokenSeperator = value.IndexOf("##", previousTokenSeperator);
+                if (nextTokenSeperator == -1)
+                {
+                    return false;
+                }
+
+                string potentialToken = value.Substring(previousTokenSeperator, nextTokenSeperator - previousTokenSeperator);
+                if (potentialToken.EndsWith(commentTokenSuffixKeyword))
+                {
+                    string token = potentialToken.Substring(0, potentialToken.Length - commentTokenSuffixKeyword.Length);
+                    // We only really need to return 1, even if multiple are created, this will all properly be handled
+                    attributeToken = new XmlAttributeTemplateToken(tokenGuid, attributeName, value, $"##{potentialToken}##");
+                    AddReplacementToken(token, attributeToken);
+                }
+
+                previousTokenSeperator = nextTokenSeperator + 2;
+                nextTokenSeperator = previousTokenSeperator >= value.Length ? -1 : value.IndexOf("##", previousTokenSeperator);
+            }
+            if (attributeToken != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private void ParseElement(XElement element)
         {
             // Scan for comments
@@ -104,15 +153,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             List<XAttribute> attributes = new List<XAttribute>();
             foreach (XAttribute attribute in element.Attributes())
             {
-                Match match = Regex.Match(attribute.Value, "(.*)##([a-zA-Z_0-9]*)_TOKEN##(.*)");
-                if (match.Success)
+                if (TryParseAttributeValueForTokens(attribute.Name, attribute.Value, out XmlAttributeTemplateToken toReplace))
                 {
-                    string token = match.Groups[2].Value;
-                    string prefix = match.Groups[1].Value;
-                    string suffix = match.Groups[3].Value;
-
-                    XmlAttributeTemplateToken toReplace = new XmlAttributeTemplateToken(attribute.Name, prefix, suffix);
-                    AddReplacementToken(token, toReplace);
                     attributes.Add(toReplace);
 
                     atleastOneReplacement = true;
