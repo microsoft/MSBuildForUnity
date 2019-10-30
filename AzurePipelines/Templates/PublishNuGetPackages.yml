@@ -29,5 +29,4 @@ steps:
     command: 'push'
     packagesToPush: '$(Build.SourcesDirectory)/**/bin/**/*.nupkg;!$(Build.SourcesDirectory)/**/bin/**/*.symbols.nupkg'
     # Publish only to the secure internal feed until we get approval from legal
-    nuGetFeedType: 'external'
-    publishFeedCredentials: 'MRW.Shared NuGet Credentials'
+    nuGetFeedType: 'internal'
