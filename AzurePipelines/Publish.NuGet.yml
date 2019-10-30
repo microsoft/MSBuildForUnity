@@ -21,6 +21,6 @@ workspace:
 steps:
 - template: Templates/CommonInitialization.yml
 - template: Templates/BuildMSBuildForUnityNuget.yml
-# Commenting out the ability to publish the NuGet packages until we get approval from legal
-#- template: Templates/PublishArtifacts.yml
-- template: Templates/PublishNuGetPackages.yml
+
+- template: Templates/PublishArtifacts.yml
+#- template: Templates/PublishNuGetPackages.yml
