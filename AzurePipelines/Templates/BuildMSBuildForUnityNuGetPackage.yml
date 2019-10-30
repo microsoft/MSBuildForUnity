@@ -1,0 +1,7 @@
+steps:
+- task: MSBuild@1
+  displayName: "Package Solution"
+  inputs:
+    solution: 'Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.NuGet.sln'
+    configuration: Release
+    msbuildArguments: '/t:Pack /p:NoBuild=true /bl:$(Build.SourcesDirectory)\MSBuildForUnity.NuGet.binlog'
