@@ -16,5 +16,6 @@ workspace:
 steps:
 - template: Templates/CommonInitialization.yml
 - template: Templates/BuildMSBuildForUnityNuGetBinaries.yml
+- template: Templates/BuildMSBuildForUnityNuGetPackage.yml
 # Commenting out the ability to publish the NuGet packages until we get approval from legal
 #- template: Templates/PublishArtifacts.yml

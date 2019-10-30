@@ -1,6 +1,6 @@
 steps:
 - task: EsrpCodeSigning@1
-  displayName: Sign NuGet Package
+  displayName: Sign Binaries
   inputs:
     ConnectedServiceName: 'ESRP Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/Source/MSBuildTools.Unity.Nuget/bin/Release'
