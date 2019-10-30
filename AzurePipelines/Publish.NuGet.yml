@@ -21,6 +21,7 @@ workspace:
 steps:
 - template: Templates/CommonInitialization.yml
 - template: Templates/BuildMSBuildForUnityNuGetBinaries.yml
+- template: Templates/SignBinaries.yml
 - template: Templates/BuildMSBuildForUnityNuGetPackage.yml
 - template: Templates/SignNuGetPackages.yml
 - template: Templates/PublishArtifacts.yml
