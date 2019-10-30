@@ -3,7 +3,7 @@ steps:
   displayName: Sign NuGet Package
   inputs:
     ConnectedServiceName: 'ESRP Code Signing'
-    FolderPath: '$(System.DefaultWorkingDirectory)\Source\MSBuildTools.Unity.Nuget\bin\Release'
+    FolderPath: '$(Build.SourcesDirectory)/Source/MSBuildTools.Unity.Nuget/bin/Release'
     Pattern: 'MSBuildForUnity.*.nupkg'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
