@@ -1,28 +1,4 @@
 steps:
-- task: EsrpCodeSigning@1
-  displayName: Sign NuGet Package
-  inputs:
-    ConnectedServiceName: 'ESRP Code Signing'
-    FolderPath: '$(System.DefaultWorkingDirectory)\Source\MSBuildTools.Unity.Nuget\bin\Release'
-    Pattern: 'MSBuildForUnity.*.nupkg'
-    signConfigType: 'inlineSignParams'
-    inlineOperation: |
-      [
-        {
-          "KeyCode" : "CP-401405",
-          "OperationCode" : "NuGetSign",
-          "Parameters" : {},
-          "ToolName" : "sign",
-          "ToolVersion" : "1.0"
-        },
-        {
-          "KeyCode" : "CP-401405",
-          "OperationCode" : "NuGetVerify",
-          "Parameters" : {},
-          "ToolName" : "sign",
-          "ToolVersion" : "1.0"
-        }
-      ]
 - task: NuGetCommand@2
   displayName: Publish NuGet Package
   inputs:
