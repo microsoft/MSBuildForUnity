@@ -4,6 +4,5 @@ steps:
   inputs:
     command: 'push'
     packagesToPush: '$(Build.SourcesDirectory)/Source/MSBuildTools.Unity.Nuget/bin/Release/MSBuildForUnity.*.nupkg;!$(Build.SourcesDirectory)/**/bin/**/*.symbols.nupkg'
-    # Publish only to the secure internal feed until we get approval from legal
-    nuGetFeedType: 'internal'
-    publishVstsFeed: 'c5734843-0320-4d3d-8a13-9f75d441dd1c'
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'Unity Developer Tools'
