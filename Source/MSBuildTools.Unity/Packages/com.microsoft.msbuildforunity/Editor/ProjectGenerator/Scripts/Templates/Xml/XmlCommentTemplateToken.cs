@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using System;
 using System.Collections.Generic;
 using System.Xml;
@@ -10,11 +9,14 @@ using System.Xml.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
-    public class XmlCommentTemplateToken : XProcessingInstruction, ITemplateToken
+    /// <summary>
+    /// This token is encoded as a comment that should be replaced.
+    /// </summary>
+    internal class XmlCommentTemplateToken : XProcessingInstruction, ITemplateToken
     {
         private readonly Guid token = Guid.NewGuid();
 
-        public XmlCommentTemplateToken(string commentValue)
+        internal XmlCommentTemplateToken(string commentValue)
             : base("somename", commentValue)
         {
         }

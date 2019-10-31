@@ -12,7 +12,10 @@ using System.Xml.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
-    public class XMLTemplatePart : XProcessingInstruction, ITemplatePart
+    /// <summary>
+    /// An Xml based implementation of a template part.
+    /// </summary>
+    internal class XMLTemplatePart : XProcessingInstruction, ITemplatePart
     {
         private readonly Guid token = Guid.NewGuid();
 
@@ -30,7 +33,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
         public IReadOnlyDictionary<string, ITemplatePart> Templates { get; }
 
 
-        public XMLTemplatePart(XElement element)
+        internal XMLTemplatePart(XElement element)
             : base("templatepart", string.Empty)
         {
             Tokens = new ReadOnlyDictionary<string, ITemplateToken>(tokens);

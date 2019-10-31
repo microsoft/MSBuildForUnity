@@ -2,26 +2,30 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using System;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
 {
-    public class TextTemplateToken : ITemplateToken
+    /// <summary>
+    /// A simple text template token.
+    /// </summary>
+    internal class TextTemplateToken : ITemplateToken
     {
         private readonly Guid token = Guid.NewGuid();
 
+        ///<inherit-doc/>
         public void AssignValue(TemplateReplacementSet replacementSet, object value)
         {
             replacementSet.ReplacementEntries[token] = value;
         }
 
+        ///<inherit-doc/>
         public void PrepareForReplacement(TemplateReplacementSet replacementSet)
         {
             // DO nothing
         }
 
-        public object GetValue(TemplateReplacementSet replacementSet)
+        internal object GetValue(TemplateReplacementSet replacementSet)
         {
             return replacementSet.ReplacementEntries[token];
         }

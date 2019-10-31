@@ -25,6 +25,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private readonly FileTemplate solutionFileTemplate;
 
+        /// <summary>
+        /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
+        /// </summary>
+        /// <param name="propsOutputFolder">The output folder for the projects and props.</param>
+        /// <param name="solutionFileTemplatePath">The path to the solution template.</param>
+        /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
+        /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
+        /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
         public TemplatedProjectExporter(DirectoryInfo propsOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
         {
             this.propsOutputFolder = propsOutputFolder;
@@ -36,14 +44,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
         }
 
-        public Uri GetProjectPath(CSProjectInfo projectInfo)
+        ///<inherit-doc/>
+        public FileInfo GetProjectPath(CSProjectInfo projectInfo)
         {
-            return new Uri(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Name}.csproj"));
+            return new FileInfo(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Name}.csproj"));
         }
 
+        ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
-            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+            string projectPath = GetProjectPath(projectInfo).FullName;
 
             if (File.Exists(projectPath))
             {
@@ -80,7 +90,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart projectReferenceSetTemplatePart = rootTemplatePart.Templates["PROJECT_REFERENCE_SET"];
             ITemplatePart sourceIncludeTemplatePart = rootTemplatePart.Templates["SOURCE_INCLUDE"];
 
-            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+            string projectPath = GetProjectPath(projectInfo).FullName;
 
             //Dictionary<Guid, string> sourceGuidToClassName = new Dictionary<Guid, string>();
             foreach (SourceFileInfo source in projectInfo.AssemblyDefinitionInfo.GetSources())
@@ -114,7 +124,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private bool TryExportTargetsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
-            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+            string projectPath = GetProjectPath(projectInfo).FullName;
             ITemplatePart rootTemplatePart = targetsFileTemplate.Root;
             TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
             ITemplatePart supportedPlatformBuildTemplate = rootTemplatePart.Templates["SUPPORTED_PLATFORM_BUILD_CONDITION"];
@@ -127,6 +137,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return true;
         }
 
+        ///<inherit-doc/>
         public void ExportSolution(UnityProjectInfo unityProjectInfo)
         {
             string solutionFilePath = Path.Combine(propsOutputFolder.FullName, $"{unityProjectInfo.UnityProjectName}.sln");
@@ -324,7 +335,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private void ProcessProjectEntry(CSProjectInfo projectInfo, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
         {
-            string projectPath = GetProjectPath(projectInfo).AbsolutePath;
+            string projectPath = GetProjectPath(projectInfo).FullName;
 
             templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectInfo.Name);
             templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Path.GetFileName(projectPath));

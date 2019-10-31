@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,23 +9,29 @@ using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
 {
-    public class TextTemplatePart : ITemplatePart
+    /// <summary>
+    /// A simple text template part.
+    /// </summary>
+    internal class TextTemplatePart : ITemplatePart
     {
         private readonly Guid token = Guid.NewGuid();
 
         private readonly List<object> parts;
 
+        ///<inherit-doc/>
         public IReadOnlyDictionary<string, ITemplateToken> Tokens { get; }
 
+        ///<inherit-doc/>
         public IReadOnlyDictionary<string, ITemplatePart> Templates { get; }
 
-        public TextTemplatePart(List<object> parts, IDictionary<string, ITemplateToken> tokens, IDictionary<string, ITemplatePart> templates)
+        internal TextTemplatePart(List<object> parts, IDictionary<string, ITemplateToken> tokens, IDictionary<string, ITemplatePart> templates)
         {
             this.parts = parts;
             Tokens = new ReadOnlyDictionary<string, ITemplateToken>(tokens);
             Templates = new ReadOnlyDictionary<string, ITemplatePart>(templates);
         }
 
+        ///<inherit-doc/>
         public TemplateReplacementSet CreateReplacementSet(TemplateReplacementSet parentReplacementSet = null)
         {
             return TemplateReplacementSet.Create(parentReplacementSet, token);

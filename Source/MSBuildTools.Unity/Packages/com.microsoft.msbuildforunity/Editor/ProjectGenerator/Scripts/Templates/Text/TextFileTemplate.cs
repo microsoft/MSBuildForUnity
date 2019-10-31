@@ -2,20 +2,23 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
 {
+    /// <summary>
+    /// This is the implementation of the simple text based file template.
+    /// </summary>
     internal class TextFileTemplate : FileTemplate
     {
         private const string TemplateSuffix = "_TEMPLATE";
         private const string TemplateStartSuffix = "_TEMPLATE_START";
         private const string TokenSuffix = "_TOKEN";
 
-        public TextFileTemplate(FileInfo templateFile) : base(templateFile)
+        internal TextFileTemplate(FileInfo templateFile) 
+            : base(templateFile)
         {
         }
 

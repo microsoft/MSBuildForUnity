@@ -2,27 +2,30 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
-    public class XmlAttributeTemplateToken : XAttribute, ITemplateToken
+    /// <summary>
+    /// Represents a token that is part of a Xml attribute.
+    /// </summary>
+    internal class XmlAttributeTemplateToken : XAttribute, ITemplateToken
     {
         private readonly Guid tokenGuid;
 
         private readonly string attributeValue;
         private readonly string tokenToReplace;
 
-        public XmlAttributeTemplateToken(Guid tokenGuid, XName attributeName, string attributeValue, string tokenToReplace)
+        internal XmlAttributeTemplateToken(Guid tokenGuid, XName attributeName, string attributeValue, string tokenToReplace)
             : base(attributeName, string.Empty)
         {
             this.tokenGuid = tokenGuid;
             this.attributeValue = attributeValue;
             this.tokenToReplace = tokenToReplace;
         }
+
         public void AssignValue(TemplateReplacementSet replacementSet, object value)
         {
             string toUseForReplace;

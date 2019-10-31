@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
-
 using Microsoft.Build.Unity.ProjectGeneration.Templates.Text;
 using Microsoft.Build.Unity.ProjectGeneration.Templates.Xml;
 using System;
@@ -10,10 +9,19 @@ using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
-    public abstract partial class FileTemplate
+    /// <summary>
+    /// This is the base class for the types of template files used by the <see cref="Exporters.TemplatedProjectExporter"/>.
+    /// </summary>
+    public abstract class FileTemplate
     {
         private const string TemplateExtension = ".template";
 
+        /// <summary>
+        /// Attempts to parse the templtae file.
+        /// </summary>
+        /// <param name="path">The path to the template file.</param>
+        /// <param name="fileTemplate">The instance of the parsed template file, null if failed.</param>
+        /// <returns>True if was able to parse succesfully.</returns>
         public static bool TryParseTemplate(FileInfo path, out FileTemplate fileTemplate)
         {
             if (!(path?.Exists ?? throw new ArgumentNullException(nameof(path))))

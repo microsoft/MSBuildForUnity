@@ -8,6 +8,9 @@ using System.Xml.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
+    /// <summary>
+    /// Represents a template file that is Xml based.
+    /// </summary>
     internal class XmlFileTemplate : FileTemplate
     {
         private XDocument document;
