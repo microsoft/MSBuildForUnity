@@ -55,11 +55,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public const string PackagesFolderName = "Packages";
         private const string PackagesCacheFolderName = "PackageCache";
         private const string MSBuildFolderName = "MSBuild";
+        private const string MSBuildProjectsFolderName = "Projects";
 
         private const string BuiltInPackagesRelativePath = @"Data\Resources\PackageManager\BuiltInPackages";
 
         public static string ProjectPath { get; } = Path.GetFullPath(Application.dataPath.Substring(0, Application.dataPath.Length - AssetsFolderName.Length));
         public static string MSBuildOutputFolder { get; } = GetNormalizedPath(ProjectPath + MSBuildFolderName, true);
+        public static string MSBuildProjectFolder { get; } = Path.Combine(MSBuildOutputFolder, MSBuildProjectsFolderName);
         public static string PackageLibraryCachePath { get; } = Path.Combine(ProjectPath, "Library", PackagesCacheFolderName);
 
         public const string MetaFileGuidRegex = @"guid:\s*([0-9a-fA-F]{32})";

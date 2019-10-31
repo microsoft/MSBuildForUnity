@@ -36,6 +36,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private static readonly string uwpMinPlatformVersion = EditorUserBuildSettings.wsaMinUWPSDK;
         private static readonly string uwpTargetPlatformVersion = EditorUserBuildSettings.wsaUWPSDK;
 
+        private static IProjectExporter exporter = null;
+
+        private static IProjectExporter Exporter => exporter ?? (exporter = new TemplatedProjectExporter(new DirectoryInfo(Utilities.MSBuildProjectFolder), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath, TemplateFiles.Instance.SDKProjectPropsFileTemplatePath, TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath));
+
         [MenuItem("MSBuild/Generate C# SDK Projects", priority = 101)]
         public static void GenerateSDKProjects()
         {
@@ -59,10 +63,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             try
             {
                 // Create a copy of the packages as they might change after we create the MSBuild project
-                string generatedProjectPath = Path.Combine(Utilities.MSBuildOutputFolder, "Projects");
                 try
                 {
-                    Utilities.EnsureCleanDirectory(generatedProjectPath);
+                    Utilities.EnsureCleanDirectory(Utilities.MSBuildProjectFolder);
                 }
                 catch (IOException ex)
                 {
@@ -90,26 +93,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 CompilationPlatformInfo editorPlatform = CompilationPlatformInfo.GetEditorPlatform();
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
-                CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
+                CreateCommonPropsFile(platforms, editorPlatform, Utilities.MSBuildProjectFolder);
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
                 UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms);
 
-                exporterStart = stopwatch.ElapsedMilliseconds;
-                IProjectExporter exporter = new TemplatedProjectExporter(
-                    new DirectoryInfo(generatedProjectPath),
-                    TemplateFiles.Instance.MSBuildSolutionTemplatePath,
-                    TemplateFiles.Instance.SDKProjectFileTemplatePath,
-                    TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
-                    TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath);
-                exporterEnd = stopwatch.ElapsedMilliseconds;
-
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
-                exporter.ExportSolution(unityProjectInfo);
+                Exporter.ExportSolution(unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
                 {
-                    File.Copy(otherFile, Path.Combine(generatedProjectPath, Path.GetFileName(otherFile)));
+                    File.Copy(otherFile, Path.Combine(Utilities.MSBuildProjectFolder, Path.GetFileName(otherFile)));
                 }
 
                 string buildProjectsFile = "BuildProjects.proj";
