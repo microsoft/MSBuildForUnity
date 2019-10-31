@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -24,7 +23,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly FileTemplate propsFileTemplate;
         private readonly FileTemplate targetsFileTemplate;
 
-        private readonly string solutionFileTemplateText;
+        private readonly FileTemplate solutionFileTemplate;
 
         public TemplatedProjectExporter(DirectoryInfo propsOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
         {
@@ -34,7 +33,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             FileTemplate.TryParseTemplate(projectPropsFileTemplatePath, out propsFileTemplate);
             FileTemplate.TryParseTemplate(projectTargetsFileTemplatePath, out targetsFileTemplate);
 
-            solutionFileTemplateText = File.ReadAllText(solutionFileTemplatePath.FullName);
+            FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
         }
 
         public Uri GetProjectPath(CSProjectInfo projectInfo)
@@ -136,97 +135,91 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             {
                 File.Delete(solutionFilePath);
             }
-            string solutionTemplateText = solutionFileTemplateText;
+            ITemplatePart rootTemplatePart = solutionFileTemplate.Root;
+            TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
 
-            if (Utilities.TryGetTextTemplate(solutionFileTemplateText, "PROJECT", out string projectEntryTemplate, out string projectEntryTemplateBody)
-                && Utilities.TryGetTextTemplate(solutionFileTemplateText, "CONFIGURATION_PLATFORM", out string configurationPlatformEntry, out string configurationPlatformEntryBody)
-                && Utilities.TryGetTextTemplate(solutionFileTemplateText, "CONFIGURATION_PLATFORM_MAPPING", out string configurationPlatformMappingTemplate, out string configurationPlatformMappingTemplateBody)
-                && Utilities.TryGetTextTemplate(solutionFileTemplateText, "CONFIGURATION_PLATFORM_ENABLED", out string configurationPlatformEnabledTemplate, out string configurationPlatformEnabledTemplateBody))
+            ITemplatePart projectTemplate = rootTemplatePart.Templates["PROJECT"];
+            ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
+            ITemplatePart configPlatformMappingTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_MAPPING"];
+            ITemplatePart configPlatformEnabledTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_ENABLED"];
+
+            CSProjectInfo[] unorderedProjects = unityProjectInfo.CSProjects.Select(t => t.Value).ToArray();
+            List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
+
+            while (orderedProjects.Count < unorderedProjects.Length)
             {
-                CSProjectInfo[] unorderedProjects = unityProjectInfo.CSProjects.Select(t => t.Value).ToArray();
-                List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
-
-                while (orderedProjects.Count < unorderedProjects.Length)
+                bool oneRemoved = false;
+                for (int i = 0; i < unorderedProjects.Length; i++)
                 {
-                    bool oneRemoved = false;
-                    for (int i = 0; i < unorderedProjects.Length; i++)
+                    if (unorderedProjects[i] == null)
                     {
-                        if (unorderedProjects[i] == null)
-                        {
-                            continue;
-                        }
-
-                        if (unorderedProjects[i].ProjectDependencies.Count == 0 || unorderedProjects[i].ProjectDependencies.All(t => orderedProjects.Contains(t.Dependency)))
-                        {
-                            orderedProjects.Add(unorderedProjects[i]);
-
-                            unorderedProjects[i] = null;
-                            oneRemoved = true;
-                        }
+                        continue;
                     }
 
-                    if (!oneRemoved)
+                    if (unorderedProjects[i].ProjectDependencies.Count == 0 || unorderedProjects[i].ProjectDependencies.All(t => orderedProjects.Contains(t.Dependency)))
                     {
-                        Debug.LogError($"Possible circular dependency.");
-                        break;
+                        orderedProjects.Add(unorderedProjects[i]);
+
+                        unorderedProjects[i] = null;
+                        oneRemoved = true;
                     }
                 }
 
-                IEnumerable<string> projectEntries = orderedProjects.Select(t => GetProjectEntry(t, projectEntryTemplateBody));
-
-                string[] twoConfigs = new string[] {
-                    configurationPlatformEntryBody.Replace("<Configuration>", "InEditor"),
-                    configurationPlatformEntryBody.Replace("<Configuration>", "Player")
-                };
-
-                IEnumerable<string> configPlatforms = twoConfigs
-                    .SelectMany(t => unityProjectInfo.AvailablePlatforms.Select(p => t.Replace("<Platform>", p.Name.ToString())));
-
-                List<string> configurationMappings = new List<string>();
-                List<string> disabled = new List<string>();
-
-                foreach (CSProjectInfo project in orderedProjects.Select(t => t))
+                if (!oneRemoved)
                 {
-                    string ConfigurationTemplateReplace(string template, string guid, string configuration, string platform)
-                    {
-                        return Utilities.ReplaceTokens(template, new Dictionary<string, string>()
-                        {
-                            { "<PROJECT_GUID_TOKEN>", guid.ToString().ToUpper() },
-                            { "<PROJECT_CONFIGURATION_TOKEN>", configuration },
-                            { "<PROJECT_PLATFORM_TOKEN>", platform },
-                            { "<SOLUTION_CONFIGURATION_TOKEN>", configuration },
-                            { "<SOLUTION_PLATFORM_TOKEN>", platform },
-                        });
-                    }
-
-                    void ProcessMappings(Guid guid, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
-                    {
-                        foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
-                        {
-                            configurationMappings.Add(ConfigurationTemplateReplace(configurationPlatformMappingTemplateBody, guid.ToString(), configuration, platform.Name));
-
-                            if (platforms.ContainsKey(platform.BuildTarget))
-                            {
-                                configurationMappings.Add(ConfigurationTemplateReplace(configurationPlatformEnabledTemplateBody, guid.ToString(), configuration, platform.Name));
-                            }
-                        }
-                    }
-
-                    ProcessMappings(project.Guid, "InEditor", project.InEditorPlatforms);
-                    ProcessMappings(project.Guid, "Player", project.PlayerPlatforms);
+                    Debug.LogError($"Possible circular dependency.");
+                    break;
                 }
-
-                solutionTemplateText = Utilities.ReplaceTokens(solutionFileTemplateText, new Dictionary<string, string>()
-                {
-                    { projectEntryTemplate, string.Join(Environment.NewLine, projectEntries)},
-                    { configurationPlatformEntry, string.Join(Environment.NewLine, configPlatforms)},
-                    { configurationPlatformMappingTemplate, string.Join(Environment.NewLine, configurationMappings) },
-                    { configurationPlatformEnabledTemplate, string.Join(Environment.NewLine, disabled) }
-                });
             }
-            else
+            foreach (CSProjectInfo project in orderedProjects)
             {
-                Debug.LogError("Failed to find Project and/or Configuration_Platform templates in the solution template file.");
+                TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
+                ProcessProjectEntry(project, projectTemplate, replacementSet);
+            }
+
+            ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
+            ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
+            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+            {
+                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
+                configPlatform_ConfigurationToken.AssignValue(replacementSet, "InEditor");
+                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
+
+                replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
+                configPlatform_ConfigurationToken.AssignValue(replacementSet, "Player");
+                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
+            }
+
+            List<string> disabled = new List<string>();
+
+            foreach (CSProjectInfo project in orderedProjects.Select(t => t))
+            {
+                void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, string guid, string configuration, string platform)
+                {
+                    templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
+                    templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
+                    templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
+                    templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, configuration);
+                    templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, platform);
+                }
+
+                void ProcessMappings(Guid guid, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
+                {
+                    foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+                    {
+                        TemplateReplacementSet replacemetSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
+                        ConfigurationTemplateReplace(configPlatformMappingTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
+
+                        if (platforms.ContainsKey(platform.BuildTarget))
+                        {
+                            replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(rootReplacementSet);
+                            ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
+                        }
+                    }
+                }
+
+                ProcessMappings(project.Guid, "InEditor", project.InEditorPlatforms);
+                ProcessMappings(project.Guid, "Player", project.PlayerPlatforms);
             }
 
             foreach (CSProjectInfo project in unityProjectInfo.CSProjects.Values)
@@ -234,7 +227,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ExportProject(unityProjectInfo, project);
             }
 
-            File.WriteAllText(solutionFilePath, solutionTemplateText);
+            solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
         }
 
         private void ProcessSourceFile(CSProjectInfo projectInfo, SourceFileInfo sourceFile, ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet)
@@ -329,33 +322,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return toReturn;
         }
 
-        private string GetProjectEntry(CSProjectInfo projectInfo, string projectEntryTemplateBody)
+        private void ProcessProjectEntry(CSProjectInfo projectInfo, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
         {
             string projectPath = GetProjectPath(projectInfo).AbsolutePath;
 
-            StringBuilder toReturn = new StringBuilder();
+            templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectInfo.Name);
+            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Path.GetFileName(projectPath));
+            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectInfo.Guid.ToString().ToUpper());
 
-            toReturn.AppendLine(Utilities.ReplaceTokens(projectEntryTemplateBody, new Dictionary<string, string>() {
-                        { "<PROJECT_NAME>", projectInfo.Name },
-                        { "<PROJECT_RELATIVE_PATH>", Path.GetFileName(projectPath) },
-                        { "<PROJECT_GUID>", projectInfo.Guid.ToString().ToUpper() } }));
+            ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];
 
             if (projectInfo.ProjectDependencies.Count > 0)
             {
-                string projectDependencyStartSection = "    ProjectSection(ProjectDependencies) = postProject";
-                string projectDependencyGuid = "        {<DependencyGuid>} = {<DependencyGuid>}";
-                string projectDependencyStopSection = "    EndProjectSection";
-                toReturn.AppendLine(projectDependencyStartSection);
-
                 foreach (CSProjectDependency<CSProjectInfo> project in projectInfo.ProjectDependencies)
                 {
-                    toReturn.AppendLine(projectDependencyGuid.Replace("<DependencyGuid>", project.Dependency.Guid.ToString().ToUpper()));
+                    TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(replacementSet);
+                    dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, project.Dependency.Guid.ToString().ToUpper());
                 }
-
-                toReturn.AppendLine(projectDependencyStopSection);
             }
-            toReturn.Append("EndProject");
-            return toReturn.ToString();
         }
     }
 }

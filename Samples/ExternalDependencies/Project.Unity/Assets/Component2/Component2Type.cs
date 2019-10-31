@@ -10,7 +10,7 @@ public class Component2Type : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-#if UNITY_EDIITOR
+#if UNITY_EDITOR
         MSBuildTools.GenerateSDKProjects();
 #endif
     }

@@ -6,7 +6,7 @@
 using System.IO;
 using System.Xml;
 
-namespace Microsoft.Build.Unity.ProjectGeneration.Templates
+namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
     public class XmlTemplateWriter : XmlTextWriter
     {

@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Microsoft.Build.Unity.ProjectGeneration.Templates
+namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 {
     public class XMLTemplatePart : XProcessingInstruction, ITemplatePart
     {
@@ -45,24 +45,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 
         public TemplateReplacementSet CreateReplacementSet(TemplateReplacementSet parentReplacementSet = null)
         {
-            if (parentReplacementSet == null)
-            {
-                return new TemplateReplacementSet();
-            }
-
-            TemplateReplacementSet toReturn = new TemplateReplacementSet();
-            List<TemplateReplacementSet> templateInstances;
-            if (parentReplacementSet.ReplacementEntries.TryGetValue(token, out object list))
-            {
-                templateInstances = (List<TemplateReplacementSet>)list;
-            }
-            else
-            {
-                templateInstances = new List<TemplateReplacementSet>();
-                parentReplacementSet.ReplacementEntries[token] = templateInstances;
-            }
-            templateInstances.Add(toReturn);
-            return toReturn;
+            return TemplateReplacementSet.Create(parentReplacementSet, token);
         }
 
         public override void WriteTo(XmlWriter writer)

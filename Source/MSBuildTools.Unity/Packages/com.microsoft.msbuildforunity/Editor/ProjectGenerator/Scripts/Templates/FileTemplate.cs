@@ -3,10 +3,10 @@
 
 #if UNITY_EDITOR
 
+using Microsoft.Build.Unity.ProjectGeneration.Templates.Text;
+using Microsoft.Build.Unity.ProjectGeneration.Templates.Xml;
 using System;
 using System.IO;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
@@ -49,7 +49,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             return true;
         }
 
-        private readonly FileInfo templateFile;
+        protected readonly FileInfo templateFile;
 
         public ITemplatePart Root { get; protected set; }
 
@@ -61,52 +61,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         protected abstract void Parse();
 
         public abstract void Write(string path, TemplateReplacementSet replacementSet);
-
-        private partial class XmlFileTemplate : FileTemplate
-        {
-
-            private XDocument document;
-            private XMLTemplatePart rootPart;
-
-            public XmlFileTemplate(FileInfo templateFile) : base(templateFile)
-            {
-            }
-
-            protected override void Parse()
-            {
-                document = XDocument.Load(templateFile.FullName);
-
-                rootPart = new XMLTemplatePart(document.Root);
-                rootPart.Parse();
-                Root = rootPart;
-            }
-
-            public override void Write(string path, TemplateReplacementSet replacementSet)
-            {
-                using (StreamWriter writer = new StreamWriter(path))
-                using (XmlTemplateWriter xmlWriter = new XmlTemplateWriter(writer, replacementSet) { Formatting = Formatting.Indented, IndentChar = ' ', Indentation = 4, Namespaces = false })
-                {
-                    rootPart.Write(xmlWriter);
-                }
-            }
-        }
-
-        private class TextFileTemplate : FileTemplate
-        {
-            public TextFileTemplate(FileInfo templateFile) : base(templateFile)
-            {
-            }
-
-            protected override void Parse()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void Write(string path, TemplateReplacementSet replacementSet)
-            {
-                throw new NotImplementedException();
-            }
-        }
     }
 }
 #endif

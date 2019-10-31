@@ -107,8 +107,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             PlatformPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName));
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
 
-            FileTemplate.TryParseTemplate(SDKProjectPropsFileTemplatePath, out FileTemplate propsFileTemplate);
-
             // Get specific platforms
             Dictionary<string, FileInfo> platformTemplates = new Dictionary<string, FileInfo>();
             Dictionary<BuildTargetGroup, FileInfo> metaFileTemplates = new Dictionary<BuildTargetGroup, FileInfo>();
