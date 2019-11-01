@@ -20,6 +20,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
     {
         private const string TemplateFilesFolderName = "MSBuildTemplates";
         private const string MSBuildSolutionTemplateName = "SolutionTemplate.sln.template";
+        private const string DirectoryBuildPropsTemplateName = "Directory.Build.props.template";
         private const string SDKProjectFileTemplateName = "SDKProjectTemplate.csproj.template";
         private const string SDKProjectPropsFileTemplateName = "SDKProjectTemplate.g.props.template";
         private const string SDKProjectTargetsFileTemplateName = "SDKProjectTemplate.g.targets.template";
@@ -40,6 +41,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// Gets the MSBuild Solution file (.sln) template path.
         /// </summary>
         public FileInfo MSBuildSolutionTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the Directory.Build.props file template.
+        /// </summary>
+        public FileInfo DirectoryBuildPropsTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
@@ -101,6 +107,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 
             MSBuildSolutionTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName));
+            DirectoryBuildPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Directory.Build Props File", DirectoryBuildPropsTemplateName));
             SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
             SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
             SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));

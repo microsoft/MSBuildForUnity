@@ -38,7 +38,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static IProjectExporter exporter = null;
 
-        private static IProjectExporter Exporter => exporter ?? (exporter = new TemplatedProjectExporter(new DirectoryInfo(Utilities.MSBuildProjectFolder), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath, TemplateFiles.Instance.SDKProjectPropsFileTemplatePath, TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath));
+        private static IProjectExporter Exporter => exporter ?? (exporter = new TemplatedProjectExporter(new DirectoryInfo(Utilities.MSBuildProjectFolder), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath, TemplateFiles.Instance.SDKProjectPropsFileTemplatePath, TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath, TemplateFiles.Instance.DirectoryBuildPropsTemplatePath));
 
         [MenuItem("MSBuild/Generate C# SDK Projects", priority = 101)]
         public static void GenerateSDKProjects()

@@ -68,15 +68,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static string PackagesPath { get; } = Path.Combine(ProjectPath, PackagesFolderName);
 
-        public static string AssetPath { get; }
+        public static string AssetPath { get; } = Path.GetFullPath(Application.dataPath);
 
-        public static string BuiltInPackagesPath { get; }
-
-        static Utilities()
-        {
-            AssetPath = Path.GetFullPath(Application.dataPath);
-            BuiltInPackagesPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(EditorApplication.applicationPath), BuiltInPackagesRelativePath));
-        }
+        public static string BuiltInPackagesPath { get; } = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(EditorApplication.applicationPath), BuiltInPackagesRelativePath));
 
         /// <summary>
         /// Converts an assets relative path to an absolute path.
@@ -159,7 +153,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         /// <param name="assetFile">The asset file.</param>
         /// <returns>The <see cref="AssetLocation"/> if valid; throws an exception otherwise.</returns>
-        public static AssetLocation GetAssetLocation(FileInfo assetFile)
+        public static AssetLocation GetAssetLocation(FileSystemInfo assetFile)
         {
             string absolutePath = Path.GetFullPath(assetFile.FullName);
 

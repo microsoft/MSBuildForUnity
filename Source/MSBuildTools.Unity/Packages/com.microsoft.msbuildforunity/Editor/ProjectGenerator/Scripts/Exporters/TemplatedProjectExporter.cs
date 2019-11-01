@@ -17,37 +17,55 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     /// </summary>
     public class TemplatedProjectExporter : IProjectExporter
     {
-        private readonly DirectoryInfo propsOutputFolder;
+        private readonly DirectoryInfo generatedOutputFolder;
 
         private readonly FileTemplate projectFileTemplate;
         private readonly FileTemplate propsFileTemplate;
         private readonly FileTemplate targetsFileTemplate;
 
         private readonly FileTemplate solutionFileTemplate;
+        private readonly FileTemplate directoryPropsTemplate;
 
         /// <summary>
         /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
         /// </summary>
-        /// <param name="propsOutputFolder">The output folder for the projects and props.</param>
+        /// <param name="generatedOutputFolder">The output folder for the projects and props.</param>
         /// <param name="solutionFileTemplatePath">The path to the solution template.</param>
         /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
         /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
         /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
-        public TemplatedProjectExporter(DirectoryInfo propsOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath)
+        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo directoryPropsFile)
         {
-            this.propsOutputFolder = propsOutputFolder;
+            this.generatedOutputFolder = generatedOutputFolder;
 
             FileTemplate.TryParseTemplate(projectFileTemplatePath, out projectFileTemplate);
             FileTemplate.TryParseTemplate(projectPropsFileTemplatePath, out propsFileTemplate);
             FileTemplate.TryParseTemplate(projectTargetsFileTemplatePath, out targetsFileTemplate);
 
             FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
+            FileTemplate.TryParseTemplate(directoryPropsFile, out directoryPropsTemplate);
+        }
+
+        private string GetProjectFilePath(DirectoryInfo directory, CSProjectInfo projectInfo)
+        {
+            return Path.Combine(generatedOutputFolder.FullName, $"{projectInfo.Name}.csproj");
         }
 
         ///<inherit-doc/>
         public FileInfo GetProjectPath(CSProjectInfo projectInfo)
         {
-            return new FileInfo(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Name}.csproj"));
+            switch (Utilities.GetAssetLocation(projectInfo.AssemblyDefinitionInfo.Directory))
+            {
+                case AssetLocation.BuiltInPackage:
+                case AssetLocation.External:
+                case AssetLocation.PackageLibraryCache:
+                    return new FileInfo(GetProjectFilePath(generatedOutputFolder, projectInfo));
+                case AssetLocation.Project:
+                case AssetLocation.Package:
+                    return new FileInfo(GetProjectFilePath(projectInfo.AssemblyDefinitionInfo.Directory, projectInfo));
+                default:
+                    throw new InvalidOperationException("The project's assembly definition file is in an unknown location.");
+            }
         }
 
         ///<inherit-doc/>
@@ -90,7 +108,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart projectReferenceSetTemplatePart = rootTemplatePart.Templates["PROJECT_REFERENCE_SET"];
             ITemplatePart sourceExcludeTemplatePart = rootTemplatePart.Templates["SOURCE_EXCLUDE"];
 
-            string projectPath = GetProjectPath(projectInfo).FullName;
+            string projectPath = GetProjectFilePath(generatedOutputFolder, projectInfo);
 
             foreach (AssemblyDefinitionInfo nestedAsmdef in projectInfo.AssemblyDefinitionInfo.NestedAssemblyDefinitionFiles)
             {
@@ -112,7 +130,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplatePart.Tokens["SUPPORTED_PLATFORMS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", unityProjectInfo.AvailablePlatforms.Select(t => t.Name)));
             rootTemplatePart.Tokens["INEDITOR_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", inEditorSearchPaths));
             rootTemplatePart.Tokens["PLAYER_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", playerSearchPaths));
-            rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, propsOutputFolder.FullName);
+            rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
             rootTemplatePart.Tokens["PROJECT_DIRECTORY_PATH"].AssignValue(rootReplacementSet, projectInfo.AssemblyDefinitionInfo.Directory.FullName);
 
             propsFileTemplate.Write(projectPath.Replace("csproj", "g.props"), rootReplacementSet);
@@ -121,7 +139,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private bool TryExportTargetsFile(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
-            string projectPath = GetProjectPath(projectInfo).FullName;
+            string projectPath = GetProjectFilePath(generatedOutputFolder, projectInfo);
+
             ITemplatePart rootTemplatePart = targetsFileTemplate.Root;
             TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
             ITemplatePart supportedPlatformBuildTemplate = rootTemplatePart.Templates["SUPPORTED_PLATFORM_BUILD_CONDITION"];
@@ -134,10 +153,23 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return true;
         }
 
+        private void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
+        {
+            string outputPath = Path.Combine(Utilities.ProjectPath, "Directory.Build.props");
+
+            ITemplatePart rootTemplate = directoryPropsTemplate.Root;
+            TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);
+
+            rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
+            directoryPropsTemplate.Write(outputPath, rootReplacementSet);
+        }
+
         ///<inherit-doc/>
         public void ExportSolution(UnityProjectInfo unityProjectInfo)
         {
-            string solutionFilePath = Path.Combine(propsOutputFolder.FullName, $"{unityProjectInfo.UnityProjectName}.sln");
+            string solutionFilePath = Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.sln");
+
+            GenerateDirectoryPropsFile(unityProjectInfo);
 
             if (File.Exists(solutionFilePath))
             {
@@ -304,7 +336,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             string projectPath = GetProjectPath(projectInfo).FullName;
 
             templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectInfo.Name);
-            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Path.GetFileName(projectPath));
+            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, projectPath);
             templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectInfo.Guid.ToString().ToUpper());
 
             ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];

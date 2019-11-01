@@ -3,8 +3,8 @@
     <!--anborod: This is a weird thing, it is a required property (even if commented)-->
     <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
   </PropertyGroup>
-  
-  <Import Project="$(MSBuildProjectName).g.props" />
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
 
   <!--
     This file can be modified and checked in as long as the following rules are met:
@@ -24,6 +24,10 @@
         <ProjectReference Include="..\..\..\ExternalLib\ExternalLib.csproj" />
       </ItemGroup>
   -->
-  
-  <Import Project="$(MSBuildProjectName).g.targets" />
+
+  <ItemGroup>
+
+  </ItemGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
 </Project>

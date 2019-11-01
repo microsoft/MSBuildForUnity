@@ -1,0 +1,5 @@
+<Project>
+    <PropertyGroup>
+        <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
+    </PropertyGroup>
+</Project>
