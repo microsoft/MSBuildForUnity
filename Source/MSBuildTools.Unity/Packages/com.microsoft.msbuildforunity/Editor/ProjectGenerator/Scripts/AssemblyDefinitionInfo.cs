@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
@@ -140,6 +139,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets DLL references for this assembly definition.
         /// </summary>
         public HashSet<string> PrecompiledAssemblyReferences { get; private set; }
+
+        public HashSet<AssemblyDefinitionInfo> NestedAssemblyDefinitionFiles { get; } = new HashSet<AssemblyDefinitionInfo>();
 
         /// <summary>
         /// After it's parsed from JSON, this method should be invoked to validate some of the values and set additional properties.
