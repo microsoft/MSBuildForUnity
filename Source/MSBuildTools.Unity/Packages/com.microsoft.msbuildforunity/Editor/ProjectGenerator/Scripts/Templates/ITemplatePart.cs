@@ -35,7 +35,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
     public static class Extensions
     {
         /// <summary>
-        /// Attempts to replace the token if its available and returns true, otherwise returns false.
+        /// Attempts to replace the token if it's available and returns true, otherwise returns false.
         /// </summary>
         /// <param name="templatePart">The template on which to replace the token.</param>
         /// <param name="tokenName">The name of the token.</param>
