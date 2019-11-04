@@ -74,6 +74,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             // Not all of these will be converted to C# objects, only the ones found to be referenced
             Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap = new Dictionary<string, AssemblyDefinitionInfo>();
+            SortedSet<AssemblyDefinitionInfo> asmDefDirectoriesSorted = new SortedSet<AssemblyDefinitionInfo>(Comparer<AssemblyDefinitionInfo>.Create((a, b) => a.Directory.FullName.CompareTo(b.Directory.FullName)));
+
             HashSet<string> builtInPackagesWithoutSource = new HashSet<string>();
 
             // Parse the builtInPackagesFirst
@@ -91,6 +93,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 foreach (FileInfo fileInfo in asmDefFiles)
                 {
                     AssemblyDefinitionInfo assemblyDefinitionInfo = AssemblyDefinitionInfo.Parse(fileInfo, this, null, true);
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
                     asmDefInfoMap.Add(Path.GetFileNameWithoutExtension(fileInfo.Name), assemblyDefinitionInfo);
                 }
             }
@@ -132,9 +135,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                         }
                     }
 
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
                     asmDefInfoMap.Add(pair.Key, assemblyDefinitionInfo);
                 }
             }
+
+            int index = 0;
+            ProcessSortedAsmDef(asmDefDirectoriesSorted.ToArray(), ref index, (uri) => true, (a) => { });
 
             while (projectsToProcess.Count > 0)
             {
@@ -147,6 +154,41 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             return projectsMap;
+        }
+
+        private void ProcessSortedAsmDef(AssemblyDefinitionInfo[] set, ref int currentIndex, Func<Uri, bool> childOfParentFunc, Action<AssemblyDefinitionInfo> addAsChild)
+        {
+            Uri GetUri(DirectoryInfo d) => d.FullName.EndsWith("\\") ? new Uri(d.FullName) : new Uri(d.FullName + "\\");
+
+            for (; currentIndex < set.Length;)
+            {
+                AssemblyDefinitionInfo current = set[currentIndex];
+                addAsChild(current);
+
+                if (currentIndex + 1 == set.Length)
+                {
+                    return;
+                }
+
+                currentIndex++;
+
+                AssemblyDefinitionInfo next = set[currentIndex];
+
+                Uri potentialBase = GetUri(current.Directory);
+                Uri potentialChild = GetUri(next.Directory);
+                if (!childOfParentFunc(potentialChild))
+                {
+                    return;
+                }
+                else if (potentialBase.IsBaseOf(potentialChild))
+                {
+                    ProcessSortedAsmDef(set, ref currentIndex, potentialBase.IsBaseOf, (a) => current.NestedAssemblyDefinitionFiles.Add(a));
+                    if (!childOfParentFunc(potentialChild))
+                    {
+                        return;
+                    }
+                }
+            }
         }
 
         private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey)

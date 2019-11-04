@@ -88,19 +88,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
 
             ITemplatePart projectReferenceSetTemplatePart = rootTemplatePart.Templates["PROJECT_REFERENCE_SET"];
-            ITemplatePart sourceIncludeTemplatePart = rootTemplatePart.Templates["SOURCE_INCLUDE"];
+            ITemplatePart sourceExcludeTemplatePart = rootTemplatePart.Templates["SOURCE_EXCLUDE"];
 
             string projectPath = GetProjectPath(projectInfo).FullName;
 
-            //Dictionary<Guid, string> sourceGuidToClassName = new Dictionary<Guid, string>();
-            foreach (SourceFileInfo source in projectInfo.AssemblyDefinitionInfo.GetSources())
+            foreach (AssemblyDefinitionInfo nestedAsmdef in projectInfo.AssemblyDefinitionInfo.NestedAssemblyDefinitionFiles)
             {
-                //sourceGuidToClassName.Add(source.Guid, source.ClassType?.FullName);
-                ProcessSourceFile(projectInfo, source, sourceIncludeTemplatePart, rootReplacementSet);
+                TemplateReplacementSet replacementSet = sourceExcludeTemplatePart.CreateReplacementSet(rootReplacementSet);
+                sourceExcludeTemplatePart.Tokens["EXCLUDE_DIRECTORY_PATH"].AssignValue(replacementSet, nestedAsmdef.Directory.FullName);
             }
-
-            // For now don't create .csmaps; not used yet anyways
-            //File.WriteAllLines(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Guid.ToString()}.csmap"), sourceGuidToClassName.Select(t => $"{t.Key.ToString("N")}:{t.Value}"));
 
             HashSet<string> inEditorSearchPaths = new HashSet<string>(), playerSearchPaths = new HashSet<string>();
             CreateProjectReferencesSet(projectInfo, projectReferenceSetTemplatePart, rootReplacementSet, inEditorSearchPaths, true);
@@ -117,6 +113,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplatePart.Tokens["INEDITOR_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", inEditorSearchPaths));
             rootTemplatePart.Tokens["PLAYER_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", playerSearchPaths));
             rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, propsOutputFolder.FullName);
+            rootTemplatePart.Tokens["PROJECT_DIRECTORY_PATH"].AssignValue(rootReplacementSet, projectInfo.AssemblyDefinitionInfo.Directory.FullName);
 
             propsFileTemplate.Write(projectPath.Replace("csproj", "g.props"), rootReplacementSet);
             return true;
@@ -239,37 +236,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
 
             solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
-        }
-
-        private void ProcessSourceFile(CSProjectInfo projectInfo, SourceFileInfo sourceFile, ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet)
-        {
-            string linkPath = Utilities.GetRelativePath(projectInfo.AssemblyDefinitionInfo.Directory.FullName, sourceFile.File.FullName);
-
-            string relativeSourcePath;
-
-            switch (sourceFile.AssetLocation)
-            {
-                case AssetLocation.BuiltInPackage:
-                    relativeSourcePath = sourceFile.File.FullName;
-                    return;
-                case AssetLocation.Project:
-                    relativeSourcePath = $"..\\..\\{Utilities.GetAssetsRelativePathFrom(sourceFile.File.FullName)}";
-                    break;
-                case AssetLocation.Package:
-                    relativeSourcePath = sourceFile.File.FullName.Replace(Utilities.ProjectPath, "..\\..\\");
-                    break;
-                case AssetLocation.PackageLibraryCache:
-                    relativeSourcePath = sourceFile.File.FullName.Replace(Utilities.ProjectPath, "..\\..\\");
-                    break;
-                case AssetLocation.External:
-                    relativeSourcePath = sourceFile.File.FullName;
-                    break;
-                default: throw new InvalidDataException("Unknown asset location.");
-            }
-
-            TemplateReplacementSet replacementSet = templatePart.CreateReplacementSet(parentReplacementSet);
-            templatePart.Tokens["RELATIVE_SOURCE_PATH"].AssignValue(replacementSet, relativeSourcePath);
-            templatePart.Tokens["PROJECT_LINK_PATH"].AssignValue(replacementSet, linkPath);
         }
 
         private void PopulateSupportedPlatformBuildConditions(ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
