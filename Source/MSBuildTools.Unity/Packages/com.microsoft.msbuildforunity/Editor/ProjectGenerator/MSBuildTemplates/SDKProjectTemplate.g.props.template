@@ -121,9 +121,5 @@
 <!--SOURCE_INCLUDE_TEMPLATE_START-->
     <Compile Include="##RELATIVE_SOURCE_PATH_TOKEN##" Link="##PROJECT_LINK_PATH_TOKEN##" />
 <!--SOURCE_INCLUDE_TEMPLATE_END-->
-
-    <!--<Content Include="$(ProjectGuid).csmap">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>-->
   </ItemGroup>
 </Project>
