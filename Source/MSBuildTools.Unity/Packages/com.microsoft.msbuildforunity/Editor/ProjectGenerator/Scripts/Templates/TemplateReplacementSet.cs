@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
     /// <summary>
-    /// This class is used to hold the values for toke and template replacements that will be used when the template is writen out.
+    /// This class is used to hold the values for token and template replacements that will be used when the template is written out.
     /// This way the template structure can be reused multiple times.
     /// </summary>
     public class TemplateReplacementSet

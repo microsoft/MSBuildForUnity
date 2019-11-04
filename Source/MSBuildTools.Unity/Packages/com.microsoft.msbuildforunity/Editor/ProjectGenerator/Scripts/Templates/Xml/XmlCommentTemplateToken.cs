@@ -63,7 +63,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 
         public void PrepareForReplacement(TemplateReplacementSet replacementSet)
         {
-            // DO nothing
+            // Do nothing
         }
     }
 }

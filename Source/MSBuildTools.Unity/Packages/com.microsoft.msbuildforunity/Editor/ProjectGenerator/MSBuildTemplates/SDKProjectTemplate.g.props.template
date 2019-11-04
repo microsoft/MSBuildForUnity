@@ -148,8 +148,5 @@
   
   <ItemGroup>
     <Compile Include="##PROJECT_DIRECTORY_PATH_TOKEN##\**\*.cs" Exclude="@(FoldersToExclude->'%(identity)\**\*.cs')" />
-    <!--<Content Include="$(ProjectGuid).csmap">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>-->
   </ItemGroup>
 </Project>
