@@ -44,7 +44,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
         }
 
-        ///<inherit-doc/>
+        /// <inheritdoc />
         public FileInfo GetProjectPath(CSProjectInfo projectInfo)
         {
             return new FileInfo(Path.Combine(propsOutputFolder.FullName, $"{projectInfo.Name}.csproj"));
