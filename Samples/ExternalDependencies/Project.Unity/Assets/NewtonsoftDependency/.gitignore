@@ -1,0 +1,4 @@
+Plugins/
+.obj/
+Plugins.meta
+!*.csproj
