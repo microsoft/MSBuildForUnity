@@ -385,7 +385,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 DeleteDirectory(path, true);
             }
 
-            if (!TryIOWithRetries(() => Directory.CreateDirectory(path), 5, TimeSpan.FromMilliseconds(100)))
+            if (!TryIOWithRetries(() => Directory.CreateDirectory(path), 5, TimeSpan.FromMilliseconds(30)))
             {
                 throw new InvalidOperationException($"Failed to create the directory at '{path}'.");
             }

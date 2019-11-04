@@ -22,7 +22,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
 
         protected override void Parse()
         {
-            document = XDocument.Load(templateFile.FullName);
+            document = XDocument.Load(templateFile.FullName, LoadOptions.PreserveWhitespace);
 
             rootPart = new XMLTemplatePart(document.Root);
             rootPart.Parse();
@@ -32,7 +32,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Xml
         public override void Write(string path, TemplateReplacementSet replacementSet)
         {
             using (StreamWriter writer = new StreamWriter(path))
-            using (XmlTemplateWriter xmlWriter = new XmlTemplateWriter(writer, replacementSet) { Formatting = Formatting.Indented, IndentChar = ' ', Indentation = 4, Namespaces = false })
+            using (XmlTemplateWriter xmlWriter = new XmlTemplateWriter(writer, replacementSet))
             {
                 rootPart.Write(xmlWriter);
             }

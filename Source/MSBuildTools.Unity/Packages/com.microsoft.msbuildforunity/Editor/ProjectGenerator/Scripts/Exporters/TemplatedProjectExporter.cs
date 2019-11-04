@@ -17,14 +17,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     /// </summary>
     public class TemplatedProjectExporter : IProjectExporter
     {
+        private const string MSBuildFileSuffix = "msb4u";
+
         private readonly DirectoryInfo generatedOutputFolder;
 
         private readonly FileTemplate projectFileTemplate;
+        private readonly FileTemplate generatedProjectFileTemplate;
         private readonly FileTemplate propsFileTemplate;
         private readonly FileTemplate targetsFileTemplate;
 
         private readonly FileTemplate solutionFileTemplate;
-        private readonly FileTemplate directoryPropsTemplate;
+        private readonly FileTemplate msbuildForUnityCommonTemplate;
 
         /// <summary>
         /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
@@ -34,27 +37,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
         /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
         /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo directoryPropsFile)
+        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
             FileTemplate.TryParseTemplate(projectFileTemplatePath, out projectFileTemplate);
+            FileTemplate.TryParseTemplate(generatedProjectFileTemplatePath, out generatedProjectFileTemplate);
             FileTemplate.TryParseTemplate(projectPropsFileTemplatePath, out propsFileTemplate);
             FileTemplate.TryParseTemplate(projectTargetsFileTemplatePath, out targetsFileTemplate);
 
             FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
-            FileTemplate.TryParseTemplate(directoryPropsFile, out directoryPropsTemplate);
+            FileTemplate.TryParseTemplate(msbuildForUnityCommonTemplatePath, out msbuildForUnityCommonTemplate);
         }
 
         private string GetProjectFilePath(DirectoryInfo directory, CSProjectInfo projectInfo)
         {
-            return Path.Combine(generatedOutputFolder.FullName, $"{projectInfo.Name}.csproj");
+            return Path.Combine(directory.FullName, $"{projectInfo.Name}.{MSBuildFileSuffix}.csproj");
         }
 
         ///<inherit-doc/>
         public FileInfo GetProjectPath(CSProjectInfo projectInfo)
         {
-            switch (Utilities.GetAssetLocation(projectInfo.AssemblyDefinitionInfo.Directory))
+            switch (projectInfo.AssemblyDefinitionInfo.AssetLocation)
             {
                 case AssetLocation.BuiltInPackage:
                 case AssetLocation.External:
@@ -68,14 +72,30 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
+        public string GetSolutionFilePath(UnityProjectInfo unityProjectInfo)
+        {
+            return Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.{MSBuildFileSuffix}.sln");
+        }
+
         ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
             string projectPath = GetProjectPath(projectInfo).FullName;
 
-            if (File.Exists(projectPath))
+            bool generatedProject;
+            switch (projectInfo.AssemblyDefinitionInfo.AssetLocation)
             {
-                File.Delete(projectPath);
+                case AssetLocation.BuiltInPackage:
+                case AssetLocation.External:
+                case AssetLocation.PackageLibraryCache:
+                    generatedProject = true;
+                    break;
+                case AssetLocation.Project:
+                case AssetLocation.Package:
+                    generatedProject = false;
+                    break;
+                default:
+                    throw new InvalidOperationException("The project's assembly definition file is in an unknown location.");
             }
 
             if (!TryExportPropsFile(unityProjectInfo, projectInfo))
@@ -90,13 +110,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 return;
             }
 
-            if (File.Exists(projectPath))
+            if (generatedProject)
             {
-                Debug.Log($"Skipping replacing the existing C# project file {projectInfo.Name}");
+                generatedProjectFileTemplate.Write(projectPath, generatedProjectFileTemplate.Root.CreateReplacementSet());
+                File.SetAttributes(projectPath, FileAttributes.ReadOnly);
             }
             else
             {
-                projectFileTemplate.Write(projectPath, projectFileTemplate.Root.CreateReplacementSet());
+                if (File.Exists(projectPath))
+                {
+                    Debug.Log($"Skipping replacing the existing C# project file {projectInfo.Name}");
+                }
+                else
+                {
+                    projectFileTemplate.Write(projectPath, projectFileTemplate.Root.CreateReplacementSet());
+                }
             }
         }
 
@@ -126,6 +154,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplatePart.Tokens["DEVELOPMENT_BUILD"].AssignValue(rootReplacementSet, "false");
             rootTemplatePart.Tokens["IS_EDITOR_ONLY_TARGET"].AssignValue(rootReplacementSet, (projectInfo.ProjectType == ProjectType.EditorAsmDef || projectInfo.ProjectType == ProjectType.PredefinedEditorAssembly).ToString());
             rootTemplatePart.Tokens["UNITY_EDITOR_INSTALL_FOLDER"].AssignValue(rootReplacementSet, Path.GetDirectoryName(EditorApplication.applicationPath) + "\\");
+            rootTemplatePart.Tokens["PROJECT_NAME"].AssignValue(rootReplacementSet, projectInfo.Name);
             rootTemplatePart.Tokens["DEFAULT_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.AvailablePlatforms.First(t => t.BuildTarget == BuildTarget.StandaloneWindows).Name);
             rootTemplatePart.Tokens["SUPPORTED_PLATFORMS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", unityProjectInfo.AvailablePlatforms.Select(t => t.Name)));
             rootTemplatePart.Tokens["INEDITOR_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", inEditorSearchPaths));
@@ -133,7 +162,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
             rootTemplatePart.Tokens["PROJECT_DIRECTORY_PATH"].AssignValue(rootReplacementSet, projectInfo.AssemblyDefinitionInfo.Directory.FullName);
 
-            propsFileTemplate.Write(projectPath.Replace("csproj", "g.props"), rootReplacementSet);
+            string propsFilePath = projectPath.Replace("csproj", "g.props");
+            propsFileTemplate.Write(propsFilePath, rootReplacementSet);
+            File.SetAttributes(propsFilePath, FileAttributes.ReadOnly);
             return true;
         }
 
@@ -148,28 +179,30 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             PopulateSupportedPlatformBuildConditions(supportedPlatformBuildTemplate, rootReplacementSet, "InEditor", projectInfo.InEditorPlatforms);
             PopulateSupportedPlatformBuildConditions(supportedPlatformBuildTemplate, rootReplacementSet, "Player", projectInfo.PlayerPlatforms);
 
-            targetsFileTemplate.Write(projectPath.Replace("csproj", "g.targets"), rootReplacementSet);
+            string targetsFilePath = projectPath.Replace("csproj", "g.targets");
+            targetsFileTemplate.Write(targetsFilePath, rootReplacementSet);
+            File.SetAttributes(targetsFilePath, FileAttributes.ReadOnly);
 
             return true;
         }
 
-        private void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
+        public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
         {
             string outputPath = Path.Combine(Utilities.ProjectPath, "Directory.Build.props");
 
-            ITemplatePart rootTemplate = directoryPropsTemplate.Root;
+            ITemplatePart rootTemplate = msbuildForUnityCommonTemplate.Root;
             TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);
 
             rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
-            directoryPropsTemplate.Write(outputPath, rootReplacementSet);
+            rootTemplate.Tokens["CURRENT_UNITY_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.Name);
+            rootTemplate.Tokens["CURRENT_TARGET_FRAMEWORK"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.TargetFramework.AsMSBuildString());
+            msbuildForUnityCommonTemplate.Write(outputPath, rootReplacementSet);
         }
 
         ///<inherit-doc/>
         public void ExportSolution(UnityProjectInfo unityProjectInfo)
         {
-            string solutionFilePath = Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.sln");
-
-            GenerateDirectoryPropsFile(unityProjectInfo);
+            string solutionFilePath = GetSolutionFilePath(unityProjectInfo);
 
             if (File.Exists(solutionFilePath))
             {
@@ -179,9 +212,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
 
             ITemplatePart projectTemplate = rootTemplatePart.Templates["PROJECT"];
+            ITemplatePart folderTemplate = rootTemplatePart.Templates["FOLDER"];
             ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
             ITemplatePart configPlatformMappingTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_MAPPING"];
             ITemplatePart configPlatformEnabledTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_ENABLED"];
+            ITemplatePart folderNestedProjectsTemplate = rootTemplatePart.Templates["FOLDER_NESTED_PROJECTS"];
 
             CSProjectInfo[] unorderedProjects = unityProjectInfo.CSProjects.Select(t => t.Value).ToArray();
             List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
@@ -211,11 +246,33 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     break;
                 }
             }
+
+            List<CSProjectInfo> builtinPackages = new List<CSProjectInfo>();
+            List<CSProjectInfo> importedPacakges = new List<CSProjectInfo>();
+            List<CSProjectInfo> externalPackages = new List<CSProjectInfo>();
             foreach (CSProjectInfo project in orderedProjects)
             {
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
                 ProcessProjectEntry(project, projectTemplate, replacementSet);
+
+                switch (project.AssemblyDefinitionInfo.AssetLocation)
+                {
+                    case AssetLocation.BuiltInPackage:
+                        builtinPackages.Add(project);
+                        break;
+                    case AssetLocation.PackageLibraryCache:
+                        importedPacakges.Add(project);
+                        break;
+                    case AssetLocation.External:
+                        externalPackages.Add(project);
+                        break;
+                    default: break;
+                }
             }
+
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "External Packages", externalPackages);
 
             ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
             ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
@@ -270,6 +327,25 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
         }
 
+        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects)
+        {
+            if (projects.Count > 0)
+            {
+                string folderGuid = Guid.NewGuid().ToString().ToUpper();
+
+                TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
+                folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, folderName);
+                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
+
+                foreach (CSProjectInfo project in projects)
+                {
+                    replacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
+                    folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
+                    folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(replacementSet, project.Guid.ToString().ToUpper());
+                }
+            }
+        }
+
         private void PopulateSupportedPlatformBuildConditions(ITemplatePart templatePart, TemplateReplacementSet parentReplacementSet, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
         {
             foreach (KeyValuePair<BuildTarget, CompilationPlatformInfo> platform in platforms)
@@ -290,8 +366,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             {
                 List<string> platformConditions = GetPlatformConditions(inEditor ? projectInfo.InEditorPlatforms : projectInfo.PlayerPlatforms, inEditor ? dependency.InEditorSupportedPlatforms : dependency.PlayerSupportedPlatforms);
 
+                string projectPath = GetProjectPath(dependency.Dependency).FullName;
                 TemplateReplacementSet replacementSet = projectReferenceTemplatePart.CreateReplacementSet(templateReplacementSet);
-                projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, $"{dependency.Dependency.Name}.csproj");
+                projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, projectPath);
                 //projectReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, GetProjectPath(dependency.Dependency).AbsolutePath);
                 projectReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
             }
@@ -347,6 +424,96 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 {
                     TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(replacementSet);
                     dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, project.Dependency.Guid.ToString().ToUpper());
+                }
+            }
+        }
+
+        public void ExportCommonPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration)
+        {
+            string configuration = inEditorConfiguration ? "InEditor" : "Player";
+
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.ScriptingBackend), out FileTemplate fileTemplate))
+            {
+                throw new InvalidOperationException("Failed to parse template file for common props.");
+            }
+
+            ITemplatePart rootPart = fileTemplate.Root;
+            TemplateReplacementSet rootReplacementSet = rootPart.CreateReplacementSet();
+
+            if (inEditorConfiguration)
+            {
+                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
+                    platform.CommonPlatformReferences.Concat(platform.AdditionalInEditorReferences),
+                    platform.CommonPlatformDefines.Concat(platform.AdditionalInEditorDefines));
+            }
+            else
+            {
+                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
+                    platform.CommonPlatformReferences.Concat(platform.AdditionalPlayerReferences),
+                    platform.CommonPlatformDefines.Concat(platform.AdditionalPlayerDefines));
+            }
+
+            fileTemplate.Write(Path.Combine(generatedOutputFolder.FullName, $"{platform.Name}.{configuration}.props"), rootReplacementSet);
+        }
+
+        private void ProcessPlatformTemplate(ITemplatePart rootPart, TemplateReplacementSet rootReplacementSet, string platformName, string configuration, BuildTarget buildTarget, TargetFramework targetFramework, IEnumerable<string> references, IEnumerable<string> defines, params HashSet<string>[] priorToCheck)
+        {
+            ProcessReferences(buildTarget, references, out HashSet<string> platformAssemblySearchPaths, out HashSet<string> platformAssemblyReferencePaths, priorToCheck);
+
+            string minUWPPlatform = EditorUserBuildSettings.wsaMinUWPSDK;
+            if (string.IsNullOrWhiteSpace(minUWPPlatform) || new Version(minUWPPlatform) < MSBuildTools.DefaultMinUWPSDK)
+            {
+                minUWPPlatform = MSBuildTools.DefaultMinUWPSDK.ToString();
+            }
+
+            string[] versionParts = Application.unityVersion.Split('.');
+            // This is a try replace because some may hardcode this value
+            rootPart.TryReplaceToken("TARGET_FRAMEWORK", rootReplacementSet, targetFramework.AsMSBuildString());
+
+            rootPart.Tokens["PLATFORM_COMMON_DEFINE_CONSTANTS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", defines));
+            rootPart.Tokens["PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", platformAssemblySearchPaths));
+
+            // These are UWP specific, but they will be no-op if not needed
+            if (buildTarget == BuildTarget.WSAPlayer && configuration == "Player")
+            {
+                string targetUWPPlatform = EditorUserBuildSettings.wsaUWPSDK;
+                if (string.IsNullOrWhiteSpace(targetUWPPlatform))
+                {
+                    targetUWPPlatform = Utilities.GetUWPSDKs().Max().ToString(4);
+                }
+                rootPart.TryReplaceToken("UWP_TARGET_PLATFORM_VERSION", rootReplacementSet, targetUWPPlatform);
+                rootPart.TryReplaceToken("UWP_MIN_PLATFORM_VERSION", rootReplacementSet, minUWPPlatform);
+            }
+
+            rootPart.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
+            rootPart.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
+
+            ITemplatePart platformCommonReferencePart = rootPart.Templates["PLATFORM_COMMON_REFERENCE"];
+            foreach (string reference in platformAssemblyReferencePaths)
+            {
+                TemplateReplacementSet replacementSet = platformCommonReferencePart.CreateReplacementSet(rootReplacementSet);
+                platformCommonReferencePart.Tokens["REFERENCE"].AssignValue(replacementSet, Path.GetFileNameWithoutExtension(reference));
+                platformCommonReferencePart.Tokens["HINT_PATH"].AssignValue(replacementSet, reference);
+            }
+        }
+
+        private void ProcessReferences(BuildTarget buildTarget, IEnumerable<string> references, out HashSet<string> searchPaths, out HashSet<string> referenceNames, params HashSet<string>[] priorToCheck)
+        {
+            searchPaths = new HashSet<string>();
+            referenceNames = new HashSet<string>();
+
+            foreach (string reference in references)
+            {
+                string directory = Path.GetDirectoryName(reference);
+                string fileName = Path.GetFileName(reference);
+                if (!priorToCheck.Any(t => t.Contains(directory))) // Don't add duplicates
+                {
+                    searchPaths.Add(directory);
+                }
+
+                if (!referenceNames.Add(reference))
+                {
+                    Debug.LogError($"Duplicate assembly reference found for platform '{buildTarget}' - {reference} ignoring.");
                 }
             }
         }

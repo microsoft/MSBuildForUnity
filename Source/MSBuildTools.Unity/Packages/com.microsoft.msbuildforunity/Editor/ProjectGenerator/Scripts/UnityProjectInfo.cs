@@ -16,7 +16,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
     /// </summary>
-    public class UnityProjectInfo
+    public class UnityProjectInfo : IDisposable
     {
         /// <summary>
         /// These package references aren't actual packages it appears, manually labeling them for exclusion.
@@ -34,21 +34,36 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the available platforms for this Unity project.
         /// </summary>
-        internal IEnumerable<CompilationPlatformInfo> AvailablePlatforms { get; }
+        public IReadOnlyCollection<CompilationPlatformInfo> AvailablePlatforms { get; }
+
+        /// <summary>
+        /// Gets the special editor platform.
+        /// </summary>
+        public CompilationPlatformInfo EditorPlatform { get; }
+
+        /// <summary>
+        /// Gets the current player platform.
+        /// </summary>
+        public CompilationPlatformInfo CurrentPlayerPlatform { get; }
 
         /// <summary>
         /// Gets all the parsed CSProjects for this Unity project.
         /// </summary>
-        public IReadOnlyDictionary<string, CSProjectInfo> CSProjects { get; }
+        public IReadOnlyDictionary<string, CSProjectInfo> CSProjects { get; private set; }
 
         /// <summary>
         /// Gets all the parsed DLLs for this Unity project.
         /// </summary>
-        public IReadOnlyCollection<PluginAssemblyInfo> Plugins { get; }
+        public IReadOnlyCollection<PluginAssemblyInfo> Plugins { get; private set; }
 
-        public UnityProjectInfo(IEnumerable<CompilationPlatformInfo> availablePlatforms)
+        public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets)
         {
-            AvailablePlatforms = availablePlatforms;
+            AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
+                    .Select(CompilationPlatformInfo.GetCompilationPlatform)
+                    .OrderBy(t => t.Name).ToList());
+
+            EditorPlatform = CompilationPlatformInfo.GetEditorPlatform();
 
             UnityProjectName = Application.productName;
 
@@ -57,6 +72,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 UnityProjectName = "UnityProject";
             }
 
+            RefreshPlugins();
+            RefreshProjects();
+
+            CurrentPlayerPlatform = AvailablePlatforms.First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget);
+        }
+
+        public void Dispose()
+        {
+            // This will be used soon
+        }
+
+        public void RefreshPlugins()
+        {
             Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(ScanForPluginDLLs());
 
             foreach (PluginAssemblyInfo plugin in Plugins)
@@ -67,6 +95,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
+            RefreshProjects();
+        }
+
+        public void RefreshProjects()
+        {
             CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects());
         }
 

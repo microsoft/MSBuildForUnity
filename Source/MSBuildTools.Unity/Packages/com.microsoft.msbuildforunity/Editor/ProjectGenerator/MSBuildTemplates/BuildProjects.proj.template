@@ -1,11 +1,11 @@
 <Project>
 <!-- xmlns="http://schemas.microsoft.com/developer/msbuild/2003"-->
   <PropertyGroup>
-    <TargetProjectName><!--TARGET_PROJECT_NAME_TOKEN--></TargetProjectName>
+    <TargetProjectPath><!--TARGET_PROJECT_PATH_TOKEN--></TargetProjectPath>
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReferences  Include="Projects\$(TargetProjectName).sln"/>
+    <ProjectReferences  Include="$(TargetProjectPath)"/>
   </ItemGroup>
 
 <!--PLATFORM_TARGET_TEMPLATE_START-->
