@@ -70,9 +70,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="guid">The unique Guid of this reference item.</param>
         /// <param name="assemblyDefinitionInfo">The associated Assembly-Definition info.</param>
         /// <param name="assembly">The Unity assembly object associated with this csproj.</param>
-        /// <param name="baseOutputPath">The output path where everything will be outputted.</param>
-        internal CSProjectInfo(UnityProjectInfo unityProjectInfo, AssemblyDefinitionInfo assemblyDefinitionInfo, string baseOutputPath)
-            : base(unityProjectInfo, assemblyDefinitionInfo.Guid, new Uri(Path.Combine(baseOutputPath, $"{assemblyDefinitionInfo.Name}.csproj")), assemblyDefinitionInfo.Name)
+        internal CSProjectInfo(UnityProjectInfo unityProjectInfo, AssemblyDefinitionInfo assemblyDefinitionInfo)
+            : base(unityProjectInfo, assemblyDefinitionInfo.Guid, assemblyDefinitionInfo.Name)
         {
             AssemblyDefinitionInfo = assemblyDefinitionInfo;
 

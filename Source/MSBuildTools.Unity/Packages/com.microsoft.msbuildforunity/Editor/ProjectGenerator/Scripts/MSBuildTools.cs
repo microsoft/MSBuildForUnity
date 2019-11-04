@@ -3,13 +3,16 @@
 
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Exporters;
+using Microsoft.Build.Unity.ProjectGeneration.Templates;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
@@ -33,6 +36,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private static readonly string uwpMinPlatformVersion = EditorUserBuildSettings.wsaMinUWPSDK;
         private static readonly string uwpTargetPlatformVersion = EditorUserBuildSettings.wsaUWPSDK;
 
+        private static IProjectExporter exporter = null;
+
+        private static IProjectExporter Exporter => exporter ?? (exporter = new TemplatedProjectExporter(new DirectoryInfo(Utilities.MSBuildProjectFolder), TemplateFiles.Instance.MSBuildSolutionTemplatePath, TemplateFiles.Instance.SDKProjectFileTemplatePath, TemplateFiles.Instance.SDKProjectPropsFileTemplatePath, TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath));
+
         [MenuItem("MSBuild/Generate C# SDK Projects", priority = 101)]
         public static void GenerateSDKProjects()
         {
@@ -50,57 +57,65 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static void RunGenerateSDKProjects()
         {
-            // Create a copy of the packages as they might change after we create the MSBuild project
-            string generatedProjectPath = Path.Combine(Utilities.MSBuildOutputFolder, "Projects");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            long postCleanupAndCopyStamp = 0, solutionExportStart = 0, solutionExportEnd = 0, exporterStart = 0, exporterEnd = 0, propsFileGenerationStart = 0, propsFileGenerationEnd = 0;
             try
             {
-                Utilities.EnsureCleanDirectory(generatedProjectPath);
-            }
-            catch (IOException ex)
-            {
-                if (ex.Message.Contains(@"db.lock"))
+                // Create a copy of the packages as they might change after we create the MSBuild project
+                try
                 {
-                    Debug.LogError("Generated project appears to be still open with Visual Studio.");
-                    throw new InvalidDataException("Generated project appears to be still open with Visual Studio.", ex);
+                    Utilities.EnsureCleanDirectory(Utilities.MSBuildProjectFolder);
                 }
-                else
+                catch (IOException ex)
                 {
-                    throw;
+                    if (ex.Message.Contains(@"db.lock"))
+                    {
+                        Debug.LogError("Generated project appears to be still open with Visual Studio.");
+                        throw new InvalidDataException("Generated project appears to be still open with Visual Studio.", ex);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                Utilities.EnsureCleanDirectory(Path.Combine(Utilities.MSBuildOutputFolder, "Output"));
+
+                postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
+
+                List<CompilationPlatformInfo> platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
+                    .Select(CompilationPlatformInfo.GetCompilationPlatform)
+                    .OrderBy(t => t.Name)
+                    .ToList();
+
+                CompilationPlatformInfo editorPlatform = CompilationPlatformInfo.GetEditorPlatform();
+
+                propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
+                CreateCommonPropsFile(platforms, editorPlatform, Utilities.MSBuildProjectFolder);
+                propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
+                UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms);
+
+                solutionExportStart = stopwatch.ElapsedMilliseconds;
+                Exporter.ExportSolution(unityProjectInfo);
+                solutionExportEnd = stopwatch.ElapsedMilliseconds;
+
+                foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
+                {
+                    File.Copy(otherFile, Path.Combine(Utilities.MSBuildProjectFolder, Path.GetFileName(otherFile)));
+                }
+
+                string buildProjectsFile = "BuildProjects.proj";
+                if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
+                {
+                    GenerateBuildProjectsFile(buildProjectsFile, unityProjectInfo.UnityProjectName, platforms);
                 }
             }
-
-            Utilities.EnsureCleanDirectory(Path.Combine(Utilities.MSBuildOutputFolder, "Output"));
-
-            MakePackagesCopy(Utilities.MSBuildOutputFolder);
-
-            List<CompilationPlatformInfo> platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms()
-                .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
-                .Select(CompilationPlatformInfo.GetCompilationPlatform)
-                .OrderBy(t => t.Name)
-                .ToList();
-
-            CompilationPlatformInfo editorPlatform = CompilationPlatformInfo.GetEditorPlatform();
-
-            CreateCommonPropsFile(platforms, editorPlatform, generatedProjectPath);
-            UnityProjectInfo unityProjectInfo = new UnityProjectInfo(platforms, generatedProjectPath);
-
-            IProjectExporter exporter = new TemplatedProjectExporter(
-                new DirectoryInfo(generatedProjectPath), 
-                TemplateFiles.Instance.MSBuildSolutionTemplatePath, 
-                TemplateFiles.Instance.SDKProjectFileTemplatePath,
-                TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
-                TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath);
-            exporter.ExportSolution(unityProjectInfo);
-
-            foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
+            finally
             {
-                File.Copy(otherFile, Path.Combine(generatedProjectPath, Path.GetFileName(otherFile)));
-            }
-
-            string buildProjectsFile = "BuildProjects.proj";
-            if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
-            {
-                GenerateBuildProjectsFile(buildProjectsFile, unityProjectInfo.UnityProjectName, platforms);
+                stopwatch.Stop();
+                Debug.Log($"Whole Generate Projects process took {stopwatch.ElapsedMilliseconds} ms; actual generation took {stopwatch.ElapsedMilliseconds - postCleanupAndCopyStamp}; solution export: {solutionExportEnd - solutionExportStart}; exporter creation: {exporterEnd - exporterStart}; props file generation: {propsFileGenerationEnd - propsFileGenerationStart}");
             }
         }
 
@@ -148,20 +163,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             File.WriteAllText(Path.Combine(Utilities.MSBuildOutputFolder, "BuildAll.bat"), string.Join("\r\n", batBuildEntry));
         }
 
-        private static void MakePackagesCopy(string msbuildFolder)
-        {
-            string packageCache = Path.Combine(Application.dataPath, "..", "Library/PackageCache");
-            string[] directories = Directory.GetDirectories(packageCache);
-
-            string outputDirectory = Path.Combine(msbuildFolder, Utilities.PackagesCopyFolderName);
-            Utilities.EnsureCleanDirectory(outputDirectory);
-
-            foreach (string directory in directories)
-            {
-                Utilities.CopyDirectory(directory, Path.Combine(outputDirectory, Path.GetFileName(directory).Split('@')[0]), ".asmdef", ".asmdef.meta", ".cs", ".cs.meta", ".template", ".template.meta", ".dll", ".dll.meta");
-            }
-        }
-
         private static void CreateCommonPropsFile(IEnumerable<CompilationPlatformInfo> availablePlatforms, CompilationPlatformInfo editorPlatform, string projectOutputFolder)
         {
             foreach (CompilationPlatformInfo platform in availablePlatforms)
@@ -178,73 +179,69 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             string configuration = inEditorConfiguration ? "InEditor" : "Player";
 
-            string platformTemplate = File.ReadAllText(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.ScriptingBackend));
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.ScriptingBackend), out FileTemplate fileTemplate))
+            {
+                throw new InvalidOperationException("Failed to parse template file for common props.");
+            }
 
-            string platformPropsText;
+            ITemplatePart rootPart = fileTemplate.Root;
+            TemplateReplacementSet rootReplacementSet = rootPart.CreateReplacementSet();
+
             if (inEditorConfiguration)
             {
-                platformPropsText = ProcessPlatformTemplate(platformTemplate, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalInEditorReferences), platform.CommonPlatformDefines.Concat(platform.AdditionalInEditorDefines));
+                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
+                    platform.CommonPlatformReferences.Concat(platform.AdditionalInEditorReferences),
+                    platform.CommonPlatformDefines.Concat(platform.AdditionalInEditorDefines));
             }
             else
             {
-                platformPropsText = ProcessPlatformTemplate(platformTemplate, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalPlayerReferences), platform.CommonPlatformDefines.Concat(platform.AdditionalPlayerDefines));
+                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
+                    platform.CommonPlatformReferences.Concat(platform.AdditionalPlayerReferences),
+                    platform.CommonPlatformDefines.Concat(platform.AdditionalPlayerDefines));
             }
 
-            File.WriteAllText(Path.Combine(projectOutputFolder, $"{platform.Name}.{configuration}.props"), platformPropsText);
+            fileTemplate.Write(Path.Combine(projectOutputFolder, $"{platform.Name}.{configuration}.props"), rootReplacementSet);
         }
 
-        private static string ProcessPlatformTemplate(string platformTemplate, string platformName, string configuration, BuildTarget buildTarget, TargetFramework targetFramework, IEnumerable<string> references, IEnumerable<string> defines, params HashSet<string>[] priorToCheck)
+        private static void ProcessPlatformTemplate(ITemplatePart rootPart, TemplateReplacementSet rootReplacementSet, string platformName, string configuration, BuildTarget buildTarget, TargetFramework targetFramework, IEnumerable<string> references, IEnumerable<string> defines, params HashSet<string>[] priorToCheck)
         {
-            if (Utilities.TryGetXMLTemplate(platformTemplate, "PLATFORM_COMMON_REFERENCE", out string platformCommonReferenceTemplate))
-            {
-                ProcessReferences(buildTarget, references, out HashSet<string> platformAssemblySearchPaths, out HashSet<string> platformAssemblyReferencePaths, priorToCheck);
+            ProcessReferences(buildTarget, references, out HashSet<string> platformAssemblySearchPaths, out HashSet<string> platformAssemblyReferencePaths, priorToCheck);
 
+            string minUWPPlatform = uwpMinPlatformVersion;
+            if (string.IsNullOrWhiteSpace(minUWPPlatform) || new Version(minUWPPlatform) < DefaultMinUWPSDK)
+            {
+                minUWPPlatform = DefaultMinUWPSDK.ToString();
+            }
+
+            string[] versionParts = Application.unityVersion.Split('.');
+            // This is a try replace because some may hardcode this value
+            rootPart.TryReplaceToken("TARGET_FRAMEWORK", rootReplacementSet, targetFramework.AsMSBuildString());
+
+            rootPart.Tokens["PLATFORM_COMMON_DEFINE_CONSTANTS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", defines));
+            rootPart.Tokens["PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", platformAssemblySearchPaths));
+
+            // These are UWP specific, but they will be no-op if not needed
+            if (buildTarget == BuildTarget.WSAPlayer && configuration == "Player")
+            {
                 string targetUWPPlatform = uwpTargetPlatformVersion;
                 if (string.IsNullOrWhiteSpace(targetUWPPlatform))
                 {
                     targetUWPPlatform = Utilities.GetUWPSDKs().Max().ToString(4);
                 }
-
-                string minUWPPlatform = uwpMinPlatformVersion;
-                if (string.IsNullOrWhiteSpace(minUWPPlatform) || new Version(minUWPPlatform) < DefaultMinUWPSDK)
-                {
-                    minUWPPlatform = DefaultMinUWPSDK.ToString();
-                }
-                string[] versionParts = Application.unityVersion.Split('.');
-                Dictionary<string, string> platformTokens = new Dictionary<string, string>()
-                {
-                    {"<!--TARGET_FRAMEWORK_TOKEN-->", targetFramework.AsMSBuildString() },
-                    {"<!--PLATFORM_COMMON_DEFINE_CONSTANTS-->", string.Join(";", defines) },
-                    {"<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN-->", string.Join(";", platformAssemblySearchPaths)},
-
-                    // These are UWP specific, but they will be no-op if not needed
-                    { "<!--UWP_TARGET_PLATFORM_VERSION_TOKEN-->", targetUWPPlatform },
-                    { "<!--UWP_MIN_PLATFORM_VERSION_TOKEN-->", minUWPPlatform },
-
-                    { "<!--UNITY_MAJOR_VERSION_TOKEN-->", versionParts[0] },
-                    { "<!--UNITY_MINOR_VERSION_TOKEN-->", versionParts[1] }
-                };
-
-                platformTokens.Add(platformCommonReferenceTemplate, string.Join("\r\n", GetReferenceEntries(platformCommonReferenceTemplate, platformAssemblyReferencePaths)));
-
-                return Utilities.ReplaceTokens(platformTemplate, platformTokens);
+                rootPart.TryReplaceToken("UWP_TARGET_PLATFORM_VERSION", rootReplacementSet, targetUWPPlatform);
+                rootPart.TryReplaceToken("UWP_MIN_PLATFORM_VERSION", rootReplacementSet, minUWPPlatform);
             }
-            else
-            {
-                Debug.LogError($"Invalid platform template format for '{platformName}' with configuration '{configuration}'");
-                return platformTemplate;
-            }
-        }
 
-        public static IEnumerable<string> GetReferenceEntries(string template, IEnumerable<string> references)
-        {
-            return references.Select(t => Utilities.ReplaceTokens(template, new Dictionary<string, string>()
+            rootPart.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
+            rootPart.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
+
+            ITemplatePart platformCommonReferencePart = rootPart.Templates["PLATFORM_COMMON_REFERENCE"];
+            foreach (string reference in platformAssemblyReferencePaths)
             {
-                { "##REFERENCE_TOKEN##", Path.GetFileNameWithoutExtension(t) },
-                { "<!--HINT_PATH_TOKEN-->", t }
-            }));
+                TemplateReplacementSet replacementSet = platformCommonReferencePart.CreateReplacementSet(rootReplacementSet);
+                platformCommonReferencePart.Tokens["REFERENCE"].AssignValue(replacementSet, Path.GetFileNameWithoutExtension(reference));
+                platformCommonReferencePart.Tokens["HINT_PATH"].AssignValue(replacementSet, reference);
+            }
         }
 
         private static void ProcessReferences(BuildTarget buildTarget, IEnumerable<string> references, out HashSet<string> searchPaths, out HashSet<string> referenceNames, params HashSet<string>[] priorToCheck)

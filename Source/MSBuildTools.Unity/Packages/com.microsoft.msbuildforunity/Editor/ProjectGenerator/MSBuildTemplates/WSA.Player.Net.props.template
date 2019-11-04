@@ -3,7 +3,7 @@
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN-->;C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5;$(UnityEditorInstallFolder)Data\PlaybackEngines\MetroSupport\Managed\UAP\</AssemblySearchPaths>
     <TargetFramework>uap10.0</TargetFramework>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS-->;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN-->;NETFX_CORE;WINDOWS_UWP</DefineConstants>
     <NugetTargetMoniker>UAP,Version=v10.0</NugetTargetMoniker>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion><!--UWP_TARGET_PLATFORM_VERSION_TOKEN--></TargetPlatformVersion>

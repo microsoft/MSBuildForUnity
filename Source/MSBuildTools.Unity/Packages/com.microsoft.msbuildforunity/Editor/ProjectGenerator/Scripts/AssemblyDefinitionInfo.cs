@@ -120,7 +120,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets whether this is marked as a TestAssembly.
         /// </summary>
         public bool TestAssembly { get; private set; }
-        
+
         /// <summary>
         /// Gets whether this is a default assembly definition like Assembly-CSharp
         /// </summary>
@@ -194,8 +194,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     foreach (string sourceFile in assembly.sourceFiles)
                     {
-                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(sourceFile);
-                        sourceFiles.Add(SourceFileInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile)), asset.GetClass())); 
+                        FileInfo fileInfo = new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile));
+                        sourceFiles.Add(new SourceFileInfo(fileInfo, Utilities.GetAssetLocation(fileInfo), sourceFile));
                     }
                 }
                 else
@@ -218,7 +218,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             foreach (FileInfo fileInfo in directory.GetFiles("*.cs", SearchOption.TopDirectoryOnly))
             {
-                sourceFiles.Add(SourceFileInfo.Parse(fileInfo, null));
+                sourceFiles.Add(new SourceFileInfo(fileInfo, Utilities.GetAssetLocation(fileInfo), null));
             }
 
             foreach (DirectoryInfo subDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly))

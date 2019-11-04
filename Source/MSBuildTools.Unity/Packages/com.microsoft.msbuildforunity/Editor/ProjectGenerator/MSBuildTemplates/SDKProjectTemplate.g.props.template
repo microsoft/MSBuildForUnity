@@ -7,7 +7,7 @@
     <DevelopmentBuild><!--DEVELOPMENT_BUILD_TOKEN--></DevelopmentBuild>
     
     <IsEditorOnlyTarget><!--IS_EDITOR_ONLY_TARGET_TOKEN--></IsEditorOnlyTarget>
-    <UnityEditorInstallFolder><!--UNITY_EDITOR_INSTALL_FOLDER--></UnityEditorInstallFolder>
+    <UnityEditorInstallFolder><!--UNITY_EDITOR_INSTALL_FOLDER_TOKEN--></UnityEditorInstallFolder>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -119,11 +119,7 @@
   
   <ItemGroup>
 <!--SOURCE_INCLUDE_TEMPLATE_START-->
-    <Compile Include="##RELATIVE_SOURCE_PATH##" Link="##PROJECT_LINK_PATH##" />
+    <Compile Include="##RELATIVE_SOURCE_PATH_TOKEN##" Link="##PROJECT_LINK_PATH_TOKEN##" />
 <!--SOURCE_INCLUDE_TEMPLATE_END-->
-
-    <Content Include="$(ProjectGuid).csmap">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>

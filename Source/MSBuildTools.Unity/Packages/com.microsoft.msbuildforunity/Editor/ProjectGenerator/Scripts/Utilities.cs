@@ -33,7 +33,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Inside the copy of the PackagesCache folder of the Unity project.
         /// </summary>
-        PackageCopy,
+        PackageLibraryCache,
 
         /// <summary>
         /// Inside the Packages folder shipped with the Unity version.
@@ -52,18 +52,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     public static class Utilities
     {
         private const string AssetsFolderName = "Assets";
-        private const string PackagesFolderName = "Packages";
+        public const string PackagesFolderName = "Packages";
+        private const string PackagesCacheFolderName = "PackageCache";
         private const string MSBuildFolderName = "MSBuild";
-        public const string PackagesCopyFolderName = "PackagesCopy";
+        private const string MSBuildProjectsFolderName = "Projects";
 
         private const string BuiltInPackagesRelativePath = @"Data\Resources\PackageManager\BuiltInPackages";
 
-        public static string ProjectPath { get; } = Application.dataPath.Substring(0, Application.dataPath.Length - AssetsFolderName.Length);
+        public static string ProjectPath { get; } = Path.GetFullPath(Application.dataPath.Substring(0, Application.dataPath.Length - AssetsFolderName.Length));
         public static string MSBuildOutputFolder { get; } = GetNormalizedPath(ProjectPath + MSBuildFolderName, true);
-        public static string PackagesCopyPath { get; } = Path.Combine(MSBuildOutputFolder, PackagesCopyFolderName);
+        public static string MSBuildProjectFolder { get; } = Path.Combine(MSBuildOutputFolder, MSBuildProjectsFolderName);
+        public static string PackageLibraryCachePath { get; } = Path.Combine(ProjectPath, "Library", PackagesCacheFolderName);
+
         public const string MetaFileGuidRegex = @"guid:\s*([0-9a-fA-F]{32})";
 
-        private static readonly string packagesPath;
+        public static string PackagesPath { get; } = Path.Combine(ProjectPath, PackagesFolderName);
 
         public static string AssetPath { get; }
 
@@ -72,7 +75,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         static Utilities()
         {
             AssetPath = Path.GetFullPath(Application.dataPath);
-            packagesPath = Path.GetFullPath(ProjectPath + PackagesFolderName);
             BuiltInPackagesPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(EditorApplication.applicationPath), BuiltInPackagesRelativePath));
         }
 
@@ -105,7 +107,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     return fullPathInPackages;
                 }
 
-                return Path.GetFullPath(Path.Combine(MSBuildOutputFolder, PackagesCopyFolderName + path.Substring(PackagesFolderName.Length)));
+                return fullPathInPackages;// Path.GetFullPath(PackagesCopyPath + path.Substring(PackagesFolderName.Length));
             }
 
             throw new InvalidOperationException("Not a path known to be relative to project's Package folder.");
@@ -165,13 +167,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 return AssetLocation.Project;
             }
-            else if (absolutePath.Contains(packagesPath) && assetFile.Exists)
+            else if (absolutePath.Contains(PackagesPath) && assetFile.Exists)
             {
                 return AssetLocation.Package;
             }
-            else if (absolutePath.Contains(packagesPath) || absolutePath.Contains(PackagesCopyPath))
+            else if (absolutePath.Contains(PackagesPath) || absolutePath.Contains(PackageLibraryCachePath))
             {
-                return AssetLocation.PackageCopy;
+                return AssetLocation.PackageLibraryCache;
             }
             else if (absolutePath.Contains(BuiltInPackagesPath))
             {
@@ -179,7 +181,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
             else
             {
-                Debug.LogWarning($"Unknown asset location for '{absolutePath}', marking as external.");
                 return AssetLocation.External;
             }
         }
@@ -217,37 +218,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
-        /// Get a path relative to the Packages folder from the absolute path, uses PackagesOutput folder.
-        /// </summary>
-        public static string GetPackagesRelativePathFrom(string absolutePath)
-        {
-            absolutePath = Path.GetFullPath(absolutePath);
-
-            if (absolutePath.Contains(packagesPath))
-            {
-                if (File.Exists(absolutePath) || Directory.Exists(absolutePath))
-                {
-                    return absolutePath.Replace(packagesPath, PackagesFolderName);
-                }
-
-                return absolutePath.Replace(packagesPath, PackagesCopyFolderName);
-            }
-            else if (absolutePath.Contains(PackagesCopyPath))
-            {
-                return absolutePath.Replace(PackagesCopyPath, PackagesCopyFolderName);
-            }
-
-            throw new ArgumentException(nameof(absolutePath), $"Absolute path '{absolutePath}' is not a Unity Project Packages relative path ('{packagesPath}')");
-        }
-
-        /// <summary>
         /// Gets a relative path between two absolute paths.
         /// </summary>
         public static string GetRelativePath(string thisAbsolute, string thatAbsolute)
         {
-            thisAbsolute = Path.GetFullPath(thisAbsolute);
-            thatAbsolute = Path.GetFullPath(thatAbsolute);
-
             if (!thisAbsolute.EndsWith("\\"))
             {
                 thisAbsolute = thisAbsolute + "\\";

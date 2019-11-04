@@ -1,3 +1,14 @@
-﻿{
-	"name": "Component2"
+{
+    "name": "Component2",
+    "references": [
+        "Microsoft.MSBuildForUnity.ProjectGenerator"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
 }

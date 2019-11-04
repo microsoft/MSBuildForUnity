@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using UnityEditor;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
@@ -17,24 +18,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="path"></param>
         /// <param name="classType"></param>
         /// <returns></returns>
-        public static SourceFileInfo Parse(FileInfo path, Type classType = null)
-        {
-            if (path.Extension != ".cs")
-            {
-                throw new ArgumentException($"Given file '{path.FullName}' is not a C# source file.");
-            }
-            else if (!path.Exists)
-            {
-                throw new ArgumentException($"Given file '{path.FullName}' does not exist.");
-            }
 
-            if (!Utilities.TryGetGuidForAsset(path, out Guid guid))
-            {
-                throw new InvalidOperationException($"Couldn't get guid for source asset '{path.FullName}'.");
-            }
+        private readonly string assetDatabasePath;
 
-            return new SourceFileInfo(path, guid, Utilities.GetAssetLocation(path), classType);
-        }
+        private bool parsed = false;
+        private Guid guid;
+        private Type classType;
 
         /// <summary>
         /// Gets the file on disk.
@@ -44,7 +33,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the Asset Guid for this source file.
         /// </summary>
-        public Guid Guid { get; }
+        public Guid Guid
+        {
+            get
+            {
+                if (!parsed)
+                {
+                    Parse();
+                }
+
+                return guid;
+            }
+        }
 
         /// <summary>
         /// Gets the asset location of this source file.
@@ -54,14 +54,42 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the class type of this source file. May be null, if the file was not inside the Unity project.
         /// </summary>
-        public Type ClassType { get; }
-
-        private SourceFileInfo(FileInfo fileInfo, Guid guid, AssetLocation assetLocation, Type classType)
+        public Type ClassType
         {
+            get
+            {
+                if (!parsed)
+                {
+                    Parse();
+                }
+                return classType;
+            }
+        }
+
+        public SourceFileInfo(FileInfo fileInfo, AssetLocation assetLocation, string assetDatabasePath)
+        {
+            this.assetDatabasePath = assetDatabasePath;
+
+            if (fileInfo.Extension != ".cs")
+            {
+                throw new ArgumentException($"Given file '{fileInfo.FullName}' is not a C# source file.");
+            }
+
             File = fileInfo;
-            Guid = guid;
             AssetLocation = assetLocation;
-            ClassType = classType;
+        }
+
+        private void Parse()
+        {
+            if (!Guid.TryParse(AssetDatabase.AssetPathToGUID(assetDatabasePath), out guid) && !Utilities.TryGetGuidForAsset(File, out guid))
+            {
+                throw new InvalidOperationException($"Couldn't get guid for source asset '{File.FullName}'.");
+            }
+
+            MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(File.FullName);
+            classType = script?.GetClass();
+
+            parsed = true;
         }
     }
 }
