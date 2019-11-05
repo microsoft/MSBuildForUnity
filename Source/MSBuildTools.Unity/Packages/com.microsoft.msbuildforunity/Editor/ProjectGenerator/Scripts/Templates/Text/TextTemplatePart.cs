@@ -63,8 +63,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
                         writer.Write(part);
                     }
                 }
-
-                writer.WriteLine();
             }
         }
     }

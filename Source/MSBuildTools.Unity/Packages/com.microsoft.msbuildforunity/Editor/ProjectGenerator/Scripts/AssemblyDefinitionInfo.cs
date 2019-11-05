@@ -63,6 +63,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             toReturn.assembly = assembly;
             toReturn.Directory = file.Directory;
+            toReturn.AssetLocation = Utilities.GetAssetLocation(file);
             toReturn.file = file;
             toReturn.Guid = guid;
             toReturn.BuiltInPackage = isBuiltInPackage;
@@ -99,6 +100,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets the parent directory of the associated file, or returns the Assets folder if it's a DefaultAssembly.
         /// </summary>
         public DirectoryInfo Directory { get; private set; }
+
+        /// <summary>
+        /// Gets the asset location of this assembly definition.
+        /// </summary>
+        public AssetLocation AssetLocation { get; private set; }
 
         /// <summary>
         /// Name of this assembly definition info

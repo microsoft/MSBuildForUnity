@@ -1,11 +1,5 @@
 <Project ToolsVersion="15.0">
-  <PropertyGroup>
-    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
-    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
-  </PropertyGroup>
-  
-  <Import Project="$(MSBuildProjectName).g.props" />
-
+  <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in as long as the following rules are met:
     - Both the imports are present:
@@ -25,5 +19,19 @@
       </ItemGroup>
   -->
   
-  <Import Project="$(MSBuildProjectName).g.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))"
+        Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
+  <PropertyGroup>
+    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
+    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
+
+  <ItemGroup>
+  <!-- Add your references here -->
+
+  </ItemGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
 </Project>

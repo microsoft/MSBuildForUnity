@@ -17,7 +17,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
         private const string TemplateStartSuffix = "_TEMPLATE_START";
         private const string TokenSuffix = "_TOKEN";
 
-        internal TextFileTemplate(FileInfo templateFile) 
+        internal TextFileTemplate(FileInfo templateFile)
             : base(templateFile)
         {
         }
@@ -88,6 +88,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
             Dictionary<string, ITemplateToken> subTokens = new Dictionary<string, ITemplateToken>();
 
             ParseLineForTokens(inlineTemplate, templateParts, subTokens);
+            templateParts.Add(Environment.NewLine);
             return new TextTemplatePart(templateParts, subTokens, new Dictionary<string, ITemplatePart>());
         }
 
@@ -115,7 +116,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
                         TextTemplatePart template = ParseInlineTemplate(line.Substring(indexOfSpace + 1));
                         subTemplates.Add(templateName, template);
                         templateParts.Add(template);
-                        templateParts.Add(Environment.NewLine);
                         continue;
                     }
                     else if (line.EndsWith(TemplateStartSuffix))
@@ -126,15 +126,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
                         TextTemplatePart template = ParseMultilineTemplate(reader, templateName);
                         subTemplates.Add(templateName, template);
                         templateParts.Add(template);
+                    }
+                    else
+                    {
+                        ParseLineForTokens(line, templateParts, subTokens);
                         templateParts.Add(Environment.NewLine);
                     }
                 }
                 else
                 {
                     ParseLineForTokens(line, templateParts, subTokens);
+                    templateParts.Add(Environment.NewLine);
                 }
-
-                templateParts.Add(Environment.NewLine);
             }
             return new TextTemplatePart(templateParts, subTokens, subTemplates);
         }

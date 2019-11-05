@@ -20,7 +20,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
     {
         private const string TemplateFilesFolderName = "MSBuildTemplates";
         private const string MSBuildSolutionTemplateName = "SolutionTemplate.sln.template";
+        private const string MSBuildForUnityCommonPropsTemplateName = "MSBuildForUnity.Common.props.template";
         private const string SDKProjectFileTemplateName = "SDKProjectTemplate.csproj.template";
+        private const string SDKGeneratedProjectFileTemplateName = "SDKProjectTemplate.g.csproj.template";
         private const string SDKProjectPropsFileTemplateName = "SDKProjectTemplate.g.props.template";
         private const string SDKProjectTargetsFileTemplateName = "SDKProjectTemplate.g.targets.template";
         private const string PlatformPropsTemplateName = "Platform.Configuration.Any.props.template";
@@ -42,9 +44,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         public FileInfo MSBuildSolutionTemplatePath { get; }
 
         /// <summary>
+        /// The path to the Directory.Build.props file template.
+        /// </summary>
+        public FileInfo MSBuildForUnityCommonPropsTemplatePath { get; }
+
+        /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
         /// </summary>
         public FileInfo SDKProjectFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path for generated projects (Read-Only).
+        /// </summary>
+        public FileInfo SDKGeneratedProjectFileTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
@@ -101,7 +113,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 
             MSBuildSolutionTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName));
+            MSBuildForUnityCommonPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Directory.Build Props File", MSBuildForUnityCommonPropsTemplateName));
             SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
+            SDKGeneratedProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Generated SDK Project", SDKGeneratedProjectFileTemplateName));
             SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
             SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
             PlatformPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName));

@@ -19,6 +19,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         FileInfo GetProjectPath(CSProjectInfo projectInfo);
 
         /// <summary>
+        /// Given the <see cref="UnityProjectInfo"/>, get where the solution file will be exported.
+        /// </summary>
+        /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
+        /// <returns>The path to where the .sln file will be exported.</returns>
+        string GetSolutionFilePath(UnityProjectInfo unityProjectInfo);
+
+        /// <summary>
         /// Exports a C# project given the <see cref="UnityProjectInfo"/> information.
         /// </summary>
         /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
@@ -30,6 +37,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// </summary>
         /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
         void ExportSolution(UnityProjectInfo unityProjectInfo);
+
+        /// <summary>
+        /// Generates the Directory.Build.props file that is expected to be used by both generated and non-generated projects alike.
+        /// </summary>
+        /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
+        void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo);
+
+        /// <summary>
+        /// Exports the Common props file based on the given compilation platform and whether to export it as an In-Editor flavor vs Player.
+        /// </summary>
+        /// <param name="platform">The platform to export.</param>
+        /// <param name="inEditorConfiguration">True if this is an In-Editor flavor, false otherwise.</param>
+        void ExportCommonPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
     }
 }
 #endif
