@@ -1,6 +1,6 @@
 <Project ToolsVersion="15.0">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))"
-        Condition="Exists('$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))')" />
+        Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
   <PropertyGroup>
     <!--anborod: This is a weird thing, it is a required property (even if commented)-->
     <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->

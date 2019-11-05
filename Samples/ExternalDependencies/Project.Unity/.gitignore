@@ -63,3 +63,4 @@ crashlytics-build.properties
 !/MSBuild/Publish/
 /MSBuild/Publish/**/*.dll
 /MSBuild/Publish/**/*.pdb
+/MSBuildForUnity.Common.props

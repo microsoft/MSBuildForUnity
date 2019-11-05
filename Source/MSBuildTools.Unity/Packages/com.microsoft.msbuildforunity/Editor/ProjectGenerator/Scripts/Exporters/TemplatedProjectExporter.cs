@@ -188,7 +188,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
         {
-            string outputPath = Path.Combine(Utilities.ProjectPath, "Directory.Build.props");
+            string outputPath = Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props");
 
             ITemplatePart rootTemplate = msbuildForUnityCommonTemplate.Root;
             TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);

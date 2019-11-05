@@ -9,10 +9,46 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
+    public class MSBuildToolsConfig
+    {
+        private static string MSBuildSettingsFilePath { get; } = Path.Combine(Utilities.ProjectPath, "MSBuild", "settings.json");
+
+        [SerializeField]
+        private bool autoGenerateEnabled = false;
+
+        public bool AutoGenerateEnabled
+        {
+            get => autoGenerateEnabled;
+            set
+            {
+                autoGenerateEnabled = value;
+                Save();
+            }
+        }
+
+        private void Save()
+        {
+            File.WriteAllText(MSBuildSettingsFilePath, EditorJsonUtility.ToJson(this));
+        }
+
+        public static MSBuildToolsConfig Load()
+        {
+            MSBuildToolsConfig toReturn = new MSBuildToolsConfig();
+
+            if (File.Exists(MSBuildSettingsFilePath))
+            {
+                EditorJsonUtility.FromJsonOverwrite(File.ReadAllText(MSBuildSettingsFilePath), toReturn);
+            }
+
+            return toReturn;
+        }
+    }
+
     /// <summary>
     /// Class that exposes the MSBuild project generation operation.
     /// </summary>
@@ -48,40 +84,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath,
             TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath));
 
-        public static bool AutoGenerateProjectFilesEnabled
-        {
-            get => EditorPrefs.GetBool($"{nameof(MSBuildTools)}.{nameof(AutoGenerateProjectFilesEnabled)}");
-            set => EditorPrefs.SetBool($"{nameof(MSBuildTools)}.{nameof(AutoGenerateProjectFilesEnabled)}", value);
-        }
-
-        public static bool AutoGenerateEnabled
-        {
-            get => EditorPrefs.GetBool($"{nameof(MSBuildTools)}.{nameof(AutoGenerateEnabled)}", true);
-            set => EditorPrefs.SetBool($"{nameof(MSBuildTools)}.{nameof(AutoGenerateEnabled)}", value);
-        }
-
+        public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
+        
         [MenuItem(AutoGenerate, priority = 101)]
         public static void ToggleAutoGenerate()
         {
-            AutoGenerateEnabled = !AutoGenerateEnabled;
-            Menu.SetChecked(AutoGenerate, AutoGenerateEnabled);
+            Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
+            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
             RunCoreAutoGenerate();
         }
 
-        [MenuItem(AutoGenerateSDKProjects, true, priority = 102)]
-        private static bool ToggleAutoGenerateSDKProjects_Validate()
-        {
-            return AutoGenerateEnabled;
-        }
-
-        [MenuItem(AutoGenerateSDKProjects, priority = 102)]
-        public static void ToggleAutoGenerateSDKProjects()
-        {
-            AutoGenerateProjectFilesEnabled = !AutoGenerateProjectFilesEnabled;
-            Menu.SetChecked(AutoGenerateSDKProjects, AutoGenerateProjectFilesEnabled);
-        }
-
-        [MenuItem("MSBuild/Regenerate C# SDK Projects", priority = 103)]
+       
+        [MenuItem("MSBuild/Regenerate C# SDK Projects", priority = 102)]
         public static void GenerateSDKProjects()
         {
             try
@@ -98,14 +112,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         static MSBuildTools()
         {
-            Menu.SetChecked(AutoGenerate, AutoGenerateEnabled);
-            Menu.SetChecked(AutoGenerateSDKProjects, AutoGenerateProjectFilesEnabled);
+            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
             RunCoreAutoGenerate();
         }
 
         private static void RunCoreAutoGenerate()
         {
-            if (!AutoGenerateEnabled)
+            Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
+
+            if (!Config.AutoGenerateEnabled)
             {
                 return;
             }
@@ -114,14 +129,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // Check if a file exists, if it does, we already generated this editor instance
             if (!File.Exists(tokenFile))
             {
-                if (AutoGenerateProjectFilesEnabled)
-                {
-                    RegenerateEverything(false);
-                }
-                else
-                {
-                    ExportCoreUnityPropFiles();
-                }
+                RegenerateEverything(false);
+                
                 File.Create(tokenFile).Dispose();
             }
 
@@ -137,8 +146,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             Exporter.ExportCommonPropsFile(UnityProjectInfo.EditorPlatform, true);
-
-            Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
         }
 
         private static void RegenerateEverything(bool reparseUnityData)
@@ -172,6 +179,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
+                Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
                 ExportCoreUnityPropFiles();
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
 
