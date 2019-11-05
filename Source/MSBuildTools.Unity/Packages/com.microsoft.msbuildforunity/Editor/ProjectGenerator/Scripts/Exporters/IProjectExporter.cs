@@ -12,7 +12,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     public interface IProjectExporter
     {
         /// <summary>
-        /// Given a C# project, get it's export path.
+        /// Given a C# project, get its export path.
         /// </summary>
         /// <param name="projectInfo">The parsed <see cref="CSProjectInfo"/> representing the C# project.</param>
         /// <returns>The path to the project.</returns>
