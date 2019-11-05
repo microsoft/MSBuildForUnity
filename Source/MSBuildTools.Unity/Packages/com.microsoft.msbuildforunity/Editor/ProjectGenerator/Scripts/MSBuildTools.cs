@@ -174,7 +174,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     Directory.CreateDirectory(Utilities.MSBuildProjectFolder);
                 }
 
-                // Utilities.EnsureCleanDirectory(Path.Combine(Utilities.MSBuildOutputFolder, "Output"));
                 if (reparseUnityData)
                 {
                     unityProjectInfo?.Dispose();

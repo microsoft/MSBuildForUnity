@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
   
   <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' == ''">
@@ -30,7 +30,6 @@
   </ItemGroup>
   
 
-  <!-- Could just move this directly into the proj and get rid of this targets file. -->
   <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
 
 </Project>
