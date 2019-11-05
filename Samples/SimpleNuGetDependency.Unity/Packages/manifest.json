@@ -36,6 +36,6 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0",
-    "com.microsoft.msbuildforunity": "file:../../../../Source/MSBuildTools.Unity/Packages/com.microsoft.msbuildforunity"
+    "com.microsoft.msbuildforunity": "file:../../../Source/MSBuildTools.Unity/Packages/com.microsoft.msbuildforunity"
   }
 }
