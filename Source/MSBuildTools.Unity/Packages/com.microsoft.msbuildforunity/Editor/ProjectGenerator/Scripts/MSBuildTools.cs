@@ -66,7 +66,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public const string CSharpVersion = "7.3";
         public const string AutoGenerate = "MSBuild/Generation Enabled";
-        public const string AutoGenerateSDKProjects = "MSBuild/Auto-Generate C# SDK Project Files";
 
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
@@ -94,6 +93,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             RunCoreAutoGenerate();
         }
 
+        [MenuItem(AutoGenerate, true, priority = 101)]
+        public static bool ToggleAutoGenerate_Validate()
+        {
+            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
+            return true;
+        }
+
        
         [MenuItem("MSBuild/Regenerate C# SDK Projects", priority = 102)]
         public static void GenerateSDKProjects()
@@ -112,7 +118,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         static MSBuildTools()
         {
-            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
             RunCoreAutoGenerate();
         }
 
