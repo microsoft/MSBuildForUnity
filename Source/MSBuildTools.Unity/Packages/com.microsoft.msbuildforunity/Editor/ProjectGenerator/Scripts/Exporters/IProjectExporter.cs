@@ -49,7 +49,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// </summary>
         /// <param name="platform">The platform to export.</param>
         /// <param name="inEditorConfiguration">True if this is an In-Editor flavor, false otherwise.</param>
-        void ExportCommonPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
+        void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
     }
 }
 #endif
