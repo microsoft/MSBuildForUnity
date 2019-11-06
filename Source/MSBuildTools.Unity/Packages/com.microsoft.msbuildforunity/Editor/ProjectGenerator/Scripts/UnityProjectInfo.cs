@@ -247,9 +247,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!assemblyDefinitionInfo.BuiltInPackage)
             {
+                Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies"));
                 foreach (PluginAssemblyInfo plugin in Plugins.Where(t => t.Type != PluginType.Native))
                 {
-                    if (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name))
+                    if (!dependencies.IsBaseOf(plugin.ReferencePath) && (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name)))
                     {
                         toReturn.AddDependency(plugin);
                     }
