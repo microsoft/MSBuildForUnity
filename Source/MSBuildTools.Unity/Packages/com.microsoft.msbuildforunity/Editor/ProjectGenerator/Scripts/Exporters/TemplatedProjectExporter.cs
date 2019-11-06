@@ -29,6 +29,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly FileTemplate solutionFileTemplate;
         private readonly FileTemplate msbuildForUnityCommonTemplate;
 
+        private readonly FileTemplate dependenciesProjectTemplate;
+        private readonly FileTemplate dependenciesPropsTemplate;
+
         /// <summary>
         /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
         /// </summary>
@@ -37,7 +40,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
         /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
         /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath)
+        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
@@ -48,11 +51,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             FileTemplate.TryParseTemplate(solutionFileTemplatePath, out solutionFileTemplate);
             FileTemplate.TryParseTemplate(msbuildForUnityCommonTemplatePath, out msbuildForUnityCommonTemplate);
+
+            FileTemplate.TryParseTemplate(dependenciesProjectTemplatePath, out dependenciesProjectTemplate);
+            FileTemplate.TryParseTemplate(dependenciesPropsTemplatePath, out dependenciesPropsTemplate);
         }
 
         private string GetProjectFilePath(DirectoryInfo directory, CSProjectInfo projectInfo)
         {
-            return Path.Combine(directory.FullName, $"{projectInfo.Name}.{MSBuildFileSuffix}.csproj");
+            return GetProjectFilePath(directory.FullName, projectInfo.Name);
+        }
+
+        private string GetProjectFilePath(string directory, string projectName)
+        {
+            return Path.Combine(directory, $"{projectName}.{MSBuildFileSuffix}.csproj");
         }
 
         ///<inherit-doc/>
@@ -253,7 +264,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             foreach (CSProjectInfo project in orderedProjects)
             {
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
-                ProcessProjectEntry(project, projectTemplate, replacementSet);
+                ProcessProjectEntry(project.Name, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
 
                 switch (project.AssemblyDefinitionInfo.AssetLocation)
                 {
@@ -269,6 +280,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     default: break;
                 }
             }
+
+            // Add the "Dependencies" project
+            ProcessProjectEntry("Dependencies", GetProjectFilePath(Utilities.AssetPath, "Dependencies"), Guid.NewGuid(), null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
 
             PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages);
             PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges);
@@ -324,7 +338,35 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ExportProject(unityProjectInfo, project);
             }
 
+            GenerateTopLevelDependenciesProject(unityProjectInfo);
+
             solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
+        }
+
+        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
+        {
+            string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
+            string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
+
+            ITemplatePart propsFileTemplate = dependenciesPropsTemplate.Root;
+            ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
+
+            TemplateReplacementSet replacementSet = propsFileTemplate.CreateReplacementSet();
+
+            // We use this to emulate the platform support for all 
+            Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
+            foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
+            {
+                List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
+                ProcessProjectDependency(replacementSet, projectReferenceTemplate, projectInfo, platformConditions);
+            }
+
+            dependenciesPropsTemplate.Write(propsPath, replacementSet);
+
+            if (!File.Exists(projectPath))
+            {
+                dependenciesProjectTemplate.Write(projectPath, dependenciesProjectTemplate.Root.CreateReplacementSet());
+            }
         }
 
         private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects)
@@ -365,12 +407,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             foreach (CSProjectDependency<CSProjectInfo> dependency in projectInfo.ProjectDependencies)
             {
                 List<string> platformConditions = GetPlatformConditions(inEditor ? projectInfo.InEditorPlatforms : projectInfo.PlayerPlatforms, inEditor ? dependency.InEditorSupportedPlatforms : dependency.PlayerSupportedPlatforms);
-
-                string projectPath = GetProjectPath(dependency.Dependency).FullName;
-                TemplateReplacementSet replacementSet = projectReferenceTemplatePart.CreateReplacementSet(templateReplacementSet);
-                projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, projectPath);
-                //projectReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, GetProjectPath(dependency.Dependency).AbsolutePath);
-                projectReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
+                ProcessProjectDependency(templateReplacementSet, projectReferenceTemplatePart, dependency.Dependency, platformConditions);
             }
 
             foreach (CSProjectDependency<PluginAssemblyInfo> dependency in projectInfo.PluginDependencies)
@@ -392,15 +429,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             templatePart.Tokens["REFERENCE_CONFIGURATION"].AssignValue(templateReplacementSet, inEditor ? "InEditor" : "Player");
         }
 
-        private List<string> GetPlatformConditions(IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, HashSet<BuildTarget> dependencyPlatforms)
+        private void ProcessProjectDependency(TemplateReplacementSet parentReplacementSet, ITemplatePart projectReferenceTemplatePart, CSProjectInfo dependency, List<string> platformConditions)
+        {
+            string projectPath = GetProjectPath(dependency).FullName;
+            TemplateReplacementSet replacementSet = projectReferenceTemplatePart.CreateReplacementSet(parentReplacementSet);
+            projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, projectPath);
+            //projectReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, GetProjectPath(dependency.Dependency).AbsolutePath);
+            projectReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
+        }
+
+        private List<string> GetPlatformConditions(IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, IEnumerable<BuildTarget> dependencyPlatforms)
         {
             List<string> toReturn = new List<string>();
 
-            foreach (KeyValuePair<BuildTarget, CompilationPlatformInfo> pair in platforms)
+            foreach (BuildTarget platform in dependencyPlatforms)
             {
-                if (dependencyPlatforms.Contains(pair.Key))
+                if (platforms.TryGetValue(platform, out CompilationPlatformInfo platformInfo))
                 {
-                    string platformName = pair.Value.Name;
+                    string platformName = platformInfo.Name;
                     toReturn.Add($"'$(UnityPlatform)' == '{platformName}'");
                 }
             }
@@ -408,19 +454,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return toReturn;
         }
 
-        private void ProcessProjectEntry(CSProjectInfo projectInfo, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
+        private void ProcessProjectEntry(string projectName, string projectPath, Guid projectGuid, IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
         {
-            string projectPath = GetProjectPath(projectInfo).FullName;
-
-            templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectInfo.Name);
+            templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectName);
             templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, projectPath);
-            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectInfo.Guid.ToString().ToUpper());
+            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
 
             ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];
 
-            if (projectInfo.ProjectDependencies.Count > 0)
+            if (projectDependencies != null && projectDependencies.Count > 0)
             {
-                foreach (CSProjectDependency<CSProjectInfo> project in projectInfo.ProjectDependencies)
+                foreach (CSProjectDependency<CSProjectInfo> project in projectDependencies)
                 {
                     TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(replacementSet);
                     dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, project.Dependency.Guid.ToString().ToUpper());
@@ -428,7 +472,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        public void ExportCommonPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration)
+        public void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration)
         {
             string configuration = inEditorConfiguration ? "InEditor" : "Player";
 

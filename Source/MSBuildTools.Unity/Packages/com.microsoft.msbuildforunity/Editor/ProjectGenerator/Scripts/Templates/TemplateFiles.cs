@@ -25,6 +25,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         private const string SDKGeneratedProjectFileTemplateName = "SDKProjectTemplate.g.csproj.template";
         private const string SDKProjectPropsFileTemplateName = "SDKProjectTemplate.g.props.template";
         private const string SDKProjectTargetsFileTemplateName = "SDKProjectTemplate.g.targets.template";
+        private const string DependenciesProjectFileTemplateName = "DependenciesProjectTemplate.csproj.template";
+        private const string DependenciesPropsFileTemplateName = "DependenciesProjectTemplate.g.props.template";
         private const string PlatformPropsTemplateName = "Platform.Configuration.Any.props.template";
         private const string EditorPropsTemplateName = "Editor.InEditor.Any.props.template";
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
@@ -47,6 +49,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// The path to the Directory.Build.props file template.
         /// </summary>
         public FileInfo MSBuildForUnityCommonPropsTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the dependencies project file template.
+        /// </summary>
+        public FileInfo DependenciesProjectTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the dependencies project props template.
+        /// </summary>
+        public FileInfo DependenciesPropsTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
@@ -114,6 +126,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 
             MSBuildSolutionTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName));
             MSBuildForUnityCommonPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Directory.Build Props File", MSBuildForUnityCommonPropsTemplateName));
+            DependenciesProjectTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Dependencies CSProject File", DependenciesProjectFileTemplateName));
+            DependenciesPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Dependencies Props File", DependenciesPropsFileTemplateName));
             SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
             SDKGeneratedProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Generated SDK Project", SDKGeneratedProjectFileTemplateName));
             SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
