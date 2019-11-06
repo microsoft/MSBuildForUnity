@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 3cfffcf6ca567fd44a9d881a77e8b97f
+ScriptedImporter:
+  fileIDToRecycleName:
+    11400000: Dependencies.msb4u
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 0e4dca1acba66fd478b3854f09a32ec7, type: 3}
+  buildEngine: 0
+  profiles: []

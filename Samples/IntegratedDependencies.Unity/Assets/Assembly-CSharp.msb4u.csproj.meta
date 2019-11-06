@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 8e4524154d1b0c34f9efea280040753c
+ScriptedImporter:
+  fileIDToRecycleName:
+    11400000: Assembly-CSharp.msb4u
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 0e4dca1acba66fd478b3854f09a32ec7, type: 3}
+  buildEngine: 0
+  profiles: []
