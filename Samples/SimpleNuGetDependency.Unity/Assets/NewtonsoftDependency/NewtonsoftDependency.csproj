@@ -28,8 +28,6 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
-  
 
   <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
-
 </Project>
