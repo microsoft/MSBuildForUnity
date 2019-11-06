@@ -1,0 +1,36 @@
+<Project ToolsVersion="15.0">
+  <!--GENERATED FILE-->
+  <!--
+    This file can be modified and checked in as long as the following rules are met:
+    - Both the imports are present:
+    - - <Import Project="$(MSBuildProjectName).g.props" />
+    - - <Import Project="$(MSBuildProjectName).g.targets" />
+    - Nothing above the props import or below the targets import is modified
+    - No C# source files are added for compilation
+    
+    You can modify this file as follows:
+    - Add NuGet package references:
+        <ItemGroup>
+          <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+        </ItemGroup>
+    - Add external C# project references:
+      <ItemGroup>
+        <ProjectReference Include="..\..\..\ExternalLib\ExternalLib.csproj" />
+      </ItemGroup>
+  -->
+  
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
+  <PropertyGroup>
+    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
+    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
+
+  <ItemGroup>
+  <!-- Add your references here -->
+
+  </ItemGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
+</Project>
