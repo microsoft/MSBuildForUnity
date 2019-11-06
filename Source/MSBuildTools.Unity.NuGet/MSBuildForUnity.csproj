@@ -1,4 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
+
+  <Import Project="SDK.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -65,10 +67,17 @@
       There is a runtime dependency on Mono.Cecil and Newtonsoft for the tasks. Unfortunately there is no way to express that as a NuGet package dependency for build tasks.
       The only real option is to bundle the Mono.Cecil DLL's into our own package.
     -->
-  <Target Name="EmbedMonoCecil" AfterTargets="ResolveReferences">
+  <Target Name="EmbedMonoCecil" DependsOnTargets="ResolveReferences">
     <ItemGroup>
       <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Mono.Cecil'))" PackagePath="buildCommon" />
       <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Newtonsoft'))" PackagePath="buildCommon" />
     </ItemGroup>
   </Target>
+
+  <Import Project="SDK.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <PackDependsOn>EmbedMonoCecil;$(PackDependsOn)</PackDependsOn>
+  </PropertyGroup>
+
 </Project>
