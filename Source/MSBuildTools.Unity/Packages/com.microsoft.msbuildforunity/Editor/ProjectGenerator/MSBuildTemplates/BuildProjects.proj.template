@@ -10,7 +10,7 @@
 
 <!--PLATFORM_TARGET_TEMPLATE_START-->
   <Target Name="Build##PLATFORM_TOKEN####CONFIGURATION_TOKEN##">
-    <MSBuild Projects="@(ProjectReferences)" Targets="Restore;Build" Properties="Configuration=##CONFIGURATION_TOKEN##;Platform=##PLATFORM_TOKEN##;BuildProjectReferences=false">
+    <MSBuild Projects="@(ProjectReferences)" Targets="Restore;Build" Properties="UnityConfiguration=##CONFIGURATION_TOKEN##;UnityPlatform=##PLATFORM_TOKEN##;BuildProjectReferences=false">
       <Output TaskParameter="TargetOutputs" ItemName="Build##PLATFORM_TOKEN####CONFIGURATION_TOKEN##Outputs" />
     </MSBuild>
   </Target>
@@ -18,7 +18,7 @@
 
   <!-- WSA Player is special cased-->
   <Target Name="BuildWSAPlayer">
-    <MSBuild Projects="@(ProjectReferences)" Targets="Restore;Build" Properties="Configuration=Player;Platform=WSA;BuildProjectReferences=false;MSBuildExtensionsPathOverride=C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild">
+    <MSBuild Projects="@(ProjectReferences)" Targets="Restore;Build" Properties="UnityConfiguration=Player;UnityPlatform=WSA;BuildProjectReferences=false;MSBuildExtensionsPathOverride=C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild">
       <Output TaskParameter="TargetOutputs" ItemName="BuildWSAPlayerOutputs" />
     </MSBuild>
   </Target>

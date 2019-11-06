@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <UnityConfiguration>InEditor</UnityConfiguration>
     <!-- Make sure Unity ignores the contents of the intermediate output path. -->
     <BaseIntermediateOutputPath>$(MSBuildForUnityGeneratedOutputDirectory)\..\Output\obj\Dependencies</BaseIntermediateOutputPath>
     <OutputPath>Dependencies</OutputPath>
@@ -31,8 +32,8 @@
   <ItemGroup>
     <!--PROJECT_REFERENCE_TEMPLATE_START-->
     <ProjectReference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
-      <PrivateAssets>None</PrivateAssets>
-      <ExcludeAssets>All</ExcludeAssets>
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Properties>UnityPlatform=$(UnityPlatform);UnityConfiguration=$(UnityConfiguration)</Properties>
     </ProjectReference>
     <!--PROJECT_REFERENCE_TEMPLATE_END-->
   </ItemGroup>
