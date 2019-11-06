@@ -81,10 +81,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             TemplateFiles.Instance.SDKGeneratedProjectFileTemplatePath,
             TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
             TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath,
-            TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath));
+            TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath,
+            TemplateFiles.Instance.DependenciesProjectTemplatePath,
+            TemplateFiles.Instance.DependenciesPropsTemplatePath));
 
         public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
-        
+
         [MenuItem(AutoGenerate, priority = 101)]
         public static void ToggleAutoGenerate()
         {
@@ -100,7 +102,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return true;
         }
 
-       
+
         [MenuItem("MSBuild/Regenerate C# SDK Projects", priority = 102)]
         public static void GenerateSDKProjects()
         {
@@ -135,7 +137,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             if (!File.Exists(tokenFile))
             {
                 RegenerateEverything(false);
-                
+
                 File.Create(tokenFile).Dispose();
             }
 
@@ -146,11 +148,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             foreach (CompilationPlatformInfo platform in UnityProjectInfo.AvailablePlatforms)
             {
                 // Check for specialized template, otherwise get the common one
-                Exporter.ExportCommonPropsFile(platform, true);
-                Exporter.ExportCommonPropsFile(platform, false);
+                Exporter.ExportPlatformPropsFile(platform, true);
+                Exporter.ExportPlatformPropsFile(platform, false);
             }
 
-            Exporter.ExportCommonPropsFile(UnityProjectInfo.EditorPlatform, true);
+            Exporter.ExportPlatformPropsFile(UnityProjectInfo.EditorPlatform, true);
         }
 
         private static void RegenerateEverything(bool reparseUnityData)
