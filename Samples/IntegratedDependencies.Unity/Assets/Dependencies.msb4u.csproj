@@ -1,4 +1,4 @@
-﻿<Project ToolsVersion="15.0">
+<Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in.
@@ -34,10 +34,7 @@
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
   
   <ItemGroup>
-    <PackageReference Update="MSBuildForUnity" Version="0.1.115888">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
