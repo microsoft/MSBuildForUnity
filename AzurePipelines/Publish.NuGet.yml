@@ -25,4 +25,10 @@ steps:
 - template: Templates/BuildMSBuildForUnityNuGetPackage.yml
 - template: Templates/SignNuGetPackages.yml
 - template: Templates/PublishArtifacts.yml
+- task: ComponentGovernanceComponentDetection@0
+  inputs:
+    scanType: 'LogOnly'
+    verbosity: 'Verbose'
+    alertWarningLevel: 'High'
+    failOnAlert: true
 #- template: Templates/PublishNuGetPackages.yml
