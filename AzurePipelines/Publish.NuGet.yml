@@ -26,6 +26,7 @@ steps:
 - template: Templates/SignNuGetPackages.yml
 - template: Templates/PublishArtifacts.yml
 - task: ComponentGovernanceComponentDetection@0
+  displayName: "Scan Third Party Components"
   inputs:
     scanType: 'LogOnly'
     verbosity: 'Verbose'
