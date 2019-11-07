@@ -25,4 +25,4 @@ steps:
 - template: Templates/BuildMSBuildForUnityNuGetPackage.yml
 - template: Templates/SignNuGetPackages.yml
 - template: Templates/PublishArtifacts.yml
-- template: Templates/PublishNuGetPackages.yml
+#- template: Templates/PublishNuGetPackages.yml
