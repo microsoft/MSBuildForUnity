@@ -5,10 +5,6 @@ VisualStudioVersion = 16.0.29306.81
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildForUnity", "MSBuildForUnity.csproj", "{1FA0918F-59B8-4935-9CB9-E4A5459B3646}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil", "..\Mono.Cecil\Mono.Cecil.csproj", "{344743DE-3899-4B2A-B57F-BC30560BA4FA}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Pdb", "..\Mono.Cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{DA8E10E4-B8B2-4E6A-8388-C21F1D3E8900}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,14 +15,6 @@ Global
 		{1FA0918F-59B8-4935-9CB9-E4A5459B3646}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FA0918F-59B8-4935-9CB9-E4A5459B3646}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FA0918F-59B8-4935-9CB9-E4A5459B3646}.Release|Any CPU.Build.0 = Release|Any CPU
-		{344743DE-3899-4B2A-B57F-BC30560BA4FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{344743DE-3899-4B2A-B57F-BC30560BA4FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{344743DE-3899-4B2A-B57F-BC30560BA4FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{344743DE-3899-4B2A-B57F-BC30560BA4FA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DA8E10E4-B8B2-4E6A-8388-C21F1D3E8900}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DA8E10E4-B8B2-4E6A-8388-C21F1D3E8900}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DA8E10E4-B8B2-4E6A-8388-C21F1D3E8900}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DA8E10E4-B8B2-4E6A-8388-C21F1D3E8900}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
