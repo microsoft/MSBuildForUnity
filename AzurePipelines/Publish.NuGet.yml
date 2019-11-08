@@ -20,11 +20,6 @@ workspace:
 
 steps:
 - template: Templates/CommonInitialization.yml
-- template: Templates/BuildMSBuildForUnityNuGetBinaries.yml
-- template: Templates/SignBinaries.yml
-- template: Templates/BuildMSBuildForUnityNuGetPackage.yml
-- template: Templates/SignNuGetPackages.yml
-- template: Templates/PublishArtifacts.yml
 - task: ComponentGovernanceComponentDetection@0
   displayName: "Scan Third Party Components"
   inputs:
@@ -32,4 +27,9 @@ steps:
     verbosity: 'Verbose'
     alertWarningLevel: 'High'
     failOnAlert: true
+- template: Templates/BuildMSBuildForUnityNuGetBinaries.yml
+- template: Templates/SignBinaries.yml
+- template: Templates/BuildMSBuildForUnityNuGetPackage.yml
+- template: Templates/SignNuGetPackages.yml
+- template: Templates/PublishArtifacts.yml
 #- template: Templates/PublishNuGetPackages.yml
