@@ -32,4 +32,4 @@ steps:
     verbosity: 'Verbose'
     alertWarningLevel: 'High'
     failOnAlert: true
-#- template: Templates/PublishNuGetPackages.yml
+- template: Templates/PublishNuGetPackages.yml
