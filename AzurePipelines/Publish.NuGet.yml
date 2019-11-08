@@ -28,8 +28,8 @@ steps:
 - task: ComponentGovernanceComponentDetection@0
   displayName: "Scan Third Party Components"
   inputs:
-    scanType: 'LogOnly'
+    scanType: 'Register'
     verbosity: 'Verbose'
     alertWarningLevel: 'High'
     failOnAlert: true
-- template: Templates/PublishNuGetPackages.yml
+#- template: Templates/PublishNuGetPackages.yml
