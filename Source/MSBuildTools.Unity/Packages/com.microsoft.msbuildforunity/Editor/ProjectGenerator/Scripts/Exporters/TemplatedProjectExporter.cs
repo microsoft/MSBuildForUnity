@@ -31,6 +31,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         private readonly FileTemplate dependenciesProjectTemplate;
         private readonly FileTemplate dependenciesPropsTemplate;
+        private readonly FileTemplate dependenciesTargetsTemplate;
 
         /// <summary>
         /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
@@ -40,7 +41,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
         /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
         /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath)
+        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
@@ -54,6 +55,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             FileTemplate.TryParseTemplate(dependenciesProjectTemplatePath, out dependenciesProjectTemplate);
             FileTemplate.TryParseTemplate(dependenciesPropsTemplatePath, out dependenciesPropsTemplate);
+            FileTemplate.TryParseTemplate(dependenciesTargetsTemplatePath, out dependenciesTargetsTemplate);
         }
 
         private string GetProjectFilePath(DirectoryInfo directory, CSProjectInfo projectInfo)
@@ -347,6 +349,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         {
             string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
             string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
+            string targetsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.targets");
 
             ITemplatePart propsFileTemplate = dependenciesPropsTemplate.Root;
             ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
@@ -362,6 +365,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
 
             dependenciesPropsTemplate.Write(propsPath, replacementSet);
+
+            ITemplatePart targetsFileTemplate = dependenciesTargetsTemplate.Root;
+
+            dependenciesTargetsTemplate.Write(targetsPath, propsFileTemplate.CreateReplacementSet());
 
             if (!File.Exists(projectPath))
             {

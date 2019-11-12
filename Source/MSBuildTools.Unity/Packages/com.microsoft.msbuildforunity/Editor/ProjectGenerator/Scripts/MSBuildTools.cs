@@ -83,7 +83,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath,
             TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath,
             TemplateFiles.Instance.DependenciesProjectTemplatePath,
-            TemplateFiles.Instance.DependenciesPropsTemplatePath));
+            TemplateFiles.Instance.DependenciesPropsTemplatePath,
+            TemplateFiles.Instance.DependenciesTargetsTemplatePath));
 
         public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
 
