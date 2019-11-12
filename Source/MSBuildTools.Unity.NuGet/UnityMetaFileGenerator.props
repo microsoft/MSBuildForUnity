@@ -4,6 +4,8 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
+  <UsingTask TaskName="GenerateAssetId" AssemblyFile="$(MSBuildThisFileDirectory)MSBuildForUnity.dll" />
+
   <!-- These are the extensions that should have associated .meta files. -->
   <ItemGroup>
     <UnityPluginFileExtensions Include="dll;winmd" />

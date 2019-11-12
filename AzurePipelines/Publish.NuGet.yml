@@ -20,7 +20,16 @@ workspace:
 
 steps:
 - template: Templates/CommonInitialization.yml
-- template: Templates/BuildMSBuildForUnityNuget.yml
-# Commenting out the ability to publish the NuGet packages until we get approval from legal
-#- template: Templates/PublishArtifacts.yml
+- template: Templates/BuildMSBuildForUnityNuGetBinaries.yml
+- template: Templates/SignBinaries.yml
+- template: Templates/BuildMSBuildForUnityNuGetPackage.yml
+- template: Templates/SignNuGetPackages.yml
+- template: Templates/PublishArtifacts.yml
+- task: ComponentGovernanceComponentDetection@0
+  displayName: "Scan Third Party Components"
+  inputs:
+    scanType: 'Register'
+    verbosity: 'Verbose'
+    alertWarningLevel: 'High'
+    failOnAlert: true
 - template: Templates/PublishNuGetPackages.yml

@@ -36,6 +36,7 @@ To get started, clone the repo, and then run `git submodule update --init` to in
 | Package | Feed                                                                                                                  |
 |---------|-----------------------------------------------------------------------------------------------------------------------|
 | UPM     | [Azure DevOps](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools) |
+| NuGet   | [![NuGet Package][NuGetPackageBadge]][NuGetPackage]                                                                   |
 
 ## Quick Start
 
@@ -114,3 +115,6 @@ For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/M
 
 [NuGetBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.Publish.NuGet?branchName=master
 [NuGetBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=3&branchName=master
+
+[NuGetPackageBadge]: https://feeds.dev.azure.com/UnityDeveloperTools/0cb95e25-9194-4ccd-9afb-439b25ecb93a/_apis/public/Packaging/Feeds/a3d1c3cc-6042-4e05-b699-39a947e75639/Packages/bdf78d31-dd97-4f6b-befb-75bb6185172e/Badge
+[NuGetPackage]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=package&feed=a3d1c3cc-6042-4e05-b699-39a947e75639&package=bdf78d31-dd97-4f6b-befb-75bb6185172e&preferRelease=true
