@@ -173,28 +173,4 @@ PluginImporter:
     </ItemGroup>
   </Target>
 
-  <!--Generates a Unity asset id (formatted guid) from an asset name (text).
-      Since Unity asset ids are guids (128 bit), use an MD5 hash (also 128 bits) formatted as a hex string. -->
-  <UsingTask TaskName="GenerateAssetId" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-    <ParameterGroup>
-      <AssetName ParameterType="System.String" Required="true" />
-      <AssetId ParameterType="System.String" Output="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System.Linq" />
-      <Using Namespace="System.Security.Cryptography" />
-      <Using Namespace="System.Text" />
-      <Code Type="Fragment" Language="cs">
-        <![CDATA[
-            byte[] inputBytes = Encoding.UTF8.GetBytes(this.AssetName);
-            using (var md5 = MD5.Create())
-            {
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
-                this.AssetId = string.Join(string.Empty, hashBytes.Select(b => b.ToString("x2")));
-            }
-        ]]>
-      </Code>
-    </Task>
-  </UsingTask>
-
 </Project>
