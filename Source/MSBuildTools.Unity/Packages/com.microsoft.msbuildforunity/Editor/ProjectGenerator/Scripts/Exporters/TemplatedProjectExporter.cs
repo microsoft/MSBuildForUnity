@@ -349,6 +349,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         {
             string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
             string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
+            string targetsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.targets");
 
             ITemplatePart propsFileTemplate = dependenciesPropsTemplate.Root;
             ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
@@ -364,6 +365,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
 
             dependenciesPropsTemplate.Write(propsPath, replacementSet);
+
+            ITemplatePart targetsFileTemplate = dependenciesTargetsTemplate.Root;
+
+            dependenciesTargetsTemplate.Write(targetsPath, propsFileTemplate.CreateReplacementSet());
 
             if (!File.Exists(projectPath))
             {

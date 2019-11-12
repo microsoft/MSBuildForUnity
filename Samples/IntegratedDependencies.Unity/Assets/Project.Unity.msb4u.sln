@@ -27,6 +27,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unity.Analytics.DataPrivacy
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Component.WSA", "D:\Projects\NuGet\MSBuildForUnity2\Samples\IntegratedDependencies.Unity\Assets\WSASpecific\Component.WSA.msb4u.csproj", "{BB41A40A-FD6B-AD74-0865-83AB52977BDC}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unity.TextMeshPro.Editor", "D:\Projects\NuGet\MSBuildForUnity2\Samples\IntegratedDependencies.Unity\MSBuild\Projects\Unity.TextMeshPro.Editor.msb4u.csproj", "{6546D776-5B41-65B4-0850-B3667F981C26}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6055BE8E-BEFD-69E4-8B49-212B09B47B2F} = {6055BE8E-BEFD-69E4-8B49-212B09B47B2F}
@@ -41,6 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly-CSharp", "D:\Proje
 		{0DF1F49A-50F1-5354-5BF9-9E3DBB6674AD} = {0DF1F49A-50F1-5354-5BF9-9E3DBB6674AD}
 		{6055BE8E-BEFD-69E4-8B49-212B09B47B2F} = {6055BE8E-BEFD-69E4-8B49-212B09B47B2F}
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E} = {0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC} = {BB41A40A-FD6B-AD74-0865-83AB52977BDC}
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dependencies", "D:\Projects\NuGet\MSBuildForUnity2\Samples\IntegratedDependencies.Unity\Assets\Dependencies.msb4u.csproj", "{493A49C7-0CEC-43F3-9948-C0A854BE3ABC}"
@@ -125,6 +130,16 @@ Global
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WindowsStandalone32.ActiveCfg = Player|WindowsStandalone32
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WindowsStandalone64.ActiveCfg = Player|WindowsStandalone64
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WSA.ActiveCfg = Player|WSA
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|Android.ActiveCfg = InEditor|Android
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|iOS.ActiveCfg = InEditor|iOS
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WindowsStandalone32.ActiveCfg = InEditor|WindowsStandalone32
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WindowsStandalone64.ActiveCfg = InEditor|WindowsStandalone64
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WSA.ActiveCfg = InEditor|WSA
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|Android.ActiveCfg = Player|Android
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|iOS.ActiveCfg = Player|iOS
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|WindowsStandalone32.ActiveCfg = Player|WindowsStandalone32
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|WindowsStandalone64.ActiveCfg = Player|WindowsStandalone64
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|WSA.ActiveCfg = Player|WSA
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|Android.ActiveCfg = InEditor|Android
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|iOS.ActiveCfg = InEditor|iOS
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|WindowsStandalone32.ActiveCfg = InEditor|WindowsStandalone32
@@ -186,6 +201,12 @@ Global
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WindowsStandalone32.Build.0 = Player|WindowsStandalone32
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WindowsStandalone64.Build.0 = Player|WindowsStandalone64
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}.Player|WSA.Build.0 = Player|WSA
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|Android.Build.0 = InEditor|Android
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|iOS.Build.0 = InEditor|iOS
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WindowsStandalone32.Build.0 = InEditor|WindowsStandalone32
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WindowsStandalone64.Build.0 = InEditor|WindowsStandalone64
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.InEditor|WSA.Build.0 = InEditor|WSA
+		{BB41A40A-FD6B-AD74-0865-83AB52977BDC}.Player|WSA.Build.0 = Player|WSA
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|Android.Build.0 = InEditor|Android
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|iOS.Build.0 = InEditor|iOS
 		{6546D776-5B41-65B4-0850-B3667F981C26}.InEditor|WindowsStandalone32.Build.0 = InEditor|WindowsStandalone32
