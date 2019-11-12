@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace CommonLibrary
+namespace CommonLibrary.WSA
 {
-    public class CommonComponent
+    public class WSAHelperComponent : CommonComponent
     {
-        public virtual string GetData()
+        public override string GetData()
         {
-            return GetType().FullName;
+            return "WSA: " + base.GetData();
         }
     }
 }

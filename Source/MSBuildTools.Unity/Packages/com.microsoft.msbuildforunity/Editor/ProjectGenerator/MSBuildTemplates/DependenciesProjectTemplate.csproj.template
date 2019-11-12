@@ -30,12 +30,11 @@
     <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
   </PropertyGroup>
 
-  <!-- Note that this is the special "NoTarget" SDK to prevent this project from producing a dll. -->
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
   
   <ItemGroup>
     
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
 </Project>
