@@ -20,7 +20,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="MSBuildForUnity" Version="0.1.*">
+    <PackageReference Include="MSBuildForUnity" Version="[0.1.117077,)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -32,7 +32,7 @@
   <ItemGroup>
     <!--PROJECT_REFERENCE_TEMPLATE_START-->
     <ProjectReference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
-        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Private>false</Private>
         <Properties>UnityPlatform=$(UnityPlatform);UnityConfiguration=$(UnityConfiguration)</Properties>
     </ProjectReference>
     <!--PROJECT_REFERENCE_TEMPLATE_END-->

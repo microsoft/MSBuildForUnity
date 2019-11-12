@@ -9,12 +9,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <!--We control whether we build the project this way, depending on the platform/configuration-->
-  <PropertyGroup>
-    <OriginalBuildDependsOn>$(BuildDependsOn)</OriginalBuildDependsOn>
-    <BuildDependsOn></BuildDependsOn>
-  </PropertyGroup>
-  
-  <Target Name="OriginalBuild" DependsOnTargets="$(OriginalBuildDependsOn)">
+  <Target Name="OriginalBuild" DependsOnTargets="$(BuildDependsOn)">
   </Target>
 
   <Target Name="SetPlatformProperty">
@@ -23,7 +18,7 @@
     </CreateProperty>
   </Target>
   
-  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
+  <Target Name="Build" Returns="@(TargetPathWithTargetPlatformMoniker)">
     <CallTarget Targets="SetPlatformProperty"/>
 <!--SUPPORTED_PLATFORM_BUILD_CONDITION_TEMPLATE_START-->
     <CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='##SUPPORTED_CONFIGURATION_TOKEN##|##SUPPORTED_PLATFORM_TOKEN##'"/>
