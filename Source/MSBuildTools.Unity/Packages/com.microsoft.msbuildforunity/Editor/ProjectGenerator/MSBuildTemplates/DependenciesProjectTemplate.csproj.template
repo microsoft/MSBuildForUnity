@@ -8,7 +8,7 @@
     You can add project level dependencies to this file, by placing them below:
     - <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
     and before:
-    - <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+    - <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
     
     Do not add any source or compliation items.
     
