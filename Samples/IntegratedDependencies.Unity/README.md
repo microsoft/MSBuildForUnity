@@ -1,6 +1,31 @@
-# Simple NuGet Dependency
+# Integrated Dependencies
 
-This sample shows how to make use of MSBuildForUnity to embed a NuGet dependency into your project with minimal other impact on your project.
+This project shows a considerably more robust usage of MSBuildForUnity for your dependency management needs. Here, we rely on project generation to create .csproj files for each Assembly Definition file declared in the project, as well as, the top-level Dependencies project. Furthermore, we include an "External (to Unity)" .csproj and establish a dependency relationship between two of our components and that code. And finally, these dependency relationships are actually established depending on the platform that is currently selected in Unity.
+
+## Generated Projects
+
+When you open this sample in Unity, you will note that project generation is enabled:
+
+![Project Generation Enabled](docs\ProjectGenerationEnabled.png)
+
+> This is persisted in a checked-in file at `IntegratedDependencies.Unity\MSBuild\settings.json`.
+
+
+
+## Establishing Dependency Relationship
+
+### Platform Specific Dependency
+
+## Building Dependencies
+
+## Known Limitations
+
+
+
+
+
+
+
 
 ## Declaring the Dependency
 
