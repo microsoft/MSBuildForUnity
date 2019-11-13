@@ -8,12 +8,15 @@ namespace Microsoft.Build.Unity
 {
     partial class MSBuildProjectBuilder
     {
+        public const string BuildProfileName = "Build";
+        public const string RebuildProfileName = "Rebuild";
+        public const string CleanProfileName = "Clean";
+        public const string PackProfileName = "Pack";
+
         private const string BuildAllProjectsMenuName = "MSBuild/Build All Projects";
-        private const string BuildProfileName = "Build";
         private const string RebuildAllProjectsMenuName = "MSBuild/Rebuild All Projects";
-        private const string RebuildProfileName = "Rebuild";
+        private const string CleanAllProjectsMenuName = "MSBuild/Clean All Projects";
         private const string PackAllProjectsMenuName = "MSBuild/Pack All Projects";
-        private const string PackProfileName = "Pack";
 
         /// <summary>
         /// Tries to build all projects that define the specified profile.
@@ -62,7 +65,13 @@ namespace Microsoft.Build.Unity
         [MenuItem(MSBuildProjectBuilder.RebuildAllProjectsMenuName, validate = true)]
         private static bool CanRebuildAllProjects() => MSBuildProjectBuilder.CanBuildAllProjects(MSBuildProjectBuilder.RebuildProfileName);
 
-        [MenuItem(MSBuildProjectBuilder.PackAllProjectsMenuName, priority = 3)]
+        [MenuItem(MSBuildProjectBuilder.CleanAllProjectsMenuName, priority = 3)]
+        private static void CleanAllProjects() => MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
+
+        [MenuItem(MSBuildProjectBuilder.CleanAllProjectsMenuName, validate = true)]
+        private static bool CanCleanAllProjects() => MSBuildProjectBuilder.CanBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
+
+        [MenuItem(MSBuildProjectBuilder.PackAllProjectsMenuName, priority = 4)]
         private static void PackAllProjects() => MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.PackProfileName);
 
         [MenuItem(MSBuildProjectBuilder.PackAllProjectsMenuName, validate = true)]
