@@ -1,6 +1,10 @@
 steps:
 - task: EsrpCodeSigning@1
+<<<<<<< HEAD
   displayName: Sign First Party Binaries
+=======
+  displayName: Sign Binaries
+>>>>>>> Sign dlls and package (#39)
   inputs:
     ConnectedServiceName: 'ESRP Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/Source/MSBuildTools.Unity.Nuget/bin/Release'
@@ -28,6 +32,7 @@ steps:
             "ToolName" : "sign",
             "ToolVersion" : "1.0"
         }
+<<<<<<< HEAD
       ]
 - task: EsrpCodeSigning@1
   displayName: Sign Third Party Binaries
@@ -62,4 +67,6 @@ steps:
             "ToolName" : "sign",
             "ToolVersion" : "1.0"
         }
+=======
+>>>>>>> Sign dlls and package (#39)
       ]
