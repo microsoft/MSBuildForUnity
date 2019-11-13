@@ -10,66 +10,57 @@ When you open this sample in Unity, you will note that project generation is ena
 
 > This is persisted in a checked-in file at `IntegratedDependencies.Unity\MSBuild\settings.json`.
 
+Generation is split into two types of files being created:
 
+- Persistent files that can be checked-in:
+  - C# Project files that are found under `Assets/` or `Packages/` folder.
+  - Solution file in the Assets folder
+- Transient files Under `MSBuild/` that will be regenerated, and shouldn't be checked in.
+- MSBuildForUnity.Common.props that will be regenerated and shouldn't be checked-in.
+
+There is a limited set of times when the projects would be automatically regenerated:
+
+- When you enable `Generation Enabled`, it will go ahead and generate.
+- When you launch Unity
+- When you switch platforms
+- Every time a rebuild happens, we do a super fast regeneration of MSBuildForUnity.common.props.
 
 ## Establishing Dependency Relationship
 
+In order to add dependencies to your project, you can open any C# project under `Assets/` or `Packages/` folder and modify it. For example, here is the `Dependencies.msb4u.csproj`.
+
+![Dependencies.msb4u.csproj](docs\DependenciesGeneratedProject.png)
+
+This project has been modified to depend on an external C# project that is unrelated to Unity. Thus when this project is built, it will build that dependency and bring it into the Unity Assets folder.
+
 ### Platform Specific Dependency
+
+Furthermore, this sample includes an example of how to specify a dependency for a specific platform. The Assembly Definition at `Assets\WSASpecific\Component.WSA.asmdef` is marked to be built for `Universal Windows Platform` and `Editor` platforms; additionally it specifies a `UNITY_WSA` define constraint that only allows it to be compiled when UWP platform is selected.
+
+![Dependencies.msb4u.csproj](docs\UWPAsmDef.png)
+
+The generated project `Assets\WSASpecific\Component.WSA.msb4u.csproj` contains a dependency on `CommonLibrary.WSA.csproj` that would get built and pulled in only when the Editor is set to UWP platform.
+
+![Dependencies.msb4u.csproj](docs\UWPGeneratedProject.png)
+
+> As you can see, this project also incudes the `NewtonSoft.Json` NuGet package reference that will be brought in.
 
 ## Building Dependencies
 
+MSBuild Tools for Unity auto builds the `Dependencies.msb4u.csproj` at various times in order for these dependencies to be pulled in. If for some reason this doesn't happen, you can select the `Dependencies.msb4u` item under `Assets/` folder and press `Build` yourself.
+
+![Dependencies.msb4u.csproj](docs\CSProjectBuild.png)
+
 ## Known Limitations
 
+### Unity Specific NuGet Packages
 
+A NuGet package that was built for NuGet like [Microsoft.MixedReality.Toolkit.Foundation](https://www.nuget.org/packages/Microsoft.MixedReality.Toolkit.Foundation/) won't yet work with this method. Support for that is coming soon.
 
+### Player vs Editor Dependencies
 
+There is no supported way to pull in one dependency for the editor and a different one for when the Player is being built. You can only do it on a platform level.
 
+### When Regeneration and Rebuilding Happens
 
-
-
-## Declaring the Dependency
-
-In order for you to declare the dependency, you need several key things:
-
-- A folder for your dependency files
-- A C# project file (.csproj) file that specifies the dependency.
-- A .gitignore that ensures only the necessary files are seen by git.
-- **Temporary:** A NuGet.config that contains the special feed of MSBuildForUnity NuGet package. This requirement will go away soon.
-
-This sample has it set up under the following location `Assets\NewtonSoftDependency`.
-
-### C# Project File Structure
-
-The project file structure has several required parts to it:
-
-- The `MSBuildForUnity.Common.props` import (if found).
-  - This file contains some core properties that we require.
-- Conditional declaration of `TargetFramework` that depends on whether `UnityCurrentTargetFramework` property is available from above import.
-  - The target framework is what determines which DLL of a NuGet package is pulled in. MSBuildForUnity keeps the property up to date in `MSBuildForUnity.Common.props`.
-- Setting the `BaseIntermediateOutputPath` (object directory) to be invisible by Unity, by prefixing it with a '.'
-- Naming the `OutputPath` that will be seen by Unity, this is where the NuGet output will be dumped into.
-- Package reference to `MSBuildForUnity` NuGet package that enables the correct resolution of dependencies.
-- `Sdk.props` and `Sdk.targets` import that doesn't produce a dll (`Microsoft.Build.NoTargets`).
-
-The `Assets\NewtonSoftDependency\NewtonSoftDependency.csproj` contains all of this, plus the NuGet reference to "NewtonSoft.Json" and is a total of 33 lines long.
-
-![C# Project File Contents](docs\CSProjectContents.png)
-
-## The Process
-
-When MSBuildForUnity is brought into the project, the following happens:
-
-1. Generates the small `MSBuildForUnity.Common.props` file.
-2. Auto-processes all of the .csproj files in the repository, and builds them.
-
-## Question & Answer
-
-### Referencing External C# Projects
-
-It is possible to reference external C# projects in the same manner as the NuGet packages. As long as the .csproj file contains the structure described above, you can include other tasks and references in it.
-
-### Changing Target Scripting Subset
-
-If you update the Unity project form .NET 4.6 to .NET Standard 2.0, the `MSBuildForUnity.Common.props` will be updated to reflect the change, and the project would get re-built.
-
-> Today the project won't be cleaned, and the older NuGet artifacts will still be on disk. You would either have to do a `git clean` or manually delete that folder.
+There are still fine tuning and optimizations that must happen to make sure we regenerate and build the minimum number of times but sufficiently often. Today we err on the side of less.
