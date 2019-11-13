@@ -4,4 +4,4 @@ steps:
   inputs:
     solution: 'Source\MSBuildTools.Unity.Nuget\MSBuildForUnity.NuGet.sln'
     configuration: Release
-    msbuildArguments: '/restore /bl:$(Build.SourcesDirectory)\MSBuildForUnity.NuGet.binlog'
+    msbuildArguments: '/p:GeneratePackageOnBuild=false /restore /bl:$(Build.SourcesDirectory)\MSBuildForUnity.Source.binlog'

@@ -1,4 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
+
+  <Import Project="SDK.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -15,6 +17,9 @@
 
     <!-- Don't warn about DLL's outside of the lib folder, the DLL is for the MSBuild task so it should NOT live in the lib folder -->
     <NoWarn>$(NoWarn);NU5100</NoWarn>
+
+    <!-- Dependencies need to be copied to the output directory so they can be signed -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <!-- Setup the versioning for the package based on the build number if provided -->
@@ -24,9 +29,7 @@
 
     <MinorVersion>1</MinorVersion>
 
-    <!--
-      Minor is defaulted to 0, but if running in the lab where BuildID is specified then default the revision to that value.
-    -->
+    <!-- Revision is defaulted to 0, but if running in the lab where BuildID is specified then default the revision to that value. -->
     <RevisionVersion>0</RevisionVersion>
     <RevisionVersion Condition="'$(BUILD_BUILDID)' != ''">$(BUILD_BUILDID)</RevisionVersion>
 
@@ -53,22 +56,26 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" Version="15.9.20" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.9.20" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Mono.Cecil\Mono.Cecil.csproj" />
-    <ProjectReference Include="..\Mono.Cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
 
   <!--
       There is a runtime dependency on Mono.Cecil and Newtonsoft for the tasks. Unfortunately there is no way to express that as a NuGet package dependency for build tasks.
       The only real option is to bundle the Mono.Cecil DLL's into our own package.
     -->
-  <Target Name="EmbedMonoCecil" AfterTargets="ResolveReferences">
-    <ItemGroup>
-      <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Mono.Cecil'))" PackagePath="buildCommon" />
-      <Content Include="@(ReferencePath)" Condition="$([System.String]::new('%(ReferencePath.Filename)').StartsWith('Newtonsoft'))" PackagePath="buildCommon" />
+  <Target Name="EmbedMonoCecil">
+     <ItemGroup>
+      <Content Include="$(OutputPath)\Mono.Cecil.dll" PackagePath="buildCommon" />
+      <Content Include="$(OutputPath)\Mono.Cecil.*.dll" PackagePath="buildCommon" />
+      <Content Include="$(OutputPath)\Newtonsoft.Json.dll" PackagePath="buildCommon" />
     </ItemGroup>
   </Target>
+
+  <Import Project="SDK.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <PackDependsOn>EmbedMonoCecil;$(PackDependsOn)</PackDependsOn>
+  </PropertyGroup>
+
 </Project>
