@@ -11,5 +11,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [
+        "UNITY_WSA"
+    ]
 }
