@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -55,6 +56,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     [InitializeOnLoad]
     public static class MSBuildTools
     {
+        private class BuildTargetChanged : IActiveBuildTargetChanged
+        {
+            public int callbackOrder => 0;
+
+            public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
+            {
+                File.Delete(TokenFilePath);
+                RunCoreAutoGenerate();
+            }
+        }
+
         private static readonly HashSet<BuildTarget> supportedBuildTargets = new HashSet<BuildTarget>()
         {
             BuildTarget.StandaloneWindows,
@@ -67,6 +79,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public const string CSharpVersion = "7.3";
         public const string AutoGenerate = "MSBuild/Generation Enabled";
 
+        private static readonly string TokenFilePath = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;
@@ -133,13 +146,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 return;
             }
 
-            string tokenFile = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
             // Check if a file exists, if it does, we already generated this editor instance
-            if (!File.Exists(tokenFile))
+            if (!File.Exists(TokenFilePath))
             {
-                RegenerateEverything(false);
+                RegenerateEverything(true);
 
-                File.Create(tokenFile).Dispose();
+                File.Create(TokenFilePath).Dispose();
             }
 
         }

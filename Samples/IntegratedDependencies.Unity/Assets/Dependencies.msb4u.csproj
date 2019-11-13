@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0">
+﻿<Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in.
@@ -33,7 +33,7 @@
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
   
   <ItemGroup>
-    
+    <ProjectReference Include="..\External\CommonLibrary\CommonLibrary.csproj" />
   </ItemGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />

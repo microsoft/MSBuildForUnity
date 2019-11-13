@@ -2,11 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using UnityEngine;
+using CommonLibrary.WSA;
 
 public class WSAComponentType : MonoBehaviour
 {
     void Start()
     {
-        
+        Debug.Log(new WSAHelperComponent().GetData());
     }
 }
