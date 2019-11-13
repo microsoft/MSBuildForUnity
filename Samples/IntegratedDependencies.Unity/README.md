@@ -27,9 +27,9 @@ There is a limited set of times when the projects would be automatically regener
 
 ## Establishing Dependency Relationship
 
-In order to add dependencies to your project, you can open any C# project under `Assets/` or `Packages/` folder and modify it. For example, here is the `Dependencies.msb4u.csproj`.
+In order to add dependencies to your project, you can open any C# project under `Assets/` or `Packages/` folder and modify it. For example, here is the `Assembly-CSharp.msb4u.csproj`.
 
-![Dependencies.msb4u.csproj](docs\DependenciesGeneratedProject.png)
+![Assembly-CSharp.msb4u.csproj](docs\Assembly-CSharpGeneratedProject.png)
 
 This project has been modified to depend on an external C# project that is unrelated to Unity. Thus when this project is built, it will build that dependency and bring it into the Unity Assets folder.
 
