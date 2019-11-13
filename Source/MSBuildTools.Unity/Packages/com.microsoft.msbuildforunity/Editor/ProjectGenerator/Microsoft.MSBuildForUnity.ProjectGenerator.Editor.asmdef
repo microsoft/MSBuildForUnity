@@ -1,6 +1,8 @@
 {
     "name": "Microsoft.MSBuildForUnity.ProjectGenerator",
-    "references": [],
+    "references": [
+        "MSBuildForUnity"
+    ],
     "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"

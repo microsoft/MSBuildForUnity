@@ -63,7 +63,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
                 File.Delete(TokenFilePath);
+                Debug.Log("Change");
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
                 RunCoreAutoGenerate();
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
         }
 
@@ -130,11 +133,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 Debug.LogError($"{nameof(GenerateSDKProjects)} Failed.");
                 throw;
             }
-        }
-
-        static MSBuildTools()
-        {
-            RunCoreAutoGenerate();
         }
 
         private static void RunCoreAutoGenerate()
