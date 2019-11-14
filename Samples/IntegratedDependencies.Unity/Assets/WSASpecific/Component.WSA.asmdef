@@ -1,16 +1,17 @@
 {
-    "name": "Microsoft.MSBuildForUnity.ProjectGenerator",
-    "references": [
-        "MSBuildForUnity"
-    ],
+    "name": "Component.WSA",
+    "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [
-        "Editor"
+        "Editor",
+        "WSA"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
-    "defineConstraints": []
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_WSA"
+    ]
 }

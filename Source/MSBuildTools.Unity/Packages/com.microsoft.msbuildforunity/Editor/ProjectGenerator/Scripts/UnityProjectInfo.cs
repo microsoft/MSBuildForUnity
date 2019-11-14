@@ -173,6 +173,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
+            // This will parse additional asmdefs that are not part of current compilation set, but we still need
+            foreach (string asmdefGuid in AssetDatabase.FindAssets("t:asmdef"))
+            {
+                string asmDefPath = AssetDatabase.GUIDToAssetPath(asmdefGuid);
+                string asmDefKey = Path.GetFileNameWithoutExtension(asmDefPath);
+                if (!asmDefInfoMap.ContainsKey(asmDefKey))
+                {
+                    AssemblyDefinitionInfo assemblyDefinitionInfo = AssemblyDefinitionInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(asmDefPath)), this, null);
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
+                    asmDefInfoMap.Add(asmDefKey, assemblyDefinitionInfo);
+                }
+            }
+
             int index = 0;
             ProcessSortedAsmDef(asmDefDirectoriesSorted.ToArray(), ref index, (uri) => true, (a) => { });
 
@@ -238,7 +251,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!asmDefInfoMap.TryGetValue(projectKey, out AssemblyDefinitionInfo assemblyDefinitionInfo))
             {
-                Debug.LogError($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
+                Debug.Log($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
                 return null;
             }
 
@@ -247,9 +260,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!assemblyDefinitionInfo.BuiltInPackage)
             {
+                Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies"));
                 foreach (PluginAssemblyInfo plugin in Plugins.Where(t => t.Type != PluginType.Native))
                 {
-                    if (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name))
+                    if (!dependencies.IsBaseOf(plugin.ReferencePath) && (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name)))
                     {
                         toReturn.AddDependency(plugin);
                     }

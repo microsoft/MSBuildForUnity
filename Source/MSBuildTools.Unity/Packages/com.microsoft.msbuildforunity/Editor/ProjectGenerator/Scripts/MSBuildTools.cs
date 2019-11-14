@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -55,6 +56,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     [InitializeOnLoad]
     public static class MSBuildTools
     {
+        private class BuildTargetChanged : IActiveBuildTargetChanged
+        {
+            public int callbackOrder => 0;
+
+            public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
+            {
+                Debug.Log("Change");
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
+                RunCoreAutoGenerate(true);
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
+            }
+        }
+
         private static readonly HashSet<BuildTarget> supportedBuildTargets = new HashSet<BuildTarget>()
         {
             BuildTarget.StandaloneWindows,
@@ -67,6 +81,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public const string CSharpVersion = "7.3";
         public const string AutoGenerate = "MSBuild/Generation Enabled";
 
+        private static readonly string TokenFilePath = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;
@@ -81,16 +96,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             TemplateFiles.Instance.SDKGeneratedProjectFileTemplatePath,
             TemplateFiles.Instance.SDKProjectPropsFileTemplatePath,
             TemplateFiles.Instance.SDKProjectTargetsFileTemplatePath,
-            TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath));
+            TemplateFiles.Instance.MSBuildForUnityCommonPropsTemplatePath,
+            TemplateFiles.Instance.DependenciesProjectTemplatePath,
+            TemplateFiles.Instance.DependenciesPropsTemplatePath,
+            TemplateFiles.Instance.DependenciesTargetsTemplatePath));
 
         public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
-        
+
         [MenuItem(AutoGenerate, priority = 101)]
         public static void ToggleAutoGenerate()
         {
             Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
             Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
-            RunCoreAutoGenerate();
+            RunCoreAutoGenerate(false);
         }
 
         [MenuItem(AutoGenerate, true, priority = 101)]
@@ -100,7 +118,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return true;
         }
 
-       
+
         [MenuItem("MSBuild/Regenerate C# SDK Projects", priority = 102)]
         public static void GenerateSDKProjects()
         {
@@ -118,27 +136,29 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         static MSBuildTools()
         {
-            RunCoreAutoGenerate();
+            RunCoreAutoGenerate(false);
         }
 
-        private static void RunCoreAutoGenerate()
+        private static void RunCoreAutoGenerate(bool skipTokenFileCheck)
         {
-            Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
-
-            if (!Config.AutoGenerateEnabled)
-            {
-                return;
-            }
-
-            string tokenFile = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
             // Check if a file exists, if it does, we already generated this editor instance
-            if (!File.Exists(tokenFile))
+            bool fileExists = File.Exists(TokenFilePath);
+            if (!fileExists || skipTokenFileCheck)
             {
-                RegenerateEverything(false);
-                
-                File.Create(tokenFile).Dispose();
-            }
+                Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
 
+                if (!Config.AutoGenerateEnabled)
+                {
+                    return;
+                }
+
+                RegenerateEverything(true);
+
+                if (!fileExists)
+                {
+                    File.Create(TokenFilePath).Dispose();
+                }
+            }
         }
 
         private static void ExportCoreUnityPropFiles()
@@ -146,11 +166,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             foreach (CompilationPlatformInfo platform in UnityProjectInfo.AvailablePlatforms)
             {
                 // Check for specialized template, otherwise get the common one
-                Exporter.ExportCommonPropsFile(platform, true);
-                Exporter.ExportCommonPropsFile(platform, false);
+                Exporter.ExportPlatformPropsFile(platform, true);
+                Exporter.ExportPlatformPropsFile(platform, false);
             }
 
-            Exporter.ExportCommonPropsFile(UnityProjectInfo.EditorPlatform, true);
+            Exporter.ExportPlatformPropsFile(UnityProjectInfo.EditorPlatform, true);
         }
 
         private static void RegenerateEverything(bool reparseUnityData)
