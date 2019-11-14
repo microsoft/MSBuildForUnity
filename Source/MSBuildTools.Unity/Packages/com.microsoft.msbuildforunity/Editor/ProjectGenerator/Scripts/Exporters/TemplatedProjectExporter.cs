@@ -41,6 +41,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="projectFileTemplatePath">The path to the C# project file template.</param>
         /// <param name="projectPropsFileTemplatePath">The path to the props file template.</param>
         /// <param name="projectTargetsFileTemplatePath">The path to the targets file template.</param>
+        /// <param name="generatedProjectFileTemplatePath">The path to the generated project file that won't be checked-in.</param>
+        /// <param name="msbuildForUnityCommonTemplatePath">Path to the common props file that is quick generated.</param>
+        /// <param name="dependenciesProjectTemplatePath">Path to the dependencies project template file.</param>
+        /// <param name="dependenciesPropsTemplatePath">Path to the dependencies props template file.</param>
+        /// <param name="dependenciesTargetsTemplatePath">Path to the dependencies targets template file.</param>
         public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
@@ -441,7 +446,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             string projectPath = GetProjectPath(dependency).FullName;
             TemplateReplacementSet replacementSet = projectReferenceTemplatePart.CreateReplacementSet(parentReplacementSet);
             projectReferenceTemplatePart.Tokens["REFERENCE"].AssignValue(replacementSet, projectPath);
-            //projectReferenceTemplatePart.Tokens["HINT_PATH"].AssignValue(replacementSet, GetProjectPath(dependency.Dependency).AbsolutePath);
             projectReferenceTemplatePart.Tokens["CONDITION"].AssignValue(replacementSet, platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions));
         }
 
