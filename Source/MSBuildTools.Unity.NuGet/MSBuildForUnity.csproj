@@ -27,13 +27,20 @@
     <!-- Major is hard-coded and should be incremented on breaking changes -->
     <MajorVersion>0</MajorVersion>
 
-    <MinorVersion>1</MinorVersion>
+    <!-- Minor version is hard-coded and should be incremented on feature additions that aren't breaking changes.-->
+    <MinorVersion>8</MinorVersion>
 
-    <!-- Revision is defaulted to 0, but if running in the lab where BuildID is specified then default the revision to that value. -->
+    <!-- Revision (semver Patch) version is hard-coded and should be incremented when a bug fix is made.-->
     <RevisionVersion>0</RevisionVersion>
-    <RevisionVersion Condition="'$(BUILD_BUILDID)' != ''">$(BUILD_BUILDID)</RevisionVersion>
+    
+    <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
+    <!-- Version is based on Major.Minor.Revision, but if running in the lab where BuildID is specified then default then we append that.. -->
+    <Version Condition="'$(BUILD_BUILDID)' != ''">$(Version)-$(BUILD_BUILDID)</Version>
 
-    <PackageVersion>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</PackageVersion>
+    <PackageVersion>$(Version)</PackageVersion>
+    <AssemblyVersion>$(MajorVersion).$(MinorVersion)</AssemblyVersion>
+    <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).*</AssemblyFileVersion>
+    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != ''">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
   </PropertyGroup>
 
   <ItemGroup>
