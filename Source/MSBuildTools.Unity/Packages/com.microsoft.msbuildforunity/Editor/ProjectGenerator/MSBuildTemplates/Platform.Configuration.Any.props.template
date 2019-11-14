@@ -2,9 +2,6 @@
   <PropertyGroup>
     <TargetFramework><!--TARGET_FRAMEWORK_TOKEN--></TargetFramework>
     <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN--></DefineConstants>
-    
-    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
-    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(IsEditorOnlyTarget)' == 'false' OR '$(IsEditorOnlyTarget)' == ''">

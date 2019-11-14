@@ -137,10 +137,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             {
                 if (File.Exists(projectPath))
                 {
-                    Debug.Log($"Skipping replacing the existing C# project file {projectInfo.Name}");
-                }
-                else
-                {
                     projectFileTemplate.Write(projectPath, projectFileTemplate.Root.CreateReplacementSet());
                 }
             }
@@ -214,6 +210,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
             rootTemplate.Tokens["CURRENT_UNITY_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.Name);
             rootTemplate.Tokens["CURRENT_TARGET_FRAMEWORK"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.TargetFramework.AsMSBuildString());
+
+            string[] versionParts = Application.unityVersion.Split('.');
+            rootTemplate.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
+            rootTemplate.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
+
             msbuildForUnityCommonTemplate.Write(outputPath, rootReplacementSet);
         }
 
@@ -521,7 +522,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 minUWPPlatform = MSBuildTools.DefaultMinUWPSDK.ToString();
             }
 
-            string[] versionParts = Application.unityVersion.Split('.');
             // This is a try replace because some may hardcode this value
             rootPart.TryReplaceToken("TARGET_FRAMEWORK", rootReplacementSet, targetFramework.AsMSBuildString());
 
@@ -539,9 +539,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 rootPart.TryReplaceToken("UWP_TARGET_PLATFORM_VERSION", rootReplacementSet, targetUWPPlatform);
                 rootPart.TryReplaceToken("UWP_MIN_PLATFORM_VERSION", rootReplacementSet, minUWPPlatform);
             }
-
-            rootPart.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
-            rootPart.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
 
             ITemplatePart platformCommonReferencePart = rootPart.Templates["PLATFORM_COMMON_REFERENCE"];
             foreach (string reference in platformAssemblyReferencePaths)
