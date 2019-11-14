@@ -62,10 +62,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
-                File.Delete(TokenFilePath);
                 Debug.Log("Change");
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
-                RunCoreAutoGenerate();
+                RunCoreAutoGenerate(true);
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
         }
@@ -109,7 +108,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
             Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
-            RunCoreAutoGenerate();
+            RunCoreAutoGenerate(false);
         }
 
         [MenuItem(AutoGenerate, true, priority = 101)]
@@ -135,23 +134,31 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
-        private static void RunCoreAutoGenerate()
+        static MSBuildTools()
         {
-            Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
+            RunCoreAutoGenerate(false);
+        }
 
-            if (!Config.AutoGenerateEnabled)
-            {
-                return;
-            }
-
+        private static void RunCoreAutoGenerate(bool skipTokenFileCheck)
+        {
             // Check if a file exists, if it does, we already generated this editor instance
-            if (!File.Exists(TokenFilePath))
+            bool fileExists = File.Exists(TokenFilePath);
+            if (!fileExists || skipTokenFileCheck)
             {
+                Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
+
+                if (!Config.AutoGenerateEnabled)
+                {
+                    return;
+                }
+
                 RegenerateEverything(true);
 
-                File.Create(TokenFilePath).Dispose();
+                if (!fileExists)
+                {
+                    File.Create(TokenFilePath).Dispose();
+                }
             }
-
         }
 
         private static void ExportCoreUnityPropFiles()
