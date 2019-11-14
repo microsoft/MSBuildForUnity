@@ -8,8 +8,6 @@
     <TargetPlatformMinVersion><!--UWP_MIN_PLATFORM_VERSION_TOKEN--></TargetPlatformMinVersion>
     
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
-    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
 
   <!-- This is for succesful building step from dotnet cli -->

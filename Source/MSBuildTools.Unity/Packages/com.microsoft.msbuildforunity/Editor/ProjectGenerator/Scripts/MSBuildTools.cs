@@ -62,7 +62,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
-                Debug.Log("Change");
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
                 RunCoreAutoGenerate(true);
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
