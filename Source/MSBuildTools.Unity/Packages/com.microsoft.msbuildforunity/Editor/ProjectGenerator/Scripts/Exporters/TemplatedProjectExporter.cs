@@ -376,37 +376,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
-        {
-            string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
-            string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
-            string targetsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.targets");
-
-            ITemplatePart propsFileTemplate = dependenciesPropsTemplate.Root;
-            ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
-
-            TemplateReplacementSet replacementSet = propsFileTemplate.CreateReplacementSet();
-
-            // We use this to emulate the platform support for all 
-            Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
-            foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
-            {
-                List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
-                ProcessProjectDependency(replacementSet, projectReferenceTemplate, projectInfo, platformConditions);
-            }
-
-            dependenciesPropsTemplate.Write(propsPath, replacementSet);
-
-            ITemplatePart targetsFileTemplate = dependenciesTargetsTemplate.Root;
-
-            dependenciesTargetsTemplate.Write(targetsPath, propsFileTemplate.CreateReplacementSet());
-
-            if (!File.Exists(projectPath))
-            {
-                dependenciesProjectTemplate.Write(projectPath, dependenciesProjectTemplate.Root.CreateReplacementSet());
-            }
-        }
-
         private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects)
         {
             if (projects.Count > 0)

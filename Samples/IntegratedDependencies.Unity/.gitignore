@@ -65,6 +65,6 @@ crashlytics-build.properties
 /MSBuild/Publish/**/*.dll
 /MSBuild/Publish/**/*.pdb
 /MSBuildForUnity.Common.props
-!/Assets/*.msb4u.*
-!/Packages/*.msb4u.*
+!/Assets/**/*.msb4u.*
+!/Packages/**/*.msb4u.*
 /Assets/Dependencies
