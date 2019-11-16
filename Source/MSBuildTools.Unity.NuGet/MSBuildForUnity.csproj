@@ -34,12 +34,12 @@
     <RevisionVersion>0</RevisionVersion>
     
     <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
-    <!-- Version is based on Major.Minor.Revision, but if running in the lab where BuildID is specified then default then we append that.. -->
+    <!-- Version is based on Major.Minor.Revision as defined above, however, in a lab BUILD_BUILDID will be set so we pull in that as the pre-release version. -->
     <Version Condition="'$(BUILD_BUILDID)' != ''">$(Version)-$(BUILD_BUILDID)</Version>
 
     <PackageVersion>$(Version)</PackageVersion>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion)</AssemblyVersion>
-    <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).*</AssemblyFileVersion>
+    <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).0</AssemblyFileVersion>
     <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != ''">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
   </PropertyGroup>
 

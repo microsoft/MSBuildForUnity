@@ -78,7 +78,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         public const string CSharpVersion = "7.3";
-        public const string AutoGenerate = "MSBuild/Generation Enabled";
+        public const string AutoGenerate = "MSBuild/Auto Generation Enabled";
 
         private static readonly string TokenFilePath = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
