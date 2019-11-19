@@ -79,20 +79,20 @@ namespace Microsoft.Build.Unity
                 }
 
                 // Determine the absolute path of the MSBuild project (based on the projectPath being relative to the MSBuildProjectReference asset).
-                if (!string.IsNullOrEmpty(projectPath))
+                if (!string.IsNullOrEmpty(this.projectPath))
                 {
                     string unityProjectPath = Path.GetDirectoryName(Application.dataPath);
                     string assetAbsolutePath = Path.Combine(unityProjectPath, assetRelativePath);
                     string assetAbsoluteDirectory = Path.GetDirectoryName(assetAbsolutePath);
-                    return Path.GetFullPath(Path.Combine(assetAbsoluteDirectory, projectPath));
+                    return Path.GetFullPath(Path.Combine(assetAbsoluteDirectory, this.projectPath));
                 }
 
                 return string.Empty;
             }
         }
 
-        public BuildEngine BuildEngine => buildEngine;
+        public BuildEngine BuildEngine => this.buildEngine;
 
-        public IEnumerable<(string name, bool autoBuild, string arguments)> Profiles => profiles == null ? Enumerable.Empty<(string, bool, string)>() : profiles.Select(profile => (profile.Name, profile.AutoBuild, profile.Arguments));
+        public IEnumerable<(string name, bool autoBuild, string arguments)> Profiles => this.profiles == null ? Enumerable.Empty<(string, bool, string)>() : this.profiles.Select(profile => (profile.Name, profile.AutoBuild, profile.Arguments));
     }
 }
