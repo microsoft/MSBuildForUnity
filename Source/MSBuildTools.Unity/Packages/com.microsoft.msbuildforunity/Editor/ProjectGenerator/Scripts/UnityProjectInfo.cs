@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -17,7 +16,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
     /// </summary>
-    public class UnityProjectInfo
+    public class UnityProjectInfo : IDisposable
     {
         /// <summary>
         /// These package references aren't actual packages it appears, manually labeling them for exclusion.
@@ -35,21 +34,36 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the available platforms for this Unity project.
         /// </summary>
-        internal IEnumerable<CompilationPlatformInfo> AvailablePlatforms { get; }
+        public IReadOnlyCollection<CompilationPlatformInfo> AvailablePlatforms { get; }
+
+        /// <summary>
+        /// Gets the special editor platform.
+        /// </summary>
+        public CompilationPlatformInfo EditorPlatform { get; }
+
+        /// <summary>
+        /// Gets the current player platform.
+        /// </summary>
+        public CompilationPlatformInfo CurrentPlayerPlatform { get; }
 
         /// <summary>
         /// Gets all the parsed CSProjects for this Unity project.
         /// </summary>
-        public IReadOnlyDictionary<string, CSProjectInfo> CSProjects { get; }
+        public IReadOnlyDictionary<string, CSProjectInfo> CSProjects { get; private set; }
 
         /// <summary>
         /// Gets all the parsed DLLs for this Unity project.
         /// </summary>
-        public IReadOnlyCollection<PluginAssemblyInfo> Plugins { get; }
+        public IReadOnlyCollection<PluginAssemblyInfo> Plugins { get; private set; }
 
-        public UnityProjectInfo(IEnumerable<CompilationPlatformInfo> availablePlatforms, string projectOutputPath)
+        public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets)
         {
-            AvailablePlatforms = availablePlatforms;
+            AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
+                    .Select(CompilationPlatformInfo.GetCompilationPlatform)
+                    .OrderBy(t => t.Name).ToList());
+
+            EditorPlatform = CompilationPlatformInfo.GetEditorPlatform();
 
             UnityProjectName = Application.productName;
 
@@ -58,6 +72,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 UnityProjectName = "UnityProject";
             }
 
+            RefreshPlugins();
+            RefreshProjects();
+
+            CurrentPlayerPlatform = AvailablePlatforms.First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget);
+        }
+
+        public void Dispose()
+        {
+            // This will be used soon
+        }
+
+        public void RefreshPlugins()
+        {
             Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(ScanForPluginDLLs());
 
             foreach (PluginAssemblyInfo plugin in Plugins)
@@ -68,13 +95,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects(projectOutputPath));
+            RefreshProjects();
         }
 
-        private Dictionary<string, CSProjectInfo> CreateUnityProjects(string projectOutputPath)
+        public void RefreshProjects()
+        {
+            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects());
+        }
+
+        private Dictionary<string, CSProjectInfo> CreateUnityProjects()
         {
             // Not all of these will be converted to C# objects, only the ones found to be referenced
             Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap = new Dictionary<string, AssemblyDefinitionInfo>();
+            SortedSet<AssemblyDefinitionInfo> asmDefDirectoriesSorted = new SortedSet<AssemblyDefinitionInfo>(Comparer<AssemblyDefinitionInfo>.Create((a, b) => a.Directory.FullName.CompareTo(b.Directory.FullName)));
+
             HashSet<string> builtInPackagesWithoutSource = new HashSet<string>();
 
             // Parse the builtInPackagesFirst
@@ -92,8 +126,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 foreach (FileInfo fileInfo in asmDefFiles)
                 {
                     AssemblyDefinitionInfo assemblyDefinitionInfo = AssemblyDefinitionInfo.Parse(fileInfo, this, null, true);
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
                     asmDefInfoMap.Add(Path.GetFileNameWithoutExtension(fileInfo.Name), assemblyDefinitionInfo);
                 }
+            }
+
+            Dictionary<string, string> packageCacheVersionedMap = new Dictionary<string, string>();
+            foreach (string directory in Directory.GetDirectories(Utilities.PackageLibraryCachePath))
+            {
+                string directoryName = Path.GetFileName(directory);
+                packageCacheVersionedMap.Add(directoryName.Split('@')[0], directoryName);
             }
 
             Dictionary<string, Assembly> unityAssemblies = CompilationPipeline.GetAssemblies().ToDictionary(t => t.name);
@@ -126,9 +168,26 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                         }
                     }
 
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
                     asmDefInfoMap.Add(pair.Key, assemblyDefinitionInfo);
                 }
             }
+
+            // This will parse additional asmdefs that are not part of current compilation set, but we still need
+            foreach (string asmdefGuid in AssetDatabase.FindAssets("t:asmdef"))
+            {
+                string asmDefPath = AssetDatabase.GUIDToAssetPath(asmdefGuid);
+                string asmDefKey = Path.GetFileNameWithoutExtension(asmDefPath);
+                if (!asmDefInfoMap.ContainsKey(asmDefKey))
+                {
+                    AssemblyDefinitionInfo assemblyDefinitionInfo = AssemblyDefinitionInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(asmDefPath)), this, null);
+                    asmDefDirectoriesSorted.Add(assemblyDefinitionInfo);
+                    asmDefInfoMap.Add(asmDefKey, assemblyDefinitionInfo);
+                }
+            }
+
+            int index = 0;
+            ProcessSortedAsmDef(asmDefDirectoriesSorted.ToArray(), ref index, (uri) => true, (a) => { });
 
             while (projectsToProcess.Count > 0)
             {
@@ -136,14 +195,49 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 if (!projectsMap.ContainsKey(projectKey))
                 {
-                    GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, projectKey, projectOutputPath);
+                    GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, projectKey);
                 }
             }
 
             return projectsMap;
         }
 
-        private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey, string projectOutputPath)
+        private void ProcessSortedAsmDef(AssemblyDefinitionInfo[] set, ref int currentIndex, Func<Uri, bool> childOfParentFunc, Action<AssemblyDefinitionInfo> addAsChild)
+        {
+            Uri GetUri(DirectoryInfo d) => d.FullName.EndsWith("\\") ? new Uri(d.FullName) : new Uri(d.FullName + "\\");
+
+            for (; currentIndex < set.Length;)
+            {
+                AssemblyDefinitionInfo current = set[currentIndex];
+                addAsChild(current);
+
+                if (currentIndex + 1 == set.Length)
+                {
+                    return;
+                }
+
+                currentIndex++;
+
+                AssemblyDefinitionInfo next = set[currentIndex];
+
+                Uri potentialBase = GetUri(current.Directory);
+                Uri potentialChild = GetUri(next.Directory);
+                if (!childOfParentFunc(potentialChild))
+                {
+                    return;
+                }
+                else if (potentialBase.IsBaseOf(potentialChild))
+                {
+                    ProcessSortedAsmDef(set, ref currentIndex, potentialBase.IsBaseOf, (a) => current.NestedAssemblyDefinitionFiles.Add(a));
+                    if (!childOfParentFunc(potentialChild))
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        private CSProjectInfo GetProjectInfo(Dictionary<string, CSProjectInfo> projectsMap, Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap, HashSet<string> builtInPackagesWithoutSource, string projectKey)
         {
             if (projectKey.StartsWith("GUID:"))
             {
@@ -157,18 +251,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!asmDefInfoMap.TryGetValue(projectKey, out AssemblyDefinitionInfo assemblyDefinitionInfo))
             {
-                Debug.LogError($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
+                Debug.Log($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
                 return null;
             }
 
-            CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo, projectOutputPath);
+            CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo);
             projectsMap.Add(projectKey, toReturn);
 
             if (!assemblyDefinitionInfo.BuiltInPackage)
             {
+                Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies"));
                 foreach (PluginAssemblyInfo plugin in Plugins.Where(t => t.Type != PluginType.Native))
                 {
-                    if (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name))
+                    if (!dependencies.IsBaseOf(plugin.ReferencePath) && (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name)))
                     {
                         toReturn.AddDependency(plugin);
                     }
@@ -189,7 +284,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     continue;
                 }
 
-                CSProjectInfo dependencyToAdd = GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference, projectOutputPath);
+                CSProjectInfo dependencyToAdd = GetProjectInfo(projectsMap, asmDefInfoMap, builtInPackagesWithoutSource, reference);
                 if (dependencyToAdd != null)
                 {
                     toReturn.AddDependency(dependencyToAdd);
@@ -217,7 +312,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 toReturn.Add(toAdd);
             }
 
-            foreach (string packageDllPath in Directory.GetFiles(Utilities.PackagesCopyPath, "*.dll", SearchOption.AllDirectories))
+            foreach (string packageDllPath in Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.dll", SearchOption.AllDirectories))
             {
                 string metaPath = packageDllPath + ".meta";
 
@@ -243,147 +338,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             return toReturn;
-        }
-
-        private string GetProjectEntry(CSProjectInfo projectInfo, string projectEntryTemplateBody)
-        {
-            StringBuilder toReturn = new StringBuilder();
-
-            toReturn.AppendLine(Utilities.ReplaceTokens(projectEntryTemplateBody, new Dictionary<string, string>() {
-                        { "<PROJECT_NAME>", projectInfo.Name },
-                        { "<PROJECT_RELATIVE_PATH>", Path.GetFileName(projectInfo.ReferencePath.AbsolutePath) },
-                        { "<PROJECT_GUID>", projectInfo.Guid.ToString().ToUpper() } }));
-
-            if (projectInfo.ProjectDependencies.Count > 0)
-            {
-                string projectDependencyStartSection = "    ProjectSection(ProjectDependencies) = postProject";
-                string projectDependencyGuid = "        {<DependencyGuid>} = {<DependencyGuid>}";
-                string projectDependencyStopSection = "    EndProjectSection";
-                toReturn.AppendLine(projectDependencyStartSection);
-
-                foreach (CSProjectDependency<CSProjectInfo> project in projectInfo.ProjectDependencies)
-                {
-                    toReturn.AppendLine(projectDependencyGuid.Replace("<DependencyGuid>", project.Dependency.Guid.ToString().ToUpper()));
-                }
-
-                toReturn.AppendLine(projectDependencyStopSection);
-            }
-            toReturn.Append("EndProject");
-            return toReturn.ToString();
-        }
-
-        /// <summary>
-        /// Exports the project info into a solution file, and the CSProject files.
-        /// </summary>
-        /// <param name="solutionTemplateText">The solution file template text.</param>
-        /// <param name="projectFileTemplateText">The project file template text.</param>
-        /// <param name="generatedProjectPath">The output folder of the platform props.</param>
-        public void ExportSolution(string solutionTemplateText, string projectFileTemplateText, string generatedProjectPath)
-        {
-            string solutionFilePath = Path.Combine(generatedProjectPath, $"{UnityProjectName}.sln");
-
-            if (File.Exists(solutionFilePath))
-            {
-                File.Delete(solutionFilePath);
-            }
-
-            if (Utilities.TryGetTextTemplate(solutionTemplateText, "PROJECT", out string projectEntryTemplate, out string projectEntryTemplateBody)
-                && Utilities.TryGetTextTemplate(solutionTemplateText, "CONFIGURATION_PLATFORM", out string configurationPlatformEntry, out string configurationPlatformEntryBody)
-                && Utilities.TryGetTextTemplate(solutionTemplateText, "CONFIGURATION_PLATFORM_MAPPING", out string configurationPlatformMappingTemplate, out string configurationPlatformMappingTemplateBody)
-                && Utilities.TryGetTextTemplate(solutionTemplateText, "CONFIGURATION_PLATFORM_ENABLED", out string configurationPlatformEnabledTemplate, out string configurationPlatformEnabledTemplateBody))
-            {
-                CSProjectInfo[] unorderedProjects = CSProjects.Select(t => t.Value).ToArray();
-                List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
-
-                while (orderedProjects.Count < unorderedProjects.Length)
-                {
-                    bool oneRemoved = false;
-                    for (int i = 0; i < unorderedProjects.Length; i++)
-                    {
-                        if (unorderedProjects[i] == null)
-                        {
-                            continue;
-                        }
-
-                        if (unorderedProjects[i].ProjectDependencies.Count == 0 || unorderedProjects[i].ProjectDependencies.All(t => orderedProjects.Contains(t.Dependency)))
-                        {
-                            orderedProjects.Add(unorderedProjects[i]);
-
-                            unorderedProjects[i] = null;
-                            oneRemoved = true;
-                        }
-                    }
-
-                    if (!oneRemoved)
-                    {
-                        Debug.LogError($"Possible circular dependency.");
-                        break;
-                    }
-                }
-
-                IEnumerable<string> projectEntries = orderedProjects.Select(t => GetProjectEntry(t, projectEntryTemplateBody));
-
-                string[] twoConfigs = new string[] {
-                    configurationPlatformEntryBody.Replace("<Configuration>", "InEditor"),
-                    configurationPlatformEntryBody.Replace("<Configuration>", "Player")
-                };
-
-                IEnumerable<string> configPlatforms = twoConfigs
-                    .SelectMany(t => AvailablePlatforms.Select(p => t.Replace("<Platform>", p.Name.ToString())));
-
-                List<string> configurationMappings = new List<string>();
-                List<string> disabled = new List<string>();
-
-                foreach (CSProjectInfo project in orderedProjects.Select(t => t))
-                {
-                    string ConfigurationTemplateReplace(string template, string guid, string configuration, string platform)
-                    {
-                        return Utilities.ReplaceTokens(template, new Dictionary<string, string>()
-                        {
-                            { "<PROJECT_GUID_TOKEN>", guid.ToString().ToUpper() },
-                            { "<PROJECT_CONFIGURATION_TOKEN>", configuration },
-                            { "<PROJECT_PLATFORM_TOKEN>", platform },
-                            { "<SOLUTION_CONFIGURATION_TOKEN>", configuration },
-                            { "<SOLUTION_PLATFORM_TOKEN>", platform },
-                        });
-                    }
-
-                    void ProcessMappings(Guid guid, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
-                    {
-                        foreach (CompilationPlatformInfo platform in AvailablePlatforms)
-                        {
-                            configurationMappings.Add(ConfigurationTemplateReplace(configurationPlatformMappingTemplateBody, guid.ToString(), configuration, platform.Name));
-
-                            if (platforms.ContainsKey(platform.BuildTarget))
-                            {
-                                configurationMappings.Add(ConfigurationTemplateReplace(configurationPlatformEnabledTemplateBody, guid.ToString(), configuration, platform.Name));
-                            }
-                        }
-                    }
-
-                    ProcessMappings(project.Guid, "InEditor", project.InEditorPlatforms);
-                    ProcessMappings(project.Guid, "Player", project.PlayerPlatforms);
-                }
-
-                solutionTemplateText = Utilities.ReplaceTokens(solutionTemplateText, new Dictionary<string, string>()
-                {
-                    { projectEntryTemplate, string.Join(Environment.NewLine, projectEntries)},
-                    { configurationPlatformEntry, string.Join(Environment.NewLine, configPlatforms)},
-                    { configurationPlatformMappingTemplate, string.Join(Environment.NewLine, configurationMappings) },
-                    { configurationPlatformEnabledTemplate, string.Join(Environment.NewLine, disabled) }
-                });
-            }
-            else
-            {
-                Debug.LogError("Failed to find Project and/or Configuration_Platform templates in the solution template file.");
-            }
-
-            foreach (CSProjectInfo project in CSProjects.Values)
-            {
-                project.ExportProject(projectFileTemplateText, generatedProjectPath);
-            }
-
-            File.WriteAllText(solutionFilePath, solutionTemplateText);
         }
     }
 }

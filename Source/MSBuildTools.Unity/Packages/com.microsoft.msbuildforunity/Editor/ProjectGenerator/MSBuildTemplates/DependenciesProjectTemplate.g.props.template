@@ -1,0 +1,40 @@
+<Project ToolsVersion="15.0">
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' == ''">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' != ''">
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UnityCurrentPlatform)'!=''">
+    <UnityPlatform>$(UnityCurrentPlatform)</UnityPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UnityConfiguration>InEditor</UnityConfiguration>
+    <!-- Make sure Unity ignores the contents of the intermediate output path. -->
+    <BaseIntermediateOutputPath>$(MSBuildForUnityGeneratedOutputDirectory)\..\Output\obj\Dependencies</BaseIntermediateOutputPath>
+    <OutputPath>Dependencies</OutputPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="MSBuildForUnity" Version="[0.1.117077,)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
+  <!-- Note that this is the special "NoTarget" SDK to prevent this project from producing a dll. -->
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+
+  <ItemGroup>
+    <!--PROJECT_REFERENCE_TEMPLATE_START-->
+    <ProjectReference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
+        <Private>false</Private>
+        <Properties>UnityPlatform=$(UnityPlatform);UnityConfiguration=$(UnityConfiguration)</Properties>
+    </ProjectReference>
+    <!--PROJECT_REFERENCE_TEMPLATE_END-->
+  </ItemGroup>
+</Project>

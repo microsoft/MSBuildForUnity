@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.Build.Unity.ProjectGeneration
+namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 {
     /// <summary>
     /// A helper class to manage (and locate) all the templates.
@@ -20,7 +20,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     {
         private const string TemplateFilesFolderName = "MSBuildTemplates";
         private const string MSBuildSolutionTemplateName = "SolutionTemplate.sln.template";
+        private const string MSBuildForUnityCommonPropsTemplateName = "MSBuildForUnity.Common.props.template";
         private const string SDKProjectFileTemplateName = "SDKProjectTemplate.csproj.template";
+        private const string SDKGeneratedProjectFileTemplateName = "SDKProjectTemplate.g.csproj.template";
+        private const string SDKProjectPropsFileTemplateName = "SDKProjectTemplate.g.props.template";
+        private const string SDKProjectTargetsFileTemplateName = "SDKProjectTemplate.g.targets.template";
+        private const string DependenciesProjectFileTemplateName = "DependenciesProjectTemplate.csproj.template";
+        private const string DependenciesPropsFileTemplateName = "DependenciesProjectTemplate.g.props.template";
+        private const string DependenciesTargetsFileTemplateName = "DependenciesProjectTemplate.g.targets.template";
         private const string PlatformPropsTemplateName = "Platform.Configuration.Any.props.template";
         private const string EditorPropsTemplateName = "Editor.InEditor.Any.props.template";
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
@@ -37,17 +44,52 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets the MSBuild Solution file (.sln) template path.
         /// </summary>
-        public string MSBuildSolutionTemplatePath { get; }
+        public FileInfo MSBuildSolutionTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the Directory.Build.props file template.
+        /// </summary>
+        public FileInfo MSBuildForUnityCommonPropsTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the dependencies project file template.
+        /// </summary>
+        public FileInfo DependenciesProjectTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the dependencies project props template.
+        /// </summary>
+        public FileInfo DependenciesPropsTemplatePath { get; }
+
+        /// <summary>
+        /// The path to the dependencies project targets template.
+        /// </summary>
+        public FileInfo DependenciesTargetsTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild C# SDK Project file (.csproj) template path.
         /// </summary>
-        public string SDKProjectFileTemplatePath { get; }
+        public FileInfo SDKProjectFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path for generated projects (Read-Only).
+        /// </summary>
+        public FileInfo SDKGeneratedProjectFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path.
+        /// </summary>
+        public FileInfo SDKProjectPropsFileTemplatePath { get; }
+
+        /// <summary>
+        /// Gets the MSBuild C# SDK Project file (.csproj) template path.
+        /// </summary>
+        public FileInfo SDKProjectTargetsFileTemplatePath { get; }
 
         /// <summary>
         /// Gets the MSBuild Platform Props file (.props) template path.
         /// </summary>
-        public string PlatformPropsTemplatePath { get; }
+        public FileInfo PlatformPropsTemplatePath { get; }
 
         /// <summary>
         /// Gets the BuildProjects.proj MSBuild file template path.
@@ -57,7 +99,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// Gets a list of specialized platform templates.
         /// </summary>
-        public IReadOnlyDictionary<string, string> PlatformTemplates { get; }
+        public IReadOnlyDictionary<string, FileInfo> PlatformTemplates { get; }
 
         /// <summary>
         /// Gets a list of meta files for plugins templates.
@@ -88,13 +130,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             Dictionary<string, string> fileNamesMaps = files.ToDictionary(t => Path.GetFileName(t));
 
-            MSBuildSolutionTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName);
-            SDKProjectFileTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName);
-            PlatformPropsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName);
+            MSBuildSolutionTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Solution", MSBuildSolutionTemplateName));
+            MSBuildForUnityCommonPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Directory.Build Props File", MSBuildForUnityCommonPropsTemplateName));
+            DependenciesProjectTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Dependencies CSProject File", DependenciesProjectFileTemplateName));
+            DependenciesPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Dependencies Props File", DependenciesPropsFileTemplateName));
+            DependenciesTargetsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Dependencies Props File", DependenciesTargetsFileTemplateName));
+            SDKProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project", SDKProjectFileTemplateName));
+            SDKGeneratedProjectFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Generated SDK Project", SDKGeneratedProjectFileTemplateName));
+            SDKProjectPropsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Props", SDKProjectPropsFileTemplateName));
+            SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
+            PlatformPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName));
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
 
             // Get specific platforms
-            Dictionary<string, string> platformTemplates = new Dictionary<string, string>();
+            Dictionary<string, FileInfo> platformTemplates = new Dictionary<string, FileInfo>();
             Dictionary<BuildTargetGroup, FileInfo> metaFileTemplates = new Dictionary<BuildTargetGroup, FileInfo>();
 
             HashSet<string> toRemove = new HashSet<string>();
@@ -102,7 +151,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 if (Regex.IsMatch(pair.Key, SpecifcPlatformPropsTemplateRegex))
                 {
-                    platformTemplates.Add(pair.Key, pair.Value);
+                    platformTemplates.Add(pair.Key, new FileInfo(pair.Value));
                     toRemove.Add(pair.Key);
                 }
                 else
@@ -135,7 +184,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 fileNamesMaps.Remove(item);
             }
 
-            PlatformTemplates = new ReadOnlyDictionary<string, string>(platformTemplates);
+            PlatformTemplates = new ReadOnlyDictionary<string, FileInfo>(platformTemplates);
             PluginMetaTemplatePaths = new ReadOnlyDictionary<BuildTargetGroup, FileInfo>(metaFileTemplates);
 
             OtherFiles = new ReadOnlyCollection<string>(fileNamesMaps.Values.ToList());
@@ -147,9 +196,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="platform">The platform of the requested template.</param>
         /// <param name="configuration">The configuration of the requested template.</param>
         /// <returns>The absolute file path for the platform template to use.</returns>
-        public string GetTemplateFilePathForPlatform(string platform, string configuration, ScriptingBackend scriptingBackend)
+        public FileInfo GetTemplateFilePathForPlatform(string platform, string configuration, ScriptingBackend scriptingBackend)
         {
-            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{scriptingBackend.ToString()}.props.template", out string templatePath)
+            if (PlatformTemplates.TryGetValue($"{platform}.{configuration}.{scriptingBackend.ToString()}.props.template", out FileInfo templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.{configuration}.Any.props.template", out templatePath)
                 || PlatformTemplates.TryGetValue($"{platform}.Configuration.Any.props.template", out templatePath))
             {

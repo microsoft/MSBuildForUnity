@@ -24,11 +24,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public Guid Guid { get; }
 
         /// <summary>
-        /// Gets the output path to the reference.
-        /// </summary>
-        public Uri ReferencePath { get; }
-
-        /// <summary>
         /// Gets name of the reference item.
         /// </summary>
         public string Name { get; }
@@ -57,11 +52,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="guid">The unique Guid of this reference item.</param>
         /// <param name="referencePath">The output path to the reference item.</param>
         /// <param name="name">The name of the reference.</param>
-        protected ReferenceItemInfo(UnityProjectInfo unityProjectInfo, Guid guid, Uri referencePath, string name)
+        protected ReferenceItemInfo(UnityProjectInfo unityProjectInfo, Guid guid, string name)
         {
             UnityProjectInfo = unityProjectInfo;
             Guid = guid;
-            ReferencePath = referencePath;
             Name = name;
         }
 

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
@@ -64,6 +63,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             toReturn.assembly = assembly;
             toReturn.Directory = file.Directory;
+            toReturn.AssetLocation = Utilities.GetAssetLocation(file);
             toReturn.file = file;
             toReturn.Guid = guid;
             toReturn.BuiltInPackage = isBuiltInPackage;
@@ -102,6 +102,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public DirectoryInfo Directory { get; private set; }
 
         /// <summary>
+        /// Gets the asset location of this assembly definition.
+        /// </summary>
+        public AssetLocation AssetLocation { get; private set; }
+
+        /// <summary>
         /// Name of this assembly definition info
         /// </summary>
         public string Name => name;
@@ -120,7 +125,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets whether this is marked as a TestAssembly.
         /// </summary>
         public bool TestAssembly { get; private set; }
-        
+
         /// <summary>
         /// Gets whether this is a default assembly definition like Assembly-CSharp
         /// </summary>
@@ -140,6 +145,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Gets DLL references for this assembly definition.
         /// </summary>
         public HashSet<string> PrecompiledAssemblyReferences { get; private set; }
+
+        public HashSet<AssemblyDefinitionInfo> NestedAssemblyDefinitionFiles { get; } = new HashSet<AssemblyDefinitionInfo>();
 
         /// <summary>
         /// After it's parsed from JSON, this method should be invoked to validate some of the values and set additional properties.
@@ -194,8 +201,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     foreach (string sourceFile in assembly.sourceFiles)
                     {
-                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(sourceFile);
-                        sourceFiles.Add(SourceFileInfo.Parse(new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile)), asset.GetClass())); 
+                        FileInfo fileInfo = new FileInfo(Utilities.GetFullPathFromKnownRelative(sourceFile));
+                        sourceFiles.Add(new SourceFileInfo(fileInfo, Utilities.GetAssetLocation(fileInfo), sourceFile));
                     }
                 }
                 else
@@ -218,7 +225,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             foreach (FileInfo fileInfo in directory.GetFiles("*.cs", SearchOption.TopDirectoryOnly))
             {
-                sourceFiles.Add(SourceFileInfo.Parse(fileInfo, null));
+                sourceFiles.Add(new SourceFileInfo(fileInfo, Utilities.GetAssetLocation(fileInfo), null));
             }
 
             foreach (DirectoryInfo subDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly))

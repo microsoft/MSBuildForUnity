@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <TargetFramework><!--TARGET_FRAMEWORK_TOKEN--></TargetFramework>
-    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS--></DefineConstants>
+    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN--></DefineConstants>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(IsEditorOnlyTarget)' == 'false' OR '$(IsEditorOnlyTarget)' == ''">

@@ -3,13 +3,11 @@
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN-->;C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5;$(UnityEditorInstallFolder)Data\PlaybackEngines\MetroSupport\Managed\UAP\</AssemblySearchPaths>
     <TargetFramework><!--TARGET_FRAMEWORK_TOKEN--></TargetFramework>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS-->;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN-->;NETFX_CORE;WINDOWS_UWP</DefineConstants>
     <TargetPlatformVersion><!--UWP_TARGET_PLATFORM_VERSION_TOKEN--></TargetPlatformVersion>
     <TargetPlatformMinVersion><!--UWP_MIN_PLATFORM_VERSION_TOKEN--></TargetPlatformMinVersion>
     
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
-    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
   </PropertyGroup>
 
   <!-- This is for succesful building step from dotnet cli -->
@@ -19,9 +17,14 @@
         <LanguageTargets>$(MSBuildExtensionsPathOverride)\Microsoft\WindowsXaml\v15.0\Microsoft.Windows.UI.Xaml.CSharp.targets</LanguageTargets>
       </PropertyGroup>
     </When>
-    <Otherwise>
+    <When Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v15.0\Microsoft.Windows.UI.Xaml.CSharp.targets')">
       <PropertyGroup>
         <LanguageTargets>$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v15.0\Microsoft.Windows.UI.Xaml.CSharp.targets</LanguageTargets>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LanguageTargets>$(MSBuildBinPath)\Microsoft.CSharp.Targets</LanguageTargets>
       </PropertyGroup>
     </Otherwise>
   </Choose>

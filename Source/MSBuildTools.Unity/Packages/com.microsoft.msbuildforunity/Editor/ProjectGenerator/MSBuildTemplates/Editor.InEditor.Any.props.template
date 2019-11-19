@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
-    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS--></DefineConstants>
+    <DefineConstants>$(DefineConstants);<!--PLATFORM_COMMON_DEFINE_CONSTANTS_TOKEN--></DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -13,6 +13,7 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditorInternal;
 using UnityEngine;
+using Microsoft.Build.Unity.ProjectGeneration.Templates;
 using Object = UnityEngine.Object;
 
 namespace Microsoft.Build.Unity.ProjectGeneration

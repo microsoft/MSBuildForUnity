@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <MSBuildForUnityVersion>0.8.0</MSBuildForUnityVersion>
+    <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
+    <UnityCurrentPlatform><!--CURRENT_UNITY_PLATFORM_TOKEN--></UnityCurrentPlatform>
+    <UnityCurrentTargetFramework><!--CURRENT_TARGET_FRAMEWORK_TOKEN--></UnityCurrentTargetFramework>
+    
+    <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
+    <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
+  </PropertyGroup>
+</Project>

@@ -1,8 +1,14 @@
 # MSBuildForUnity
 
-MSBuildForUnity is a [collection of tools](#features) to help integrate MSBuild with Unity. This is helpful in leveraging more of the .NET ecosystem within Unity. Some things this project helps with are:
-- Sharing code (via an MSBuild project) between Unity and other .NET projects (such as UWP XAML apps, Xamarin apps, etc.).
+MSBuildForUnity solves the problem of establishing clear dependency relationships between Unity project and other .NET components such as external (to Unity) C# projects, or NuGet packages. It creates a familiar to .NET developers project structure and ensures that the dependencies are resolved and brought into the Unity project as appropriate. With this component, you can:
+
+- Share code between Unity and other .NET projects (such as UWP XAML apps, Xamarin apps, etc.).
 - Consuming existing .NET components (e.g. NuGet packages).
+
+The samples included in this repository best convey the simplicity and value of this component:
+
+- [Simple NuGet Dependency Sample](Samples/SimpleNuGetDependency.Unity/Readme.md) - Showcases the simplest and most minimal usage of this component to pull in a dependency.
+- [Integrated Dependencies Sample](Samples/IntegratedDependencies.Unity/Readme.md) - Showcases the power of this component by relying on project generation.
 
 ## Contributing
 
