@@ -11,7 +11,7 @@ In order for you to declare the dependency, you need several key things:
 - A .gitignore that ensures only the necessary files are seen by git.
 - **Temporary:** A NuGet.config that contains the special feed of MSBuildForUnity NuGet package. This requirement will go away soon.
 
-This sample has it set up under the following location `Assets\NewtonSoftDependency`.
+This sample has it set up under the following location `Assets/NewtonSoftDependency`.
 
 ### C# Project File Structure
 
@@ -26,9 +26,9 @@ The project file structure has several required parts to it:
 - Package reference to `MSBuildForUnity` NuGet package that enables the correct resolution of dependencies.
 - `Sdk.props` and `Sdk.targets` import that doesn't produce a dll (`Microsoft.Build.NoTargets`).
 
-The `Assets\NewtonSoftDependency\NewtonSoftDependency.csproj` contains all of this, plus the NuGet reference to "NewtonSoft.Json" and is a total of 33 lines long.
+The `Assets/NewtonSoftDependency/NewtonSoftDependency.csproj` contains all of this, plus the NuGet reference to "NewtonSoft.Json" and is a total of 33 lines long.
 
-![C# Project File Contents](docs\CSProjectContents.png)
+![C# Project File Contents](docs/CSProjectContents.png)
 
 ## The Process
 

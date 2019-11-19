@@ -6,9 +6,9 @@ This project shows a considerably more robust usage of MSBuildForUnity for your 
 
 When you open this sample in Unity, you will note that project generation is enabled:
 
-![Project Generation Enabled](docs\ProjectGenerationEnabled.png)
+![Project Generation Enabled](docs/ProjectGenerationEnabled.png)
 
-> This is persisted in a checked-in file at `IntegratedDependencies.Unity\MSBuild\settings.json`.
+> This is persisted in a checked-in file at `IntegratedDependencies.Unity/MSBuild/settings.json`.
 
 Generation is split into two types of files being created:
 
@@ -72,11 +72,11 @@ This project has been modified to depend on an external C# project that is unrel
 
 ### Platform Specific Dependency
 
-Furthermore, this sample includes an example of how to specify a dependency for a specific platform. The Assembly Definition at `Assets\WSASpecific\Component.WSA.asmdef` is marked to be built for `Universal Windows Platform` and `Editor` platforms; additionally it specifies a `UNITY_WSA` define constraint that only allows it to be compiled when UWP platform is selected.
+Furthermore, this sample includes an example of how to specify a dependency for a specific platform. The Assembly Definition at `Assets/WSASpecific/Component.WSA.asmdef` is marked to be built for `Universal Windows Platform` and `Editor` platforms; additionally it specifies a `UNITY_WSA` define constraint that only allows it to be compiled when UWP platform is selected.
 
-![Dependencies.msb4u.csproj](docs\UWPAsmDef.png)
+![Dependencies.msb4u.csproj](docs/UWPAsmDef.png)
 
-The generated project `Assets\WSASpecific\Component.WSA.msb4u.csproj` contains a dependency on `CommonLibrary.WSA.csproj` that would get built and pulled in only when the Editor is set to UWP platform.
+The generated project `Assets/WSASpecific/Component.WSA.msb4u.csproj` contains a dependency on `CommonLibrary.WSA.csproj` that would get built and pulled in only when the Editor is set to UWP platform.
 
 ```xml
 <Project ToolsVersion="15.0">
@@ -127,7 +127,7 @@ The generated project `Assets\WSASpecific\Component.WSA.msb4u.csproj` contains a
 
 MSBuild Tools for Unity auto builds the `Dependencies.msb4u.csproj` at various times in order for these dependencies to be pulled in. If for some reason this doesn't happen, you can select the `Dependencies.msb4u` item under `Assets/` folder and press `Build` yourself.
 
-![Dependencies.msb4u.csproj](docs\CSProjectBuild.png)
+![Dependencies.msb4u.csproj](docs/CSProjectBuild.png)
 
 ## Known Limitations
 
