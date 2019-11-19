@@ -34,7 +34,7 @@ namespace Microsoft.Build.Unity
 
         [SerializeField]
         [Tooltip("Named profiles to configure different build options.")]
-        private MSBuildBuildProfile[] profiles;
+        private MSBuildBuildProfile[] profiles = DefaultProfiles;
 
         /// <summary>
         /// Creates an in-memory instance that can resolve the full path to the MSBuild project.
@@ -58,9 +58,9 @@ namespace Microsoft.Build.Unity
             {
                 msBuildProjectReference.profiles = profiles.ToArray();
             }
-            else if (!Path.GetFileNameWithoutExtension(assetRelativePath).EndsWith(".msb4u") || Path.GetFileName(assetRelativePath).Equals("Dependencies.msb4u.csproj"))
+            else if (Path.GetFileNameWithoutExtension(assetRelativePath).EndsWith(".msb4u") && !Path.GetFileName(assetRelativePath).Equals("Dependencies.msb4u.csproj"))
             {
-                msBuildProjectReference.profiles = DefaultProfiles;
+                msBuildProjectReference.profiles = null;
             }
 
             return msBuildProjectReference;
