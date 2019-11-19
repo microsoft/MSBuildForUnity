@@ -31,9 +31,9 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
-	<!--Add NuGet or Project references here-->
-  <ItemGroup>
 
+  <ItemGroup>
+	  <!--Add NuGet or Project references here-->
   </ItemGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
