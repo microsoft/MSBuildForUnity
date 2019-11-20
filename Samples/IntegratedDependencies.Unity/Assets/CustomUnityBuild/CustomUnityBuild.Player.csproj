@@ -16,20 +16,30 @@
 
   <PropertyGroup>
     <!--anborod NOTE:: Currently this is a limitation, hence the file duplication..-->
-    <UnityConfiguration>InEditor</UnityConfiguration>
-    <UnityPlayer>Editor</UnityPlayer>
-    <ProjectGuid>bb41a40a-fd6b-47da-0865-83ab52977bdc</ProjectGuid>
+    <UnityConfiguration>Player</UnityConfiguration>
+    <ProjectGuid>{E8060EE6-F0CB-459B-A4B2-634E87DFDD9C}</ProjectGuid>
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <LangVersion>7.3</LangVersion>
     <IsEditorOnlyTarget>False</IsEditorOnlyTarget>
     <EnableDefaultItems>false</EnableDefaultItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <AssemblyName>CustomUnityBuild</AssemblyName>
+    <RootNamespace>CustomUnityBuild</RootNamespace>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <!-- anborod NOTE:: These are needed for meta generation -->
+  <!--anborod NOTE:: NOT WORKING <PropertyGroup>
+    <UnityPlayer Condition="'$(UnityPlatform)' == 'WindowsStandalone32' OR '$(UnityPlatform)' == 'WindowsStandalone64'">Standalone</UnityPlayer>
+    <UnityPlayer Condition="'$(UnityPlatform)' == 'Android'">Android</UnityPlayer>
+    <UnityPlayer Condition="'$(UnityPlatform)' == 'iOS'">iOS</UnityPlayer>
+    <UnityPlayer Condition="'$(UnityPlatform)' == 'WSA'">UAP</UnityPlayer>
+  </PropertyGroup>-->
+
+    <PropertyGroup>
     <!--anborod NOTE:: .obj is invisible to Unity, but Plugins isn't-->
     <BaseIntermediateOutputPath>.obj</BaseIntermediateOutputPath>
-    <OutputPath>Plugins/Player</OutputPath>
+    <OutputPath>Plugins/Editor</OutputPath>
   </PropertyGroup>
   
   <ItemGroup>
