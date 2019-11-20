@@ -1,0 +1,85 @@
+﻿<Project ToolsVersion="15.0">
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
+    
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' == ''">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' != ''">
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UnityCurrentPlatform)'!=''">
+    <UnityPlatform>$(UnityCurrentPlatform)</UnityPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UnityConfiguration>InEditor</UnityConfiguration>
+    <ProjectGuid>bb41a40a-fd6b-47da-0865-83ab52977bdc</ProjectGuid>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <LangVersion>7.3</LangVersion>
+    <IsEditorOnlyTarget>False</IsEditorOnlyTarget>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Make sure Unity ignores the contents of the intermediate output path. -->
+    <BaseIntermediateOutputPath>.obj</BaseIntermediateOutputPath>
+    <OutputPath>Plugins</OutputPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="MSBuildForUnity" Version="[0.8.0-*, 0.8.0]">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!--IMPORT SDK.props manually to be able to set the BaseIntermediateOutputPath above path-->
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <!-- 
+      This overrides the default, and excludes the "{TargetFrameworkDirectory}" from the search path which gets added by the import above.
+      The purpose is to prevent MSBuild from using it to try and resolve assemblies from that location, as we use the Unity provided framework DLLs.
+    -->
+    <AssemblySearchPaths>{CandidateAssemblyFiles};{HintPathFromItem};{RawFileName};</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(UnityPlatform).$(UnityConfiguration).props" />
+
+  <!-- This is a "special" platform that will override references -->
+  <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\Editor.InEditor.props" Condition="'$(IsEditorOnlyTarget)' == 'true'" />
+
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes)obj;bin;*.asmdef;*.asmdef.meta;*.csmap;</DefaultItemExcludes>
+    <!-- This change prevents from System.Core dll to be removed and readded without the HintPath as is default behaviour for some MSBuild environments for System.Core.dll specifically.-->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include=".src\**\*.cs" />
+  </ItemGroup>
+
+    <!--IMPORT SDK.targets-->
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <!--We control whether we build the project this way, depending on the platform/configuration-->
+  <Target Name="OriginalBuild" DependsOnTargets="$(BuildDependsOn)">
+  </Target>
+
+  <Target Name="SetPlatformProperty">
+    <CreateProperty Value="AnyCPU">
+      <Output TaskParameter="Value" PropertyName="Platform" />
+    </CreateProperty>
+  </Target>
+  
+  <Target Name="Build" Returns="@(TargetPathWithTargetPlatformMoniker)">
+    <CallTarget Targets="SetPlatformProperty" />
+<!--SUPPORTED_PLATFORM_BUILD_CONDITION_TEMPLATE_START-->
+    <CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='InEditor|Android'" /><CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='InEditor|iOS'" /><CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='InEditor|WindowsStandalone32'" /><CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='InEditor|WindowsStandalone64'" /><CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='InEditor|WSA'" /><CallTarget Targets="OriginalBuild" Condition="'$(UnityConfiguration)|$(UnityPlatform)'=='Player|WSA'" />
+<!--SUPPORTED_PLATFORM_BUILD_CONDITION_TEMPLATE_END-->
+  </Target>
+</Project>
