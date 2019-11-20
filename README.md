@@ -7,8 +7,8 @@ MSBuildForUnity solves the problem of establishing clear dependency relationship
 
 The samples included in this repository best convey the simplicity and value of this component:
 
-- [Simple NuGet Dependency Sample](Samples/SimpleNuGetDependency.Unity/Readme.md) - Showcases the simplest and most minimal usage of this component to pull in a dependency.
-- [Integrated Dependencies Sample](Samples/IntegratedDependencies.Unity/Readme.md) - Showcases the power of this component by relying on project generation.
+- [Simple NuGet Dependency Sample](Samples/SimpleNuGetDependency.Unity/README.md) - Showcases the simplest and most minimal usage of this component to pull in a dependency.
+- [Integrated Dependencies Sample](Samples/IntegratedDependencies.Unity/README.md) - Showcases the power of this component by relying on project generation.
 
 ## Contributing
 
