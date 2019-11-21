@@ -4,7 +4,7 @@
     
     <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
     <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>
-    <RecommendedBinaryOutputPath>$(UnityProjectAssetsPath)\Dependencies</RecommendedBinaryOutputPath>
+    <MSBuildForUnityDefaultOutputPath>$(UnityProjectAssetsPath)\Dependencies</MSBuildForUnityDefaultOutputPath>
     
     <UnityCurrentPlatform><!--CURRENT_UNITY_PLATFORM_TOKEN--></UnityCurrentPlatform>
     <UnityCurrentTargetFramework><!--CURRENT_TARGET_FRAMEWORK_TOKEN--></UnityCurrentTargetFramework>
