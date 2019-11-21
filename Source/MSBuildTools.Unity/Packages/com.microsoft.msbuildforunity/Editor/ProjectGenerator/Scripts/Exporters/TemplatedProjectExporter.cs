@@ -133,12 +133,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 generatedProjectFileTemplate.Write(projectPath, generatedProjectFileTemplate.Root.CreateReplacementSet());
                 File.SetAttributes(projectPath, FileAttributes.ReadOnly);
             }
-            else
+            else if (!File.Exists(projectPath))
             {
-                if (File.Exists(projectPath))
-                {
-                    projectFileTemplate.Write(projectPath, projectFileTemplate.Root.CreateReplacementSet());
-                }
+                projectFileTemplate.Write(projectPath, projectFileTemplate.Root.CreateReplacementSet());
             }
         }
 
