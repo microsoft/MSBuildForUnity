@@ -40,7 +40,7 @@
     <PackageVersion>$(Version)</PackageVersion>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion)</AssemblyVersion>
     <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).0</AssemblyFileVersion>
-    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != '' And '$(Build_SourceBranchName.StartsWith('stabilization/')'' == 'false')">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
+    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != '' And '$(Build_SourceBranchName.StartsWith('stabilization/')' == 'false')">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
   </PropertyGroup>
 
   <ItemGroup>
