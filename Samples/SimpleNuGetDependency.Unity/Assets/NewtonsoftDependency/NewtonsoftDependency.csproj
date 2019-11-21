@@ -13,6 +13,7 @@
     <!-- Make sure Unity ignores the contents of the intermediate output path. -->
     <BaseIntermediateOutputPath>.obj</BaseIntermediateOutputPath>
     <OutputPath>Plugins</OutputPath>
+    <OutputPath Condition="'$(MSBuildForUnityDefaultOutputPath)' != ''">$(MSBuildForUnityDefaultOutputPath)</OutputPath>
   </PropertyGroup>
   
   <ItemGroup>
