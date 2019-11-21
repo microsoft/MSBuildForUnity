@@ -3,7 +3,7 @@
     <MSBuildForUnityVersion>0.8.0</MSBuildForUnityVersion>
     
     <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
-    <UntiyProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UntiyProjectAssetsPath>
+    <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>
     <RecommendedBinaryOutputPath>$(UnityProjectAssetsPath)\Dependencies</RecommendedBinaryOutputPath>
     
     <UnityCurrentPlatform><!--CURRENT_UNITY_PLATFORM_TOKEN--></UnityCurrentPlatform>
