@@ -68,7 +68,7 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
         ```
     - Add the following to the `dependencies` section of the file:
         ```json
-          "com.microsoft.msbuildforunity": "0.1.1-20190816.2.0"
+          "com.microsoft.msbuildforunity": "0.8.1"
         ```
 1. Create a "SDK style" MSBuild project (e.g. csproj) somewhere under your `Assets` directory of your Unity project that references the `MSBuildForUnity` NuGet package. Here is an example:
     ```xml
@@ -77,7 +77,7 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
             <TargetFramework>netstandard2.0</TargetFramework>
         </PropertyGroup>
         <ItemGroup>
-            <PackageReference Include="MSBuildForUnity" Version="1.0.0">
+            <PackageReference Include="MSBuildForUnity" Version="0.8.1">
                 <PrivateAssets>all</PrivateAssets>
                 <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
             </PackageReference>
