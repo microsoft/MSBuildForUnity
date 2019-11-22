@@ -31,16 +31,16 @@
     <MinorVersion>8</MinorVersion>
 
     <!-- Revision (semver Patch) version is hard-coded and should be incremented when a bug fix is made.-->
-    <RevisionVersion>0</RevisionVersion>
+    <RevisionVersion>1</RevisionVersion>
     
     <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
     <!-- Version is based on Major.Minor.Revision as defined above, however, in a lab BUILD_BUILDID will be set so we pull in that as the pre-release version. -->
-    <Version Condition="'$(BUILD_BUILDID)' != ''">$(Version)-$(BUILD_BUILDID)</Version>
+    <Version Condition="'$(BUILD_BUILDID)' != '' And !$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$(Version)-$(BUILD_BUILDID)</Version>
 
     <PackageVersion>$(Version)</PackageVersion>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion)</AssemblyVersion>
     <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).0</AssemblyFileVersion>
-    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != ''">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
+    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != '' And !$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
   </PropertyGroup>
 
   <ItemGroup>

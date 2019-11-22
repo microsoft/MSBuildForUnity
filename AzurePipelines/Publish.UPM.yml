@@ -16,7 +16,7 @@ pool:
 steps:
 - task: Npm@1
 # Only update the version on master branch
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/master') 
+  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'))
   inputs:
     command: 'custom'
     customCommand: --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
