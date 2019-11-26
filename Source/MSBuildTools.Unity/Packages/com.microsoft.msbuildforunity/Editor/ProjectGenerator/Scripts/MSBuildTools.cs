@@ -158,7 +158,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (shouldClean)
             {
-                Debug.Log("Doing a clean");
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
             }
@@ -193,7 +192,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // If we cleaned, now build
             if (shouldClean)
             {
-                Debug.Log("Doing a build after clean");
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
         }
