@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -55,6 +56,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     [InitializeOnLoad]
     public static class MSBuildTools
     {
+        private class BuildTargetChanged : IActiveBuildTargetChanged
+        {
+            public int callbackOrder => 0;
+
+            public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
+            {
+                if (EditorAnalyticsSessionInfo.elapsedTime > 0)
+                {
+                    RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+                }
+            }
+        }
+
         private static readonly HashSet<BuildTarget> supportedBuildTargets = new HashSet<BuildTarget>()
         {
             BuildTarget.StandaloneWindows,
@@ -154,7 +168,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             ApiCompatibilityLevel targetFramework = PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup);
 
             bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
-                || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework;
+                || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
+                || forceGenerateEverything;
 
             if (shouldClean)
             {
@@ -174,8 +189,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             // We regenerate everything if:
             // - We are forced to
-            // - AutoGenerateEnabled and token file doesn't exist
-            if (forceGenerateEverything || (Config.AutoGenerateEnabled && !doesTokenFileExist))
+            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
+            if (forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean)))
             {
                 RegenerateEverything(true);
             }
