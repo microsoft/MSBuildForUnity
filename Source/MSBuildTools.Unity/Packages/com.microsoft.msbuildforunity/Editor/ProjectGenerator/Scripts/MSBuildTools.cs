@@ -62,9 +62,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
-                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
-                RunCoreAutoGenerate(true);
-                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
+                if (EditorAnalyticsSessionInfo.elapsedTime > 0)
+                {
+                    RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+                }
             }
         }
 
@@ -107,7 +108,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
             Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
-            RunCoreAutoGenerate(false);
+            // If we just toggled on, regenerate everything
+            RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
         }
 
         [MenuItem(AutoGenerate, true, priority = 101)]
@@ -123,7 +125,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             try
             {
-                RegenerateEverything(true);
+                RefreshGeneratedOutput(forceGenerateEverything: true);
                 Debug.Log($"{nameof(GenerateSDKProjects)} Completed Succesfully.");
             }
             catch
@@ -135,28 +137,77 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         static MSBuildTools()
         {
-            RunCoreAutoGenerate(false);
+            if (EditorAnalyticsSessionInfo.elapsedTime == 0)
+            {
+                // The Unity asset database cannot be queried until the Editor is fully loaded. The first editor update tick seems to be a safe bet for this.
+
+                // Ensure a single invocation
+                EditorApplication.update -= OnUpdate;
+                EditorApplication.update += OnUpdate;
+                void OnUpdate()
+                {
+                    RefreshGeneratedOutput(forceGenerateEverything: false);
+                    EditorApplication.update -= OnUpdate;
+                }
+            }
+            else
+            {
+                RefreshGeneratedOutput(forceGenerateEverything: false);
+            }
         }
 
-        private static void RunCoreAutoGenerate(bool skipTokenFileCheck)
+        private static void RefreshGeneratedOutput(bool forceGenerateEverything)
         {
-            // Check if a file exists, if it does, we already generated this editor instance
-            bool fileExists = File.Exists(TokenFilePath);
-            if (!fileExists || skipTokenFileCheck)
+            // In this method, the following must happen
+            // - Clean up builds if necessary
+            // - Generate the common props file if necessary
+            // - Regenerate everything else if necessary
+            // - Build if the clean was done
+
+            BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            ApiCompatibilityLevel targetFramework = PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+            bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
+                || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
+                || forceGenerateEverything;
+
+            if (shouldClean)
+            {
+                // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
+            }
+
+            bool doesTokenFileExist = File.Exists(TokenFilePath);
+
+            // We regenerate the common "directory" props file under the following conditions:
+            // - Token file doesn't exist which means editor was just started
+            // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
+            if (shouldClean || !doesTokenFileExist)
             {
                 Exporter.GenerateDirectoryPropsFile(UnityProjectInfo);
+            }
 
-                if (!Config.AutoGenerateEnabled)
-                {
-                    return;
-                }
-
+            // We regenerate everything if:
+            // - We are forced to
+            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
+            if (forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean)))
+            {
                 RegenerateEverything(true);
+            }
 
-                if (!fileExists)
-                {
-                    File.Create(TokenFilePath).Dispose();
-                }
+            if (!doesTokenFileExist)
+            {
+                File.Create(TokenFilePath).Dispose();
+            }
+
+            // Write the current targetframework and build target
+            EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}", (int)currentBuildTarget);
+            EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}", (int)targetFramework);
+
+            // If we cleaned, now build
+            if (shouldClean)
+            {
+                MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
         }
 
