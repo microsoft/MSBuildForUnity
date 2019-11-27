@@ -17,6 +17,8 @@
     <BaseIntermediateOutputPath>$(MSBuildForUnityGeneratedOutputDirectory)\..\Output\obj\Dependencies</BaseIntermediateOutputPath>
     <OutputPath>Dependencies</OutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <!--Copy the NuGet package reference dlls as well.-->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   
   <ItemGroup>
