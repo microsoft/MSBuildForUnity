@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <MSBuildForUnityVersion>0.8.2</MSBuildForUnityVersion>
+    <MSBuildForUnityVersion>0.8.3</MSBuildForUnityVersion>
     
     <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
     <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>

@@ -91,7 +91,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 if (plugin.Type == PluginType.Native)
                 {
-                    Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
+                    // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
+                    // Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
                 }
             }
 
