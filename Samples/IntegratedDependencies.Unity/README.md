@@ -82,18 +82,14 @@ The generated project `Assets/WSASpecific/Component.WSA.msb4u.csproj` contains a
 <Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
-    This file can be modified and checked in.
+    This file can be modified and checked in as long as the following rules are met:
+    - Both the imports are present:
+    - - <Import Project="$(MSBuildProjectName).g.props" />
+    - - <Import Project="$(MSBuildProjectName).g.targets" />
+    - Nothing above the props import or below the targets import is modified
+    - No C# source files are added for compilation
     
-    It is different from the other generated C# Projects in that it will be the one gathering all dependencies and placing them into the Unity asset folder.
-    
-    You can add project level dependencies to this file, by placing them below:
-    - <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
-    and before:
-    - <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
-    
-    Do not add any source or compliation items.
-    
-    Examples of how you can modify this file:
+    You can modify this file as follows:
     - Add NuGet package references:
         <ItemGroup>
           <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
@@ -105,16 +101,18 @@ The generated project `Assets/WSASpecific/Component.WSA.msb4u.csproj` contains a
   -->
   
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
-
   <PropertyGroup>
     <!--anborod: This is a weird thing, it is a required property (even if commented)-->
     <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
   </PropertyGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
-  
-  <ItemGroup>
 
+  <ItemGroup>
+  <!-- Add your references here -->
+    <ProjectReference Include="..\..\External\CommonLibrary.WSA\CommonLibrary.WSA.csproj" />
+    
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.targets" />
