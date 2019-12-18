@@ -1,6 +1,6 @@
 {
     "name": "com.microsoft.msbuildforunity",
-    "version": "0.8.0",
+    "version": "0.8.3",
     "displayName": "MSBuild for Unity",
     "description": "MSBuildForUnity solves the problem of establishing clear dependency relationships between Unity project and other .NET components such as external (to Unity) C# projects, or NuGet packages. It creates a familiar to .NET developers project structure and ensures that the dependencies are resolved and brought into the Unity project as appropriate.",
     "unity": "2018.1",

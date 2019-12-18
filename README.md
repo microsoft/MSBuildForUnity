@@ -10,51 +10,25 @@ The samples included in this repository best convey the simplicity and value of 
 - [Simple NuGet Dependency Sample](Samples/SimpleNuGetDependency.Unity/README.md) - Showcases the simplest and most minimal usage of this component to pull in a dependency.
 - [Integrated Dependencies Sample](Samples/IntegratedDependencies.Unity/README.md) - Showcases the power of this component by relying on project generation.
 
-## Contributing
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-### Prerequisites
-
-The following tools are required to contribute to this project:
-- [Visual Studio 2017+](https://visualstudio.microsoft.com/downloads)
-- [Unity 2018+](https://unity3d.com/get-unity/download)
-
-To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
-
 ### Builds and Packages
 
-| Build | Status                                               |
-|-------|------------------------------------------------------|
-| UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       |
-| NuGet | [![NuGet Build Status][NuGetBuildBadge]][NuGetBuild] |
-
-| Package | Feed                                                                                                                  |
-|---------|-----------------------------------------------------------------------------------------------------------------------|
-| UPM     | [Azure DevOps](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools) |
-| NuGet   | [![NuGet Package][NuGetPackageBadge]][NuGetPackage]                                                                   |
+| Build | Build Status                                         | Package Feed                                                                                                          |
+|-------|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       | [Azure DevOps](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools) |
+| NuGet | [![NuGet Build Status][NuGetBuildBadge]][NuGetBuild] | [![NuGet Package][NuGetPackageBadge]][NuGetPackage]                                                                   |
 
 ## Quick Start
 
-Following are basic instructions for taking advantage of MSBuildForUnity for some common scenarios.
+The following are basic instructions for taking advantage of MSBuildForUnity for some common scenarios.
 
-### Scenario 1: Bring NuGet packages and MSBuild projects into a Unity project
+### Bring NuGet packages and MSBuild projects into a Unity project
 
 This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-builder) and the MSBuildForUnity [NuGet Package](#msbuildforunity-nuget-package).
 
 1. Add the `com.microsoft.msbuildforunity` UPM (Unity Package Manager) package.
     - Edit the `Packages/manifest.json` file in your Unity project.
     - Add the following near the top of the file:
+
         ```json
         "scopedRegistries": [
             {
@@ -66,25 +40,36 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
             }
         ],
         ```
+
     - Add the following to the `dependencies` section of the file:
+
         ```json
-          "com.microsoft.msbuildforunity": "0.8.0"
+          "com.microsoft.msbuildforunity": "0.8.3"
         ```
+
 1. Create a "SDK style" MSBuild project (e.g. csproj) somewhere under your `Assets` directory of your Unity project that references the `MSBuildForUnity` NuGet package. Here is an example:
+
     ```xml
     <Project Sdk="Microsoft.NET.Sdk">
         <PropertyGroup>
             <TargetFramework>netstandard2.0</TargetFramework>
         </PropertyGroup>
         <ItemGroup>
-            <PackageReference Include="MSBuildForUnity" Version="0.8.0">
+            <PackageReference Include="MSBuildForUnity" Version="0.8.3">
                 <PrivateAssets>all</PrivateAssets>
                 <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
             </PackageReference>
         </ItemGroup>
     </Project>
     ```
+
 1. Add additional references to any NuGet packages you want to use in your Unity project.
+
+## Extended Instructions
+
+Here you can find additional instructions for various things you may want to accomplish:
+
+- [Add Support MSB4U to a NuGet Package](Documentation/CraftingNuGetPackages.md)
 
 ## Features
 
@@ -112,7 +97,6 @@ The `MSBuildForUnity` NuGet package augments the default MSBuild build logic to 
 
 For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source/MSBuildTools.Unity.NuGet/MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
 
-
 [PRBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.PRGate?branchName=master
 [PRBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=2&branchName=master
 
@@ -124,3 +108,26 @@ For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/M
 
 [NuGetPackageBadge]: https://feeds.dev.azure.com/UnityDeveloperTools/0cb95e25-9194-4ccd-9afb-439b25ecb93a/_apis/public/Packaging/Feeds/a3d1c3cc-6042-4e05-b699-39a947e75639/Packages/bdf78d31-dd97-4f6b-befb-75bb6185172e/Badge
 [NuGetPackage]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=package&feed=a3d1c3cc-6042-4e05-b699-39a947e75639&package=bdf78d31-dd97-4f6b-befb-75bb6185172e&preferRelease=true
+
+## Contributing
+
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
+
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+### Prerequisites
+
+The following tools are required to contribute to this project:
+
+- [Visual Studio 2017+](https://visualstudio.microsoft.com/downloads)
+- [Unity 2018+](https://unity3d.com/get-unity/download)
+
+To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.

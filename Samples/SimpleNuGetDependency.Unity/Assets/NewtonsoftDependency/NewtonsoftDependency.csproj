@@ -17,7 +17,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="MSBuildForUnity" Version="[0.8.0-*, 0.8.0]">
+    <PackageReference Include="MSBuildForUnity" Version="$(MSB4U_DependencyVersion)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

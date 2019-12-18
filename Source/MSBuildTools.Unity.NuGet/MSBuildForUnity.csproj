@@ -24,23 +24,16 @@
 
   <!-- Setup the versioning for the package based on the build number if provided -->
   <PropertyGroup>
-    <!-- Major is hard-coded and should be incremented on breaking changes -->
-    <MajorVersion>0</MajorVersion>
-
-    <!-- Minor version is hard-coded and should be incremented on feature additions that aren't breaking changes.-->
-    <MinorVersion>8</MinorVersion>
-
-    <!-- Revision (semver Patch) version is hard-coded and should be incremented when a bug fix is made.-->
-    <RevisionVersion>0</RevisionVersion>
+    <!-- These values are set up from the repo-root Directory.Build.props file -->
+    <MajorVersion>$(MSB4U_MajorVersion)</MajorVersion>
+    <MinorVersion>$(MSB4U_MinorVersion)</MinorVersion>
+    <RevisionVersion>$(MSB4U_RevisionVersion)</RevisionVersion>
     
-    <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
-    <!-- Version is based on Major.Minor.Revision as defined above, however, in a lab BUILD_BUILDID will be set so we pull in that as the pre-release version. -->
-    <Version Condition="'$(BUILD_BUILDID)' != ''">$(Version)-$(BUILD_BUILDID)</Version>
+    <Version>$(MSB4U_Version)</Version>
 
-    <PackageVersion>$(Version)</PackageVersion>
-    <AssemblyVersion>$(MajorVersion).$(MinorVersion)</AssemblyVersion>
-    <AssemblyFileVersion>$(AssemblyVersion).$(RevisionVersion).0</AssemblyFileVersion>
-    <AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != ''">$(AssemblyVersion).$(RevisionVersion).$(BUILD_BUILDID)</AssemblyFileVersion>
+    <PackageVersion>$(MSB4U_PackageVersion)</PackageVersion>
+    <AssemblyVersion>$(MSB4U_AssemblyVersion)</AssemblyVersion>
+    <AssemblyFileVersion>$(MSB4U_AssemblyFileVersion)</AssemblyFileVersion>
   </PropertyGroup>
 
   <ItemGroup>

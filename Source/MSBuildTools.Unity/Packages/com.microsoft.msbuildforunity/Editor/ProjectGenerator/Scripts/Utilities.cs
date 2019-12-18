@@ -221,7 +221,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 thisAbsolute = thisAbsolute + "\\";
             }
 
-            return GetNormalizedPath(new Uri(thisAbsolute).MakeRelativeUri(new Uri(thatAbsolute)).OriginalString);
+            return GetNormalizedPath(Uri.UnescapeDataString(new Uri(thisAbsolute).MakeRelativeUri(new Uri(thatAbsolute)).OriginalString));
         }
 
         /// <summary>

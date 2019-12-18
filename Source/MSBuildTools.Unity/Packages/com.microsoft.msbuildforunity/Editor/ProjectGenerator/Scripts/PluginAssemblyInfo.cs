@@ -75,7 +75,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // This approach doesn't work for native YAML parsing
 
             Dictionary<string, bool> enabledPlatforms = new Dictionary<string, bool>();
-            using (StreamReader reader = new StreamReader(ReferencePath.AbsolutePath + ".meta"))
+            using (StreamReader reader = new StreamReader(ReferencePath.LocalPath + ".meta"))
             {
                 DefineConstraints = new HashSet<string>();
 
@@ -271,7 +271,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
                 else
                 {
-                    Debug.LogError($"Platform '{platformName}' was specified as enabled by '{ReferencePath.AbsolutePath}' plugin, but not available in processed compilation settings.");
+                    Debug.LogError($"Platform '{platformName}' was specified as enabled by '{ReferencePath.LocalPath}' plugin, but not available in processed compilation settings.");
                 }
             }
         }
