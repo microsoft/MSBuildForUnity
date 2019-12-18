@@ -4,7 +4,7 @@
 
 ## Quickstart Summary
 
-Though the use of a [Build Targets or Props](https://docs.microsoft.com/en-us/nuget/create-packages/creating-a-package#include-msbuild-props-and-targets-in-a-package) file inside a NuGet package, we can leverage properties provided by MSBuildForUnity to appropriately select the contents to bring into the Unity project. The following snippet is taken from [Microsoft.Windows.MixedReality.DotNetWinRT](https://www.nuget.org/packages/Microsoft.Windows.MixedReality.DotNetWinRT/) NuGet package. It brings in the `Unity` folder packaged in the root of the NuGet package to the output folder inside Unity.
+Through the use of a [Build Targets or Props](https://docs.microsoft.com/en-us/nuget/create-packages/creating-a-package#include-msbuild-props-and-targets-in-a-package) file inside a NuGet package, we can leverage properties provided by MSBuildForUnity to appropriately select the contents to bring into the Unity project. The following snippet is taken from [Microsoft.Windows.MixedReality.DotNetWinRT](https://www.nuget.org/packages/Microsoft.Windows.MixedReality.DotNetWinRT/) NuGet package. It brings in the `Unity` folder packaged in the root of the NuGet package to the output folder inside Unity.
 
 ```xml
 <Project>
