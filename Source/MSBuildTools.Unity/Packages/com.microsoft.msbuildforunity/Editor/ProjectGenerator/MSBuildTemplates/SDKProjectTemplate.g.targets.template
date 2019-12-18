@@ -25,7 +25,12 @@
 <!--SUPPORTED_PLATFORM_BUILD_CONDITION_TEMPLATE_END-->
   </Target>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y $(TargetDir)$(TargetName).dll $(PublishOutputPath)$(UnityConfiguration)\$(UnityPlatform)\&#xD;&#xA;xcopy /y $(TargetDir)$(TargetName).pdb $(PublishOutputPath)$(UnityConfiguration)\$(UnityPlatform)\" />
+  <ItemGroup>
+    <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).dll"/>
+    <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).pdb"/>
+  </ItemGroup>
+
+  <Target Name="CopyPublishFiles" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="@(_MSB4UPublishFiles)" OverwriteReadOnlyFiles="true" DestinationFolder="$(PublishOutputPath)$(UnityConfiguration)\$(UnityPlatform)\"/>
   </Target>
 </Project>
