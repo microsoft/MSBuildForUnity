@@ -59,6 +59,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets)
         {
             AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t=> Utilities.IsPlatformInstalled(t.BuildTarget))
                     .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
                     .Select(CompilationPlatformInfo.GetCompilationPlatform)
                     .OrderBy(t => t.Name).ToList());

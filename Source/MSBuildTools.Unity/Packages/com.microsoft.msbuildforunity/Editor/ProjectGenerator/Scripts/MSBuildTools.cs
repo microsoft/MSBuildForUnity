@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
@@ -73,6 +73,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             BuildTarget.StandaloneWindows,
             BuildTarget.StandaloneWindows64,
+            BuildTarget.StandaloneOSX,
+            BuildTarget.StandaloneLinux,
+            BuildTarget.StandaloneLinux64,
+            BuildTarget.StandaloneLinuxUniversal,
             BuildTarget.iOS,
             BuildTarget.Android,
             BuildTarget.WSAPlayer
@@ -146,8 +150,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 EditorApplication.update += OnUpdate;
                 void OnUpdate()
                 {
+                    try{
                     RefreshGeneratedOutput(forceGenerateEverything: false);
-                    EditorApplication.update -= OnUpdate;
+                    }
+                    finally
+                    {
+                     EditorApplication.update -= OnUpdate;
+                    }
                 }
             }
             else

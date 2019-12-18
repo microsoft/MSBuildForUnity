@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -201,7 +201,7 @@ namespace Microsoft.Build.Unity
                         }
 
                         return buildTask.GetAwaiter().GetResult();
-
+                        
                         void DisplayProgress(string status = "", float progress = 0)
                         {
                             if (EditorUtility.DisplayCancelableProgressBar("Building MSBuild projects...", status, progress))
@@ -237,6 +237,11 @@ namespace Microsoft.Build.Unity
                         EditorUtility.ClearProgressBar();
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
             }
             finally
             {
@@ -365,14 +370,22 @@ namespace Microsoft.Build.Unity
             switch (buildEngine)
             {
                 case BuildEngine.DotNet:
-                    msBuildPath = "dotnet";
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        msBuildPath = "/usr/local/share/dotnet/dotnet";
+                    }
+                    else
+                    {
+                        msBuildPath = "dotnet";
+                    }
                     arguments = $"msbuild {arguments}";
                     break;
 
                 case BuildEngine.VisualStudio:
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        msBuildPath = "msbuild";
+                        // This will technically use mono msbuild
+                        msBuildPath = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/msbuild";
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
