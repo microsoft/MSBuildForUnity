@@ -1,6 +1,6 @@
 # Crafting a NuGet Package for MSB4U
 
-> MSBuildForUnity (MSB4U) consumes .NET based packages without any modifications to the package. This documentation describes how C++, WinRT or packages with Unity-specific contents can easily be adapted to work with MSBuildForUnity.
+MSBuildForUnity (MSB4U) consumes .NET based packages **without any modifications** to the package. This documentation describes how C++, WinRT or packages with Unity-specific contents can easily be adapted to work with MSBuildForUnity.
 
 ## Quick Start
 
