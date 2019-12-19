@@ -336,7 +336,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 foreach (Assembly dll in dlls)
                 {
-                    if (dll.name.Contains("MixedReality"))
+                    // TODO - this should be improved/it won't work for non microsoft dlls
+                    if (dll.name.Contains("Microsoft.MixedReality"))
                     {
                         string dllPath = Utilities.GetFullPathFromAssetsRelative($"Assets/../MSBuild/Publish/InEditor/WindowsStandalone32/{dll.name}.dll");
                         File.Copy(dllPath, Path.Combine(tmpDirPath, $"{dll.name}.dll"), true);
@@ -374,9 +375,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                                 {
                                     Debug.LogError($"Encountered a MonoScript we get a null Type from: '{monoScript.name}'");
                                 }
-                                else if (type.Namespace == null || !type.Namespace.Contains("Microsoft.MixedReality.Toolkit"))
+                                else if (type.Namespace == null || !type.Namespace.Contains("Microsoft.MixedReality"))
                                 {
-                                    throw new InvalidDataException($"Type {type.Name} is not a member of the Microsoft.MixedReality.Toolkit namespace");
+                                    throw new InvalidDataException($"Type {type.Name} is not a member of the Microsoft.MixedReality namespace");
                                 }
                                 else
                                 {

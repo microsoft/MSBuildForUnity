@@ -62,10 +62,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
-                if (EditorAnalyticsSessionInfo.elapsedTime > 0)
-                {
-                    RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
-                }
+                // if (EditorAnalyticsSessionInfo.elapsedTime > 0)
+                // {
+                //     RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+                // }
             }
         }
 
@@ -135,6 +135,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
+        public static void RegenerateSDKProjects()
+        {
+            RegenerateEverything(reparseUnityData:true);
+            Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
+        }
+
         static MSBuildTools()
         {
             if (EditorAnalyticsSessionInfo.elapsedTime == 0)
@@ -170,7 +176,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
-
+                        
             if (shouldClean)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
