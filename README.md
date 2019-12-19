@@ -21,7 +21,7 @@ The samples included in this repository best convey the simplicity and value of 
 
 The following are basic instructions for taking advantage of MSBuildForUnity for some common scenarios.
 
-### Scenario 1: Bring NuGet packages and MSBuild projects into a Unity project
+### Bring NuGet packages and MSBuild projects into a Unity project
 
 This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-builder) and the MSBuildForUnity [NuGet Package](#msbuildforunity-nuget-package).
 
@@ -65,6 +65,12 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
 
 1. Add additional references to any NuGet packages you want to use in your Unity project.
 
+## Extended Instructions
+
+Here you can find additional instructions for various things you may want to accomplish:
+
+- [Add Support MSB4U to a NuGet Package](Documentation/CraftingNuGetPackages.md)
+
 ## Features
 
 MSBuildForUnity has several features that can be used independently or in conjunction.
@@ -91,7 +97,6 @@ The `MSBuildForUnity` NuGet package augments the default MSBuild build logic to 
 
 For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/MSBuildForUnityNuGetPackage.md), [source](Source/MSBuildTools.Unity.NuGet/MSBuildForUnity.csproj), and [samples](Source/MSBuildTools.Unity/Assets/Samples/Samples.sln).
 
-
 [PRBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.PRGate?branchName=master
 [PRBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=2&branchName=master
 
@@ -108,7 +113,7 @@ For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/M
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
 
 When you submit a pull request, a CLA bot will automatically determine whether you need to provide
 a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
@@ -121,7 +126,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ### Prerequisites
 
 The following tools are required to contribute to this project:
+
 - [Visual Studio 2017+](https://visualstudio.microsoft.com/downloads)
 - [Unity 2018+](https://unity3d.com/get-unity/download)
 
-To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.                                                               |
+To get started, clone the repo, and then run `git submodule update --init` to initialize submodules.
