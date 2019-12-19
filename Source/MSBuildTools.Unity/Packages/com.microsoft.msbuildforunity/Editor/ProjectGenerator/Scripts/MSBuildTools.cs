@@ -139,6 +139,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
+        [MenuItem("MSBuild/Documentation...", priority = 203)]
+        public static void LaunchHelp()
+        {
+            Process.Start("https://github.com/microsoft/MSBuildForUnity");
+        }
+
         static MSBuildTools()
         {
             if (EditorAnalyticsSessionInfo.elapsedTime == 0)
