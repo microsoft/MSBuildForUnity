@@ -62,10 +62,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             public void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget)
             {
-                // if (EditorAnalyticsSessionInfo.elapsedTime > 0)
-                // {
-                //     RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
-                // }
+                if (EditorAnalyticsSessionInfo.elapsedTime > 0)
+                {
+                    RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+                }
             }
         }
 
