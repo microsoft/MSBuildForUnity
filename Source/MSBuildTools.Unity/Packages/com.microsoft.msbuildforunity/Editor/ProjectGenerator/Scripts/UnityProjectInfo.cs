@@ -95,7 +95,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            RefreshProjects();
+            //RefreshProjects();
         }
 
         public void RefreshProjects()
@@ -260,11 +260,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!assemblyDefinitionInfo.BuiltInPackage)
             {
-                Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies"));
+                Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies\\"));
                 foreach (PluginAssemblyInfo plugin in Plugins.Where(t => t.Type != PluginType.Native))
                 {
+                    Debug.Log($"Plugin: {plugin.Name} {plugin.Type} {plugin.AutoReferenced} {plugin.ReferencePath}");
                     if (!dependencies.IsBaseOf(plugin.ReferencePath) && (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name)))
                     {
+                        Debug.Log($"Plugin referenced: {plugin.Name}");
                         toReturn.AddDependency(plugin);
                     }
                 }
