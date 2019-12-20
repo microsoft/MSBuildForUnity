@@ -25,12 +25,11 @@
 <!--SUPPORTED_PLATFORM_BUILD_CONDITION_TEMPLATE_END-->
   </Target>
 
-  <ItemGroup>
-    <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).dll"/>
-    <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).pdb"/>
-  </ItemGroup>
-
   <Target Name="CopyPublishFiles" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+        <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).dll"/>
+        <_MSB4UPublishFiles Include="$(TargetDir)$(TargetName).pdb"/>
+    </ItemGroup>
     <Copy SourceFiles="@(_MSB4UPublishFiles)" OverwriteReadOnlyFiles="true" DestinationFolder="$(PublishOutputPath)$(UnityConfiguration)\$(UnityPlatform)\"/>
   </Target>
 </Project>
