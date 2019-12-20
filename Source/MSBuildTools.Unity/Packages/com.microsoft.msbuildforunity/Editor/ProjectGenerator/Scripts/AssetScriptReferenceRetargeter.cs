@@ -375,10 +375,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                                 {
                                     Debug.LogError($"Encountered a MonoScript we get a null Type from: '{monoScript.name}'");
                                 }
-                                else if (type.Namespace == null || !type.Namespace.Contains("Microsoft.MixedReality"))
-                                {
-                                    throw new InvalidDataException($"Type {type.Name} is not a member of the Microsoft.MixedReality namespace");
-                                }
                                 else
                                 {
                                     assemblyInformation.CompiledClasses.Add(type.FullName, new ClassInformation() { Name = type.Name, Namespace = type.Namespace, FileId = fileId, Guid = newDllGuid });
@@ -424,8 +420,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
                 Directory.CreateDirectory(pluginPath);
 
-                CopyFiles(directory, pluginPath, "Microsoft.MixedReality.Toolkit*.dll");
-                CopyFiles(directory, pluginPath, "Microsoft.MixedReality.Toolkit*.pdb");
+                CopyFiles(directory, pluginPath, "Microsoft.MixedReality*.dll");
+                CopyFiles(directory, pluginPath, "Microsoft.MixedReality*.pdb");
             }
         }
 

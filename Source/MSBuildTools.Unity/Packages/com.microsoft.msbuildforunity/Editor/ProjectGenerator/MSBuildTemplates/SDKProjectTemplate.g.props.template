@@ -130,7 +130,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="##PROJECT_DIRECTORY_PATH_TOKEN##\**\*.cs" Exclude="@(FoldersToExclude->'%(identity)\**\*.cs')" />
+    <Compile Include="##PROJECT_DIRECTORY_PATH_TOKEN##\**\*.cs"
+             Exclude="@(FoldersToExclude->'%(identity)\**\*.cs');**\Editor\**\*.cs"
+             Condition="'$(UnityConfiguration)'=='Player'"/>
+    <Compile Include="##PROJECT_DIRECTORY_PATH_TOKEN##\**\*.cs"
+             Exclude="@(FoldersToExclude->'%(identity)\**\*.cs')"
+             Condition="'$(UnityConfiguration)'=='InEditor'"/>
     <!--<Content Include="$(ProjectGuid).csmap">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>-->
