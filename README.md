@@ -70,6 +70,7 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
 Here you can find additional instructions for various things you may want to accomplish:
 
 - [Add Support MSB4U to a NuGet Package](Documentation/CraftingNuGetPackages.md)
+- [OSX and Linux Support](Documentation/OSXAndLinuxSupport.md)
 
 ## Features
 

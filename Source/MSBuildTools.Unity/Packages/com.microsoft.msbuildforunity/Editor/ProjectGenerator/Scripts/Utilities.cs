@@ -57,20 +57,23 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private const string MSBuildFolderName = "MSBuild";
         private const string MSBuildProjectsFolderName = "Projects";
 
+#if UNITY_EDITOR_OSX
+        private const string BuiltInPackagesRelativePath = @"Unity.app/Contents/Resources/PackageManager/BuiltInPackages";
+#else
         private const string BuiltInPackagesRelativePath = @"Data\Resources\PackageManager\BuiltInPackages";
-
-        public static string ProjectPath { get; } = Path.GetFullPath(Application.dataPath.Substring(0, Application.dataPath.Length - AssetsFolderName.Length));
+#endif
+        public static string ProjectPath { get; } = GetNormalizedPath(Application.dataPath.Substring(0, Application.dataPath.Length - AssetsFolderName.Length), true);
         public static string MSBuildOutputFolder { get; } = GetNormalizedPath(ProjectPath + MSBuildFolderName, true);
-        public static string MSBuildProjectFolder { get; } = Path.Combine(MSBuildOutputFolder, MSBuildProjectsFolderName);
-        public static string PackageLibraryCachePath { get; } = Path.Combine(ProjectPath, "Library", PackagesCacheFolderName);
+        public static string MSBuildProjectFolder { get; } = GetNormalizedPath(Path.Combine(MSBuildOutputFolder, MSBuildProjectsFolderName));
+        public static string PackageLibraryCachePath { get; } = GetNormalizedPath(Path.Combine(ProjectPath, "Library", PackagesCacheFolderName));
 
         public const string MetaFileGuidRegex = @"guid:\s*([0-9a-fA-F]{32})";
 
-        public static string PackagesPath { get; } = Path.Combine(ProjectPath, PackagesFolderName);
+        public static string PackagesPath { get; } = GetNormalizedPath(Path.Combine(ProjectPath, PackagesFolderName));
 
-        public static string AssetPath { get; } = Path.GetFullPath(Application.dataPath);
+        public static string AssetPath { get; } = GetNormalizedPath(Application.dataPath, true);
 
-        public static string BuiltInPackagesPath { get; } = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(EditorApplication.applicationPath), BuiltInPackagesRelativePath));
+        public static string BuiltInPackagesPath { get; } = GetNormalizedPath(Path.Combine(Path.GetDirectoryName(EditorApplication.applicationPath), BuiltInPackagesRelativePath), true);
 
         /// <summary>
         /// Converts an assets relative path to an absolute path.
@@ -366,13 +369,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
-        /// Gets a normalized path (with back slashes only), and optionally can make full path.
+        /// Gets a normalized path (with slashes matching the platform), and optionally can make full path.
         /// </summary>
         public static string GetNormalizedPath(string path, bool makeFullPath = false)
         {
-            return makeFullPath
-                ? Path.GetFullPath(path)
-                : path.Replace('/', '\\');
+            if (makeFullPath)
+            {
+                path = Path.GetFullPath(path);
+            }
+
+            return path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
         }
 
         /// <summary>
@@ -554,37 +560,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public static bool IsPlatformInstalled(BuildTarget buildTarget)
         {
-#if UNITY_EDITOR
-            Type moduleManager = Type.GetType("UnityEditor.Modules.ModuleManager, UnityEditor.dll");
-            MethodInfo isPlatformSupportLoaded = moduleManager.GetMethod("IsPlatformSupportLoaded", BindingFlags.Static | BindingFlags.NonPublic);
-            MethodInfo getTargetStringFromBuildTarget = moduleManager.GetMethod("GetTargetStringFromBuildTarget", BindingFlags.Static | BindingFlags.NonPublic);
-
-            return (bool)isPlatformSupportLoaded.Invoke(null, new object[] { (string)getTargetStringFromBuildTarget.Invoke(null, new object[] { buildTarget }) });
-#else
-            throw new PlatformNotSupportedException($"{nameof(IsPlatformInstalled)} is only supported in the editor.");
-#endif
-        }
-
-        /// <summary>
-        /// Gets a <see cref="BuildTargetGroup"/> for a specified <see cref="BuildTarget"/>.
-        /// </summary>
-        public static BuildTargetGroup GetBuildTargetGroup(BuildTarget buildTarget)
-        {
-            switch (buildTarget)
+            try
             {
-                case BuildTarget.iOS:
-                    return BuildTargetGroup.iOS;
-                case BuildTarget.Android:
-                    return BuildTargetGroup.Android;
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                    return BuildTargetGroup.Standalone;
-                case BuildTarget.WSAPlayer:
-                    return BuildTargetGroup.WSA;
-                case BuildTarget.NoTarget:
-                    return BuildTargetGroup.Unknown;
-                default:
-                    throw new PlatformNotSupportedException($"Don't currently support {buildTarget}");
+                return BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(buildTarget), buildTarget);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -23,15 +23,16 @@ namespace Microsoft.Build.Unity
         /// </summary>
         /// <param name="profile">The name of the profile to build.</param>
         /// <param name="additionalArguments">The additional arguments passed to MSBuild.</param>
-        public static void TryBuildAllProjects(string profile, string additionalArguments = "")
+        public static bool TryBuildAllProjects(string profile, string additionalArguments = "")
         {
             try
             {
-                MSBuildProjectBuilder.BuildAllProjects(profile, additionalArguments);
+                return MSBuildProjectBuilder.BuildAllProjects(profile, additionalArguments);
             }
             catch (OperationCanceledException)
             {
                 Debug.LogWarning("Canceled building MSBuild projects.");
+                return false;
             }
         }
 

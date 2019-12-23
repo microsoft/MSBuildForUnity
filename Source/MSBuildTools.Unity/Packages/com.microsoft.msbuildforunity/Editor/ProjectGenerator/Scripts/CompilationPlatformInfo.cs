@@ -31,7 +31,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             AssemblyBuilder builder = new AssemblyBuilder("dummy.dll", new string[] { @"Editor\dummy.cs" })
             {
                 buildTarget = platform.BuildTarget,
-                buildTargetGroup = Utilities.GetBuildTargetGroup(platform.BuildTarget),
+                buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platform.BuildTarget),
                 flags = AssemblyBuilderFlags.None
             };
 
@@ -158,7 +158,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             Name = name;
             BuildTarget = buildTarget;
-            BuildTargetGroup = Utilities.GetBuildTargetGroup(BuildTarget);
+            BuildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
 
             TargetFramework = BuildTargetGroup.GetTargetFramework();
             ScriptingBackend = BuildTargetGroup.GetScriptingBackend();

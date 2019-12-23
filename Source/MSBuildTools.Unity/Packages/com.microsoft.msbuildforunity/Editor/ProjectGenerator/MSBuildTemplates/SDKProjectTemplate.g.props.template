@@ -91,6 +91,9 @@
   <!-- This is a "special" platform that will override references -->
   <Import Project="##PLATFORM_PROPS_FOLDER_PATH_TOKEN##\Editor.InEditor.props" Condition="'$(IsEditorOnlyTarget)' == 'true'"/>
 
+  <!-- Add support for Unix based systems (OSX, Linux) that have dotnet core and mono but not netframework. -->
+  <Import Project="UnixNetSupport.props"/>
+
   <PropertyGroup Condition="'$(UnityConfiguration)'=='InEditor'">
     <AssemblySearchPaths>$(AssemblySearchPaths);<!--INEDITOR_ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
     <DevelopmentBuild>true</DevelopmentBuild>
