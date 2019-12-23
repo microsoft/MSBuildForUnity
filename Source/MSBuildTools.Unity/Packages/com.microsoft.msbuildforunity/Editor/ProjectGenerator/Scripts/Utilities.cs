@@ -369,7 +369,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
-        /// Gets a normalized path (with back slashes only), and optionally can make full path.
+        /// Gets a normalized path (with slashes matching the platform), and optionally can make full path.
         /// </summary>
         public static string GetNormalizedPath(string path, bool makeFullPath = false)
         {
@@ -562,50 +562,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             try
             {
-                return BuildPipeline.IsBuildTargetSupported(GetBuildTargetGroup(buildTarget), buildTarget);
+                return BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(buildTarget), buildTarget);
             }
             catch (PlatformNotSupportedException)
             {
                 return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets a <see cref="BuildTargetGroup"/> for a specified <see cref="BuildTarget"/>.
-        /// </summary>
-        public static BuildTargetGroup GetBuildTargetGroup(BuildTarget buildTarget)
-        {
-            switch (buildTarget)
-            {
-                case BuildTarget.iOS:
-                    return BuildTargetGroup.iOS;
-                case BuildTarget.Android:
-                    return BuildTargetGroup.Android;
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                case BuildTarget.StandaloneOSX:
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinux64:
-                case BuildTarget.StandaloneLinuxUniversal:
-                    return BuildTargetGroup.Standalone;
-                case BuildTarget.WSAPlayer:
-                    return BuildTargetGroup.WSA;
-                case BuildTarget.NoTarget:
-                    return BuildTargetGroup.Unknown;
-                case BuildTarget.Lumin:
-                    return BuildTargetGroup.Lumin;
-                case BuildTarget.PS4:
-                    return BuildTargetGroup.PS4;
-                case BuildTarget.Switch:
-                    return BuildTargetGroup.Switch;
-                case BuildTarget.tvOS:
-                    return BuildTargetGroup.tvOS;
-                case BuildTarget.WebGL:
-                    return BuildTargetGroup.WebGL;
-                case BuildTarget.XboxOne:
-                    return BuildTargetGroup.XboxOne;
-                default:
-                    throw new PlatformNotSupportedException($"Don't currently support {buildTarget}");
             }
         }
 

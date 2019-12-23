@@ -156,14 +156,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 EditorApplication.update += OnUpdate;
                 void OnUpdate()
                 {
-                    try
-                    {
-                        RefreshGeneratedOutput(forceGenerateEverything: false);
-                    }
-                    finally
-                    {
-                        EditorApplication.update -= OnUpdate;
-                    }
+                    EditorApplication.update -= OnUpdate;
+                    RefreshGeneratedOutput(forceGenerateEverything: false);
                 }
             }
             else

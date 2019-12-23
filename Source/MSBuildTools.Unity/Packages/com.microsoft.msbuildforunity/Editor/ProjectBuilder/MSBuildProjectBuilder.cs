@@ -25,82 +25,114 @@ namespace Microsoft.Build.Unity
 
         private const string AdoAuthenticationUrl = "https://microsoft.com/devicelogin";
 
-        private static readonly Lazy<Task<string>> msBuildPathTask;
+        private static readonly Lazy<Task<string>> msBuildPathTask = new Lazy<Task<string>>(GetMSBuildPath);
+        private static readonly Lazy<string> dotnetPath = new Lazy<string>(GetDotNetPath);
         private static readonly Regex msBuildErrorFormat = new Regex(@"^\s*(((?<ORIGIN>(((\d+>)?[a-zA-Z]?:[^:]*)|([^:]*))):)|())(?<SUBCATEGORY>(()|([^:]*? )))(?<CATEGORY>(error|warning))( \s*(?<CODE>[^: ]*))?\s*:(?<TEXT>.*)$", RegexOptions.Compiled);
         private static readonly Regex adoAuthenticationFormat = new Regex($"\\s*(\\[CredentialProvider\\])?(?<Message>.*({MSBuildProjectBuilder.AdoAuthenticationUrl}).*(?<Code>[A-Z|0-9]{{9}}).*)", RegexOptions.Compiled);
 
         private static bool isBuildingWithDefaultUI = false;
 
-        static MSBuildProjectBuilder()
+        private static string GetDotNetPath()
         {
-            MSBuildProjectBuilder.msBuildPathTask = new Lazy<Task<string>>(async () =>
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? (TryGetPathFor("dotnet.exe", out string result) ? result : "dotnet")
+                : (TryGetPathFor("dotnet", out result) ? result : "/usr/local/share/dotnet/dotnet");
+        }
+
+        private static async Task<string> GetMSBuildPath()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? (TryGetPathFor("msbuild.exe", out string result) ? result : await GetVSWhereMSBuildPath().ConfigureAwait(false))
+                : (TryGetPathFor("msbuild", out result) ? result : "/Library/Frameworks/Mono.framework/Commands/msbuild");
+        }
+
+        private static bool TryGetPathFor(string file, out string result)
+        {
+            string[] paths = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? Environment.GetEnvironmentVariable("path").Split(';')
+                : Environment.GetEnvironmentVariable("PATH").Split(':');
+
+            foreach (string path in paths)
             {
-                string vswherePath = Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)"), "Microsoft Visual Studio", "Installer", "vswhere.exe");
-                if (!File.Exists(vswherePath))
+                string candidate = Path.Combine(path, file);
+                if (File.Exists(candidate))
                 {
-                    throw new FileNotFoundException("Visual Studio Installer not found.", vswherePath);
+                    result = candidate;
+                    return true;
                 }
+            }
 
-                string vswhereArguments = $"-latest -requires Microsoft.Component.MSBuild -find {Path.Combine("MSBuild", "**", "Bin", "MSBuild.exe")}";
+            result = null;
+            return false;
+        }
 
-                using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
+        private static async Task<string> GetVSWhereMSBuildPath()
+        {
+            string vswherePath = Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)"), "Microsoft Visual Studio", "Installer", "vswhere.exe");
+            if (!File.Exists(vswherePath))
+            {
+                throw new FileNotFoundException("Visual Studio Installer not found.", vswherePath);
+            }
+
+            string vswhereArguments = $"-latest -requires Microsoft.Component.MSBuild -find {Path.Combine("MSBuild", "**", "Bin", "MSBuild.exe")}";
+
+            using (var process = new System.Diagnostics.Process { EnableRaisingEvents = true })
+            {
+                process.StartInfo.FileName = vswherePath;
+                process.StartInfo.Arguments = vswhereArguments;
+
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+
+                bool succeeded = false;
+                string result = null;
+                var taskCompletionSource = new TaskCompletionSource<string>();
+
+                process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
                 {
-                    process.StartInfo.FileName = vswherePath;
-                    process.StartInfo.Arguments = vswhereArguments;
-
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.RedirectStandardError = true;
-
-                    bool succeeded = false;
-                    string result = null;
-                    var taskCompletionSource = new TaskCompletionSource<string>();
-
-                    process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                    if (!string.IsNullOrEmpty(e.Data))
                     {
-                        if (!string.IsNullOrEmpty(e.Data))
-                        {
-                            succeeded = true;
-                            result = e.Data;
-                        }
-                    };
+                        succeeded = true;
+                        result = e.Data;
+                    }
+                };
 
-                    process.ErrorDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                process.ErrorDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
                     {
-                        if (!string.IsNullOrEmpty(e.Data))
-                        {
-                            succeeded = false;
-                            result = e.Data;
-                        }
-                    };
+                        succeeded = false;
+                        result = e.Data;
+                    }
+                };
 
-                    process.Start();
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-                    process.Exited += delegate
+                process.Exited += delegate
+                {
+                    process.WaitForExit();
+
+                    if (succeeded)
                     {
-                        process.WaitForExit();
-
-                        if (succeeded)
+                        taskCompletionSource.SetResult(result);
+                    }
+                    else
+                    {
+                        string message = "Could not find Visual Studio MSBuild engine.";
+                        if (!string.IsNullOrEmpty(result))
                         {
-                            taskCompletionSource.SetResult(result);
+                            message = $"{message} ({result})";
                         }
-                        else
-                        {
-                            string message = "Could not find Visual Studio MSBuild engine.";
-                            if (!string.IsNullOrEmpty(result))
-                            {
-                                message = $"{message} ({result})";
-                            }
-                            taskCompletionSource.SetException(new Exception(message));
-                        }
-                    };
+                        taskCompletionSource.SetException(new Exception(message));
+                    }
+                };
 
-                    return await taskCompletionSource.Task.ConfigureAwait(false);
-                }
-            });
+                return await taskCompletionSource.Task.ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -201,7 +233,7 @@ namespace Microsoft.Build.Unity
                         }
 
                         return buildTask.GetAwaiter().GetResult();
-                        
+
                         void DisplayProgress(string status = "", float progress = 0)
                         {
                             if (EditorUtility.DisplayCancelableProgressBar("Building MSBuild projects...", status, progress))
@@ -370,31 +402,13 @@ namespace Microsoft.Build.Unity
             switch (buildEngine)
             {
                 case BuildEngine.DotNet:
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        msBuildPath = "/usr/local/share/dotnet/dotnet";
-                    }
-                    else
-                    {
-                        msBuildPath = "dotnet";
-                    }
+                    msBuildPath = dotnetPath.Value;
+
                     arguments = $"msbuild {arguments}";
                     break;
 
                 case BuildEngine.VisualStudio:
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        // This will technically use mono msbuild
-                        msBuildPath = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/msbuild";
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        msBuildPath = await MSBuildProjectBuilder.msBuildPathTask.Value.ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"{nameof(BuildEngine.VisualStudio)} is not supported on this platform.");
-                    }
+                    msBuildPath = await MSBuildProjectBuilder.msBuildPathTask.Value.ConfigureAwait(false);
                     break;
 
                 default:
