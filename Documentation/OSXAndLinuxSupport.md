@@ -4,7 +4,7 @@ MSBuildForUnity (MSB4U) has **beta** support for Unity on OSX and Linux platform
 
 ## Overview
 
-MSB4U should behave the same on these platforms as on Windows, required software just needs to be installed. However, there is a special step that is needed when adding a dependency to a C# project with the TargetFramework of .NET 4.6 ([see below](#Targeting\ .NET\ 4.6)).
+MSB4U should behave the same on these platforms as on Windows, required software just needs to be installed. However, there is a special step that is needed when adding a dependency to a C# project with the TargetFramework of .NET 4.6 ([see below](.#Targeting-.NET-4.6)).
 
 ### Required Software
 
