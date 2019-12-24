@@ -218,7 +218,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         }
 
         ///<inherit-doc/>
-        public void ExportSolution(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid)
+        public void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config)
         {
             string solutionFilePath = GetSolutionFilePath(unityProjectInfo);
 
@@ -293,11 +293,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             HashSet<Guid> generatedItems = new HashSet<Guid>();
 
             // Add the "Dependencies" project
-            ProcessProjectEntry("Dependencies.msb4u", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), dependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
+            ProcessProjectEntry("Dependencies.msb4u", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), config.DependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
 
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages, generatedItems);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges, generatedItems);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "External Packages", externalPackages, generatedItems);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.BuiltInPackagesFolderGuid, "Built In Packages", builtinPackages, generatedItems);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.ImportedPackagesFolderGuid, "Imported Packages", importedPacakges, generatedItems);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.ExternalPackagesFolderGuid, "External Packages", externalPackages, generatedItems);
 
             ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
             ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
@@ -351,7 +351,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ExportProject(unityProjectInfo, project);
             }
 
-            GenerateTopLevelDependenciesProject(unityProjectInfo, dependenciesProjectGuid);
+            GenerateTopLevelDependenciesProject(unityProjectInfo, config.DependenciesProjectGuid);
 
             // Write notes for generated items
             foreach (Guid item in generatedItems)
@@ -401,22 +401,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects, HashSet<Guid> generatedItems)
+        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, Guid folderGuid, string folderName, List<CSProjectInfo> projects, HashSet<Guid> generatedItems)
         {
             if (projects.Count > 0)
             {
-                Guid guid = Guid.NewGuid();
-                generatedItems.Add(guid);
-                string folderGuid = guid.ToString().ToUpper();
+                generatedItems.Add(folderGuid);
+                string guidStr = folderGuid.ToString().ToUpper();
 
                 TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
                 folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, folderName);
-                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
+                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guidStr);
 
                 foreach (CSProjectInfo project in projects)
                 {
                     replacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
-                    folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
+                    folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guidStr);
                     folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(replacementSet, project.Guid.ToString().ToUpper());
                 }
             }
