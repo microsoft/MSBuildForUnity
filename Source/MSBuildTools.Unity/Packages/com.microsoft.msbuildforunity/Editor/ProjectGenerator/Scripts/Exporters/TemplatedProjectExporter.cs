@@ -267,9 +267,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
-            List<CSProjectInfo> builtinPackages = new List<CSProjectInfo>();
-            List<CSProjectInfo> importedPacakges = new List<CSProjectInfo>();
-            List<CSProjectInfo> externalPackages = new List<CSProjectInfo>();
+            List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems = new List<Tuple<CSProjectInfo, Guid, string>>();
             foreach (CSProjectInfo project in orderedProjects)
             {
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
@@ -278,13 +276,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 switch (project.AssemblyDefinitionInfo.AssetLocation)
                 {
                     case AssetLocation.BuiltInPackage:
-                        builtinPackages.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.BuiltInPackagesFolderGuid, "Built In Packages"));
                         break;
                     case AssetLocation.PackageLibraryCache:
-                        importedPacakges.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.ImportedPackagesFolderGuid, "Imported Packages"));
                         break;
                     case AssetLocation.External:
-                        externalPackages.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.ExternalPackagesFolderGuid, "External Packages"));
                         break;
                     default: break;
                 }
@@ -295,9 +293,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             // Add the "Dependencies" project
             ProcessProjectEntry("Dependencies.msb4u", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), config.DependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
 
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.BuiltInPackagesFolderGuid, "Built In Packages", builtinPackages, generatedItems);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.ImportedPackagesFolderGuid, "Imported Packages", importedPacakges, generatedItems);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, config.ExternalPackagesFolderGuid, "External Packages", externalPackages, generatedItems);
+            PopulateFolders(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, folderNestedItems, generatedItems);
 
             ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
             ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
@@ -408,23 +404,22 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, Guid folderGuid, string folderName, List<CSProjectInfo> projects, HashSet<Guid> generatedItems)
+        private void PopulateFolders(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems, HashSet<Guid> generatedItems)
         {
-            if (projects.Count > 0)
+            foreach (Tuple<CSProjectInfo, Guid, string> tuple in folderNestedItems)
             {
-                generatedItems.Add(folderGuid);
-                string guidStr = folderGuid.ToString().ToUpper();
-
-                TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
-                folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, folderName);
-                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guidStr);
-
-                foreach (CSProjectInfo project in projects)
+                string guidStr = tuple.Item2.ToString().ToUpper();
+                if (generatedItems.Add(tuple.Item2))
                 {
-                    replacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
-                    folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guidStr);
-                    folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(replacementSet, project.Guid.ToString().ToUpper());
+                    // Folder hasn't been added to generated items, so then add to replacement set
+                    TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
+                    folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, tuple.Item3);
+                    folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guidStr);
                 }
+
+                TemplateReplacementSet nestedReplacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
+                folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(nestedReplacementSet, guidStr);
+                folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(nestedReplacementSet, tuple.Item1.Guid.ToString().ToUpper());
             }
         }
 
