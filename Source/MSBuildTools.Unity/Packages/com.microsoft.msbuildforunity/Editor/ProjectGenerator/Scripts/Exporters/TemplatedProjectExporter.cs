@@ -317,28 +317,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             List<string> disabled = new List<string>();
 
-            void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string configuration, string platform)
+            void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string slnConfiguration, string slnPlatform, string projConfiguration, string projPlatform)
             {
                 generatedItems.Add(guid);
 
                 templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
-                templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
-                templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, platform);
+                templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, slnConfiguration);
+                templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, slnPlatform);
+                templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
+                templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
             }
 
-            void ProcessMappings(Guid guid, string configuration, Func<BuildTarget, bool> isEnabledConfigFunc)
+            void ProcessMappings(Guid guid, string configuration, Func<BuildTarget, bool> isEnabledConfigFunc, string projConfigOverride = null, string projPlatformOverride = null)
             {
                 foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
                 {
                     TemplateReplacementSet configMappingReplacementSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
-                    ConfigurationTemplateReplace(configPlatformMappingTemplate, configMappingReplacementSet, guid, configuration, platform.Name);
+                    ConfigurationTemplateReplace(configPlatformMappingTemplate, configMappingReplacementSet, guid, configuration, platform.Name, projConfigOverride ?? configuration, projPlatformOverride ?? platform.Name);
 
                     if (isEnabledConfigFunc(platform.BuildTarget))
                     {
                         TemplateReplacementSet replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(configMappingReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name);
+                        ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name, projConfigOverride ?? configuration, projPlatformOverride ?? platform.Name);
                     }
                 }
             }
@@ -349,9 +349,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ProcessMappings(project.Guid, "Player", b => project.PlayerPlatforms.ContainsKey(b));
             }
 
-            // For dependencies project all mappings exist and are enabled
-            ProcessMappings(config.DependenciesProjectGuid, "InEditor", b => true);
-            ProcessMappings(config.DependenciesProjectGuid, "Player", b => true);
+            // For dependencies project all mappings exist and are enabled but mapped to Debug|Any CPU by default
+            ProcessMappings(config.DependenciesProjectGuid, "InEditor", b => true, "Debug", "Any CPU");
+            ProcessMappings(config.DependenciesProjectGuid, "Player", b => true, "Debug", "Any CPU");
 
             foreach (CSProjectInfo project in unityProjectInfo.CSProjects.Values)
             {
