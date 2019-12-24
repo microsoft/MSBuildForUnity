@@ -17,10 +17,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 {
     public class MSBuildToolsConfig
     {
+        private const int CurrentConfigVersion = 1;
+
         private static string MSBuildSettingsFilePath { get; } = Path.Combine(Utilities.ProjectPath, "MSBuild", "settings.json");
 
         [SerializeField]
+        private int version = 0;
+
+        [SerializeField]
         private bool autoGenerateEnabled = false;
+
+        [SerializeField]
+        private string dependenciesProjectGuid = Guid.NewGuid().ToString();
 
         public bool AutoGenerateEnabled
         {
@@ -31,6 +39,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 Save();
             }
         }
+
+        public string DependenciesProjectGuid => dependenciesProjectGuid;
 
         private void Save()
         {
@@ -44,6 +54,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             if (File.Exists(MSBuildSettingsFilePath))
             {
                 EditorJsonUtility.FromJsonOverwrite(File.ReadAllText(MSBuildSettingsFilePath), toReturn);
+            }
+
+            if (CurrentConfigVersion > toReturn.version)
+            {
+                toReturn.version = CurrentConfigVersion;
+                toReturn.Save();
             }
 
             return toReturn;
@@ -268,7 +284,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
 
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
-                RegenerateSolution();
+                Exporter.ExportSolution(UnityProjectInfo, Guid.Parse(Config.DependenciesProjectGuid));
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
@@ -287,11 +303,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 stopwatch.Stop();
                 Debug.Log($"Whole Generate Projects process took {stopwatch.ElapsedMilliseconds} ms; actual generation took {stopwatch.ElapsedMilliseconds - postCleanupAndCopyStamp}; solution export: {solutionExportEnd - solutionExportStart}; exporter creation: {exporterEnd - exporterStart}; props file generation: {propsFileGenerationEnd - propsFileGenerationStart}");
             }
-        }
-
-        private static void RegenerateSolution()
-        {
-            Exporter.ExportSolution(UnityProjectInfo);
         }
 
         private static void GenerateBuildProjectsFile(string fileName, string solutionPath, IEnumerable<CompilationPlatformInfo> compilationPlatforms)

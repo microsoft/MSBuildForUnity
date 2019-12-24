@@ -218,12 +218,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         }
 
         ///<inherit-doc/>
-        public void ExportSolution(UnityProjectInfo unityProjectInfo)
+        public void ExportSolution(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid)
         {
             string solutionFilePath = GetSolutionFilePath(unityProjectInfo);
 
             if (File.Exists(solutionFilePath))
             {
+                ParseExistingSolutionFile(solutionFilePath);
                 File.Delete(solutionFilePath);
             }
             ITemplatePart rootTemplatePart = solutionFileTemplate.Root;
@@ -235,6 +236,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart configPlatformMappingTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_MAPPING"];
             ITemplatePart configPlatformEnabledTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_ENABLED"];
             ITemplatePart folderNestedProjectsTemplate = rootTemplatePart.Templates["FOLDER_NESTED_PROJECTS"];
+            ITemplatePart generatedItemEntryTemplate = rootTemplatePart.Templates["GENERATED_ITEM_ENTRY"];
 
             CSProjectInfo[] unorderedProjects = unityProjectInfo.CSProjects.Select(t => t.Value).ToArray();
             List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
@@ -271,7 +273,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             foreach (CSProjectInfo project in orderedProjects)
             {
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
-                ProcessProjectEntry(project.Name, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
+                ProcessProjectEntry(project.Name, solutionFilePath, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
 
                 switch (project.AssemblyDefinitionInfo.AssetLocation)
                 {
@@ -288,12 +290,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
-            // Add the "Dependencies" project
-            ProcessProjectEntry("Dependencies", GetProjectFilePath(Utilities.AssetPath, "Dependencies"), Guid.NewGuid(), null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
+            HashSet<Guid> generatedItems = new HashSet<Guid>();
 
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "External Packages", externalPackages);
+            // Add the "Dependencies" project
+            ProcessProjectEntry("Dependencies", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), dependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
+
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages, generatedItems);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges, generatedItems);
+            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "External Packages", externalPackages, generatedItems);
 
             ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
             ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
@@ -312,8 +316,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             foreach (CSProjectInfo project in orderedProjects.Select(t => t))
             {
-                void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, string guid, string configuration, string platform)
+                void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string configuration, string platform)
                 {
+                    generatedItems.Add(guid);
+
                     templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
                     templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
                     templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
@@ -326,12 +332,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                     foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
                     {
                         TemplateReplacementSet replacemetSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformMappingTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
+                        ConfigurationTemplateReplace(configPlatformMappingTemplate, replacemetSet, guid, configuration, platform.Name);
 
                         if (platforms.ContainsKey(platform.BuildTarget))
                         {
                             replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(rootReplacementSet);
-                            ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
+                            ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name);
                         }
                     }
                 }
@@ -345,12 +351,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ExportProject(unityProjectInfo, project);
             }
 
-            GenerateTopLevelDependenciesProject(unityProjectInfo);
+            GenerateTopLevelDependenciesProject(unityProjectInfo, dependenciesProjectGuid);
+
+            // Write notes for generated items
+            foreach (Guid item in generatedItems)
+            {
+                TemplateReplacementSet replacementSet = generatedItemEntryTemplate.CreateReplacementSet(rootReplacementSet);
+                generatedItemEntryTemplate.Tokens["ITEM_GUID"].AssignValue(replacementSet, item.ToString().ToUpper());
+            }
 
             solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
         }
 
-        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
+        private void ParseExistingSolutionFile(string path)
+        {
+
+        }
+
+        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid)
         {
             string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
             string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
@@ -360,6 +378,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
 
             TemplateReplacementSet replacementSet = propsFileTemplate.CreateReplacementSet();
+
+            propsFileTemplate.Tokens["PROJECT_GUID"].AssignValue(replacementSet, dependenciesProjectGuid.ToString().ToUpper());
 
             // We use this to emulate the platform support for all 
             Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
@@ -381,11 +401,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects)
+        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects, HashSet<Guid> generatedItems)
         {
             if (projects.Count > 0)
             {
-                string folderGuid = Guid.NewGuid().ToString().ToUpper();
+                Guid guid = Guid.NewGuid();
+                generatedItems.Add(guid);
+                string folderGuid = guid.ToString().ToUpper();
 
                 TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
                 folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, folderName);
@@ -465,10 +487,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return toReturn;
         }
 
-        private void ProcessProjectEntry(string projectName, string projectPath, Guid projectGuid, IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
+        private void ProcessProjectEntry(string projectName, string solutionPath, string projectPath, Guid projectGuid, IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
         {
             templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectName);
-            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, projectPath);
+            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Utilities.GetRelativePath(solutionPath, projectPath));
             templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
 
             ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];

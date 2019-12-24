@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using System;
 using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
@@ -36,7 +37,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// Exports the MSBuild solution given the <see cref="UnityProjectInfo"/> information.
         /// </summary>
         /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
-        void ExportSolution(UnityProjectInfo unityProjectInfo);
+        void ExportSolution(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid);
 
         /// <summary>
         /// Generates the Directory.Build.props file that is expected to be used by both generated and non-generated projects alike.

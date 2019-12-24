@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <ProjectGuid><!--PROJECT_GUID_TOKEN--></ProjectGuid>
     <UnityConfiguration>InEditor</UnityConfiguration>
     <!-- Make sure Unity ignores the contents of the intermediate output path. -->
     <BaseIntermediateOutputPath>$(MSBuildForUnityGeneratedOutputDirectory)\..\Output\obj\Dependencies</BaseIntermediateOutputPath>
