@@ -273,7 +273,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             foreach (CSProjectInfo project in orderedProjects)
             {
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
-                ProcessProjectEntry(project.Name, solutionFilePath, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
+                ProcessProjectEntry(project.Name + ".msb4u", solutionFilePath, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
 
                 switch (project.AssemblyDefinitionInfo.AssetLocation)
                 {
@@ -293,7 +293,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             HashSet<Guid> generatedItems = new HashSet<Guid>();
 
             // Add the "Dependencies" project
-            ProcessProjectEntry("Dependencies", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), dependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
+            ProcessProjectEntry("Dependencies.msb4u", solutionFilePath, GetProjectFilePath(Utilities.AssetPath, "Dependencies"), dependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
 
             PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages, generatedItems);
             PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges, generatedItems);
@@ -493,13 +493,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Utilities.GetRelativePath(Path.GetDirectoryName(solutionPath), projectPath));
             templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
 
-            ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];
+            ITemplatePart projectSectionTemplate = templatePart.Templates["PROJECT_SECTION"];
+            ITemplatePart dependencyTemplate = projectSectionTemplate.Templates["PROJECT_DEPENDENCY"];
 
             if (projectDependencies != null && projectDependencies.Count > 0)
             {
+                TemplateReplacementSet projectSectionReplacementSet = projectSectionTemplate.CreateReplacementSet(replacementSet);
                 foreach (CSProjectDependency<CSProjectInfo> project in projectDependencies)
                 {
-                    TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(replacementSet);
+                    TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(projectSectionReplacementSet);
                     dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, project.Dependency.Guid.ToString().ToUpper());
                 }
             }
