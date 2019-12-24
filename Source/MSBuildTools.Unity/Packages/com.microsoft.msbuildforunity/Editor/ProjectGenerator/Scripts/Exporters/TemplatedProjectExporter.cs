@@ -301,16 +301,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
             ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
-            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
-            {
-                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
-                configPlatform_ConfigurationToken.AssignValue(replacementSet, "InEditor");
-                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
 
-                replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
-                configPlatform_ConfigurationToken.AssignValue(replacementSet, "Player");
-                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
+            void WriteConfigurationPlatform(string configValue)
+            {
+                foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+                {
+                    TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
+                    configPlatform_ConfigurationToken.AssignValue(replacementSet, configValue);
+                    configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
+                }
             }
+
+            WriteConfigurationPlatform("InEditor");
+            WriteConfigurationPlatform("Player");
 
             List<string> disabled = new List<string>();
 
