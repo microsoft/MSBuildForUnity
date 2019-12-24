@@ -317,37 +317,41 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             List<string> disabled = new List<string>();
 
-            foreach (CSProjectInfo project in orderedProjects.Select(t => t))
+            void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string configuration, string platform)
             {
-                void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string configuration, string platform)
-                {
-                    generatedItems.Add(guid);
+                generatedItems.Add(guid);
 
-                    templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
-                    templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                    templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
-                    templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                    templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, platform);
-                }
+                templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
+                templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
+                templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
+                templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, configuration);
+                templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, platform);
+            }
 
-                void ProcessMappings(Guid guid, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
+            void ProcessMappings(Guid guid, string configuration, Func<BuildTarget, bool> isEnabledConfigFunc)
+            {
+                foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
                 {
-                    foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+                    TemplateReplacementSet configMappingReplacementSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
+                    ConfigurationTemplateReplace(configPlatformMappingTemplate, configMappingReplacementSet, guid, configuration, platform.Name);
+
+                    if (isEnabledConfigFunc(platform.BuildTarget))
                     {
-                        TemplateReplacementSet configMappingReplacementSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformMappingTemplate, configMappingReplacementSet, guid, configuration, platform.Name);
-
-                        if (platforms.ContainsKey(platform.BuildTarget))
-                        {
-                            TemplateReplacementSet replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(configMappingReplacementSet);
-                            ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name);
-                        }
+                        TemplateReplacementSet replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(configMappingReplacementSet);
+                        ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name);
                     }
                 }
-
-                ProcessMappings(project.Guid, "InEditor", project.InEditorPlatforms);
-                ProcessMappings(project.Guid, "Player", project.PlayerPlatforms);
             }
+
+            foreach (CSProjectInfo project in orderedProjects.Select(t => t))
+            {
+                ProcessMappings(project.Guid, "InEditor", b => project.InEditorPlatforms.ContainsKey(b));
+                ProcessMappings(project.Guid, "Player", b => project.PlayerPlatforms.ContainsKey(b));
+            }
+
+            // For dependencies project all mappings exist and are enabled
+            ProcessMappings(config.DependenciesProjectGuid, "InEditor", b => true);
+            ProcessMappings(config.DependenciesProjectGuid, "Player", b => true);
 
             foreach (CSProjectInfo project in unityProjectInfo.CSProjects.Values)
             {
