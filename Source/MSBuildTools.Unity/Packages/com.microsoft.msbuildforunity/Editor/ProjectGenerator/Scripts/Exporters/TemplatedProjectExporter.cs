@@ -490,7 +490,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private void ProcessProjectEntry(string projectName, string solutionPath, string projectPath, Guid projectGuid, IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
         {
             templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectName);
-            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Utilities.GetRelativePath(solutionPath, projectPath));
+            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, Utilities.GetRelativePath(Path.GetDirectoryName(solutionPath), projectPath));
             templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
 
             ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];
