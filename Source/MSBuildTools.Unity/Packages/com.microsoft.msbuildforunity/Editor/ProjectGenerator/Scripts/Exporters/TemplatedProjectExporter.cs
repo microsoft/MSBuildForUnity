@@ -234,7 +234,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart folderTemplate = rootTemplatePart.Templates["FOLDER"];
             ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
             ITemplatePart configPlatformMappingTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_MAPPING"];
-            ITemplatePart configPlatformEnabledTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_ENABLED"];
+            ITemplatePart configPlatformEnabledTemplate = configPlatformMappingTemplate.Templates["CONFIGURATION_PLATFORM_ENABLED"];
             ITemplatePart folderNestedProjectsTemplate = rootTemplatePart.Templates["FOLDER_NESTED_PROJECTS"];
             ITemplatePart generatedItemEntryTemplate = rootTemplatePart.Templates["GENERATED_ITEM_ENTRY"];
 
@@ -331,12 +331,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 {
                     foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
                     {
-                        TemplateReplacementSet replacemetSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformMappingTemplate, replacemetSet, guid, configuration, platform.Name);
+                        TemplateReplacementSet configMappingReplacementSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
+                        ConfigurationTemplateReplace(configPlatformMappingTemplate, configMappingReplacementSet, guid, configuration, platform.Name);
 
                         if (platforms.ContainsKey(platform.BuildTarget))
                         {
-                            replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(rootReplacementSet);
+                            TemplateReplacementSet replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(configMappingReplacementSet);
                             ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid, configuration, platform.Name);
                         }
                     }
