@@ -219,7 +219,7 @@ Global
 		{6546D776-5B41-65B4-0850-B3667F981C26} = {F0962E2E-3201-42A4-90A4-4BD07B8D0413}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {89752EEF-6413-4D53-BA9D-DCA0707F134E}
+		SolutionGuid = {6E6CC69E-A194-4F01-9182-CE7B0F63F375}
 	EndGlobalSection
 	GlobalSection(SolutionNotes) = postSolution
 		{F0962E2E-3201-42A4-90A4-4BD07B8D0413} = msb4u.generated

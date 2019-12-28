@@ -17,7 +17,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 {
     public class MSBuildToolsConfig
     {
-        private const int CurrentConfigVersion = 2;
+        private const int CurrentConfigVersion = 3;
 
         private static string MSBuildSettingsFilePath { get; } = Path.Combine(Utilities.ProjectPath, "MSBuild", "settings.json");
 
@@ -51,6 +51,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private string externalPackagesFolderGuid = Guid.NewGuid().ToString();
 
+        [SerializeField]
+        private string solutionGuid = Guid.NewGuid().ToString();
+
         public bool AutoGenerateEnabled
         {
             get => autoGenerateEnabled;
@@ -76,6 +79,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         internal Guid ImportedPackagesFolderGuid { get; private set; }
 
         internal Guid ExternalPackagesFolderGuid { get; private set; }
+
+        internal Guid SolutionGuid { get; private set; }
 
         private void Save()
         {
@@ -103,6 +108,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             toReturn.BuiltInPackagesFolderGuid = EnsureGuid(ref toReturn.builtInPackagesFolderGuid, ref needToSave);
             toReturn.ImportedPackagesFolderGuid = EnsureGuid(ref toReturn.importedPackagesFolderGuid, ref needToSave);
             toReturn.ExternalPackagesFolderGuid = EnsureGuid(ref toReturn.externalPackagesFolderGuid, ref needToSave);
+
+            toReturn.SolutionGuid = EnsureGuid(ref toReturn.solutionGuid, ref needToSave);
 
             if (CurrentConfigVersion > toReturn.version)
             {
