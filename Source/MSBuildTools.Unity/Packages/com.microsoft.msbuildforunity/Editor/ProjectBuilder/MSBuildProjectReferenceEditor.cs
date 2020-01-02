@@ -44,7 +44,7 @@ namespace Microsoft.Build.Unity
                             var pickedUri = new Uri(pickedPath);
                             var relativeUri = assetUri.MakeRelativeUri(pickedUri);
 
-                            projectPathProperty.stringValue = relativeUri.ToString();
+                            projectPathProperty.stringValue = Uri.UnescapeDataString(relativeUri.ToString());
                         }
                     }
                 }

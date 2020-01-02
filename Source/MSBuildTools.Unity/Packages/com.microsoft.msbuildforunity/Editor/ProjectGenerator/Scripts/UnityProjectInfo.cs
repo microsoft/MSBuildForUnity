@@ -59,6 +59,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets)
         {
             AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                    .Where(t=> Utilities.IsPlatformInstalled(t.BuildTarget))
                     .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
                     .Select(CompilationPlatformInfo.GetCompilationPlatform)
                     .OrderBy(t => t.Name).ToList());
@@ -91,7 +92,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 if (plugin.Type == PluginType.Native)
                 {
-                    Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
+                    // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
+                    // Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
                 }
             }
 

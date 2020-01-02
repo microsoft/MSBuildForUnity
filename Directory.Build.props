@@ -1,0 +1,31 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- 
+      The following three properties are manually set:
+       - Major is hard-coded and should be incremented on breaking changes.
+       - Minor version is hard-coded and should be incremented on feature additions that aren't breaking changes.
+       - Revision (semver Patch) version is hard-coded and should be incremented when a bug fix is made.
+    -->
+    <MSB4U_MajorVersion>0</MSB4U_MajorVersion>
+    <MSB4U_MinorVersion>8</MSB4U_MinorVersion>
+    <MSB4U_RevisionVersion>3</MSB4U_RevisionVersion>
+    <MSB4U_RevisionVersion_PreIncrement>3</MSB4U_RevisionVersion_PreIncrement>
+    
+    <!-- If we are not on a release branch, we increment revision version -->
+    <MSB4U_RevisionVersion Condition="!$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$([MSBuild]::Add($(MSB4U_RevisionVersion), 1))</MSB4U_RevisionVersion>
+    
+    <MSB4U_Version>$(MSB4U_MajorVersion).$(MSB4U_MinorVersion).$(MSB4U_RevisionVersion)</MSB4U_Version>
+    <!-- Version is based on Major.Minor.Revision as defined above, however, in a lab BUILD_BUILDID will be set so we pull in that as the pre-release version. -->
+    <MSB4U_Version Condition="'$(BUILD_BUILDID)' != '' And !$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$(MSB4U_Version)-$(BUILD_BUILDID)</MSB4U_Version>
+
+    <MSB4U_PackageVersion>$(MSB4U_Version)</MSB4U_PackageVersion>
+    <MSB4U_AssemblyVersion>$(MSB4U_MajorVersion).$(MSB4U_MinorVersion)</MSB4U_AssemblyVersion>
+    <MSB4U_AssemblyFileVersion>$(MSB4U_AssemblyVersion).$(MSB4U_RevisionVersion).0</MSB4U_AssemblyFileVersion>
+    <MSB4U_AssemblyFileVersion Condition="'$(BUILD_BUILDID)' != '' And !$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$(MSB4U_AssemblyVersion).$(MSB4U_RevisionVersion).$(BUILD_BUILDID)</MSB4U_AssemblyFileVersion>
+    
+    <MSB4U_DependencyVersion>$(MSB4U_MajorVersion).$(MSB4U_MinorVersion).$(MSB4U_RevisionVersion)</MSB4U_DependencyVersion>
+    <MSB4U_DependencyVersion Condition="!$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">[$(MSB4U_MajorVersion).$(MSB4U_MinorVersion).$(MSB4U_RevisionVersion_PreIncrement), $(MSB4U_MajorVersion).$(MSB4U_MinorVersion).$(MSB4U_RevisionVersion)]</MSB4U_DependencyVersion>
+  </PropertyGroup>
+
+</Project>
