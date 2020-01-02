@@ -95,7 +95,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            //RefreshProjects();
+            RefreshProjects();
         }
 
         public void RefreshProjects()
