@@ -373,27 +373,37 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 configPlatform_PlatformToken.AssignValue(replacementSet, platformValue);
             }
 
-            void WriteConfigurationPlatform(string configValue)
-            {
-                foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
-                {
-                    if (solutionFileInfo != null)
-                    {
-                        solutionFileInfo.ConfigPlatformPairs.RemoveWhere(t => Equals(t.Configuration, configValue) && Equals(t.Platform, platform.Name));
-                    }
+            SortedDictionary<string, SortedSet<string>> configPlatformMap = new SortedDictionary<string, SortedSet<string>>();
 
-                    WriteConfigPlatformMapping(configValue, platform.Name);
+            void AddPairToMap(string configuration, string platform)
+            {
+                if (!configPlatformMap.TryGetValue(configuration, out SortedSet<string> set))
+                {
+                    configPlatformMap[configuration] = set = new SortedSet<string>();
                 }
+
+                set.Add(platform);
             }
 
-            WriteConfigurationPlatform("InEditor");
-            WriteConfigurationPlatform("Player");
+            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+            {
+                AddPairToMap("InEditor", platform.Name);
+                AddPairToMap("Player", platform.Name);
+            }
 
             if (solutionFileInfo != null)
             {
                 foreach (ConfigPlatformPair item in solutionFileInfo.ConfigPlatformPairs)
                 {
-                    WriteConfigPlatformMapping(item.Configuration, item.Platform);
+                    AddPairToMap(item.Configuration, item.Platform);
+                }
+            }
+
+            foreach (KeyValuePair<string, SortedSet<string>> setPair in configPlatformMap)
+            {
+                foreach (string platform in setPair.Value)
+                {
+                    WriteConfigPlatformMapping(setPair.Key, platform);
                 }
             }
         }
