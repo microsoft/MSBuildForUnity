@@ -317,7 +317,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             plugins = new List<PluginAssemblyInfo>();
             winmds = new List<WinMDInfo>();
 
-            IEnumerable<string> assetReferences = Directory.GetFiles(Utilities.AssetPath, "*.*", SearchOption.AllDirectories)
+            IEnumerable<string> assetReferences = Directory.EnumerateFiles(Utilities.AssetPath, "*.*", SearchOption.AllDirectories)
                 .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
             foreach (string assetPath in assetReferences)
             {
@@ -341,7 +341,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            IEnumerable<string> packageReferences = Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.*", SearchOption.AllDirectories)
+            IEnumerable<string> packageReferences = Directory.EnumerateFiles(Utilities.PackageLibraryCachePath, "*.*", SearchOption.AllDirectories)
                 .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
             foreach (string packagePath in packageReferences)
             {
