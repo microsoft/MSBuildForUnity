@@ -78,7 +78,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
                 else
                 {
-                    // If it's not defineConstraints, then it's one of the other 3
+                    // If it's not defineConstraints, check next for platformData
                     platformData = defineConstraints;
                 }
 
