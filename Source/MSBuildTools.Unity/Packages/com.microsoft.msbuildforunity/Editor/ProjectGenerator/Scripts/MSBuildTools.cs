@@ -226,6 +226,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
+        public static void RegenerateSDKProjects()
+        {
+            RegenerateEverything(reparseUnityData:true);
+            Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
+        }
+
         [MenuItem("MSBuild/Documentation...", priority = 203)]
         public static void LaunchHelp()
         {
@@ -267,7 +273,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
-
+                        
             if (shouldClean)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.

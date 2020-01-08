@@ -45,6 +45,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     {
         private readonly List<CSProjectDependency<CSProjectInfo>> csProjectDependencies = new List<CSProjectDependency<CSProjectInfo>>();
         private readonly List<CSProjectDependency<PluginAssemblyInfo>> pluginAssemblyDependencies = new List<CSProjectDependency<PluginAssemblyInfo>>();
+        private readonly List<CSProjectDependency<WinMDInfo>> winmdDependencies = new List<CSProjectDependency<WinMDInfo>>();
 
         /// <summary>
         /// The associated Assembly-Definition info if available.
@@ -62,6 +63,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> ProjectDependencies { get; }
 
         public IReadOnlyCollection<CSProjectDependency<PluginAssemblyInfo>> PluginDependencies { get; }
+
+        public IReadOnlyCollection<CSProjectDependency<WinMDInfo>> WinMDDependencies { get; }
 
         /// <summary>
         /// Creates a new instance of the CSProject info.
@@ -87,6 +90,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             ProjectDependencies = new ReadOnlyCollection<CSProjectDependency<CSProjectInfo>>(csProjectDependencies);
             PluginDependencies = new ReadOnlyCollection<CSProjectDependency<PluginAssemblyInfo>>(pluginAssemblyDependencies);
+            WinMDDependencies = new ReadOnlyCollection<CSProjectDependency<WinMDInfo>>(winmdDependencies);
         }
 
         private ProjectType GetProjectType(AssemblyDefinitionInfo assemblyDefinitionInfo)
@@ -159,6 +163,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         internal void AddDependency(PluginAssemblyInfo pluginAssemblyInfo)
         {
             AddDependency(pluginAssemblyDependencies, pluginAssemblyInfo);
+        }
+
+        /// <summary>
+        /// Adds a dependency to the project.
+        /// </summary>
+        /// <param name="winmdInfo">The winmd dependency.</param>
+        internal void AddDependency(WinMDInfo winmdInfo)
+        {
+            AddDependency(winmdDependencies, winmdInfo);
         }
 
         private void AddDependency<T>(List<CSProjectDependency<T>> items, T referenceInfo) where T : ReferenceItemInfo
