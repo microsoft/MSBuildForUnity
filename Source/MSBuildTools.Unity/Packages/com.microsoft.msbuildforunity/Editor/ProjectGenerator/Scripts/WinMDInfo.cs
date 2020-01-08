@@ -29,6 +29,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public HashSet<string> DefineConstraints { get; private set; }
 
+        public bool IsValid { get; private set; }
+
         /// <summary>
         /// Creates a new instance of the <see cref="PluginAssemblyInfo"/>.
         /// </summary>
@@ -102,11 +104,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             Dictionary<BuildTarget, CompilationPlatformInfo> playerPlatforms = new Dictionary<BuildTarget, CompilationPlatformInfo>();
 
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Win", BuildTarget.StandaloneWindows);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Win64", BuildTarget.StandaloneWindows64);
+            IsValid = VerifyEnabledPlatforms(enabledPlatforms);
             TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "WindowsStoreApps", BuildTarget.WSAPlayer);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "iOS", BuildTarget.iOS);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Android", BuildTarget.Android);
 
             FilterPlatformsBasedOnDefineConstraints(inEditorPlatforms, true);
             FilterPlatformsBasedOnDefineConstraints(playerPlatforms, false);
@@ -231,6 +230,27 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     Debug.LogError($"Platform '{platformName}' was specified as enabled by '{ReferencePath.LocalPath}' plugin, but not available in processed compilation settings.");
                 }
             }
+        }
+
+        private bool VerifyEnabledPlatforms(Dictionary<string, bool> enabledPlatforms)
+        {
+            bool valid = true;
+            foreach (KeyValuePair<string, bool> platform in enabledPlatforms)
+            {
+                if (platform.Value &&
+                    (platform.Key == "Win" ||
+                    platform.Key == "Win64" ||
+                    platform.Key == "iOS" ||
+                    platform.Key == "Android" ||
+                    platform.Key == "Editor"))
+                {
+                    Debug.LogError($"WinMDs should only be enabled for the WSA Player; however, {ReferencePath} was configured to support {platform.Key}.");
+                    valid = false;
+                    break;
+                }
+            }
+
+            return valid;
         }
     }
 }

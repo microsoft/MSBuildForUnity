@@ -283,7 +283,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     if (!dependencies.IsBaseOf(winmd.ReferencePath))
                     {
-                        toReturn.AddDependency(winmd);
+                        if (winmd.IsValid)
+                        {
+                            toReturn.AddDependency(winmd);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"References to {winmd} were excluded because the winmd is configured incorrectly.");
+                        }
                     }
                 }
             }
