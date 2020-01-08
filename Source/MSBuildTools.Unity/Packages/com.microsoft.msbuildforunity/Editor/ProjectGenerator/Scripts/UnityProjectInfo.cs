@@ -289,7 +289,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                         }
                         else
                         {
-                            Debug.LogWarning($"References to {winmd} were excluded because the winmd is configured incorrectly.");
+                            Debug.LogError($"References to {winmd} were excluded because the winmd is configured incorrectly. Make sure this winmd is setup to only support WSAPlayer in the Unity inspector.");
                         }
                     }
                 }
