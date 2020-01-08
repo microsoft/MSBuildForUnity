@@ -277,7 +277,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                             });
                             break;
                         default:
-                            globalSections.Add(sectionName, ReadSection(reader, sectionName, prePostSolution == "preSolution" ? SolutionGlobalSectionType.PreSolution : SolutionGlobalSectionType.PostSolution));
+                            globalSections.Add(sectionName, ReadSection(reader, sectionName, prePostSolution == "preSolution" ? SolutionGlobalSectionType.PreSolution : SolutionGlobalSectionType.PostSolution, "EndGlobalSection"));
                             break;
                     }
                 }
@@ -355,7 +355,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
                 else
                 {
-                    generalProjectSections.Add(projectSectionName, ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SolutionProjecSectionType.PreProject : SolutionProjecSectionType.PostProject));
+                    generalProjectSections.Add(projectSectionName, ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SolutionProjecSectionType.PreProject : SolutionProjecSectionType.PostProject, "EndProjectSection"));
                 }
 
             } while (!reader.EndOfStream);
@@ -363,11 +363,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             throw new InvalidDataException("We should have already returned.");
         }
 
-        private static SolutionFileSection<T> ReadSection<T>(StreamReader reader, string sectionName, T sessionType)
+        private static SolutionFileSection<T> ReadSection<T>(StreamReader reader, string sectionName, T sessionType, string endSectionTag)
         {
             List<string> sectionLines = new List<string>();
 
-            ReadLinesUntil(reader, "EndProjectSection", sectionLines.Add);
+            ReadLinesUntil(reader, endSectionTag, sectionLines.Add);
 
             return new SolutionFileSection<T>()
             {

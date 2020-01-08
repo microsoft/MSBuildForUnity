@@ -383,7 +383,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 {
                     string projectConfig = pair.Key;
                     string defaultPlatform = null;
-                    if (!enabledMappings.TryGetValue(projectConfig, out List<string> enabledPlatforms))
+                    if (!enabledMappings.TryGetValue(projectConfig, out List<string> enabledPlatforms) || enabledPlatforms.Count == 0)
                     {
                         KeyValuePair<string, List<string>> enabledPair = enabledMappings.First();
                         projectConfig = enabledPair.Key;
@@ -398,7 +398,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                             ConfigPlatformPair projectPair;
                             if (!(enabledPlatforms?.Contains(platform) ?? false))
                             {
-                                projectPair = new ConfigPlatformPair(projectConfig, enabledPlatforms?[0] ?? defaultPlatform);
+                                string platformToUse = (enabledPlatforms == null || enabledPlatforms.Count == 0) ? defaultPlatform : enabledPlatforms[0];
+                                projectPair = new ConfigPlatformPair(projectConfig, platformToUse);
                             }
                             else
                             {
@@ -855,7 +856,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             TemplateReplacementSet sectionReplacementSet = extraSectionTemplate.CreateReplacementSet(parentReplacementSet);
             extraSectionTemplate.Tokens["SECTION_NAME"].AssignValue(sectionReplacementSet, sectionName);
-            extraSectionTemplate.Tokens["PRE_POST_SOLUTION"].AssignValue(sectionReplacementSet, sectionType);
+            extraSectionTemplate.Tokens["PRE_POST_SECTION"].AssignValue(sectionReplacementSet, sectionType);
 
             foreach (string line in sectionLines)
             {
