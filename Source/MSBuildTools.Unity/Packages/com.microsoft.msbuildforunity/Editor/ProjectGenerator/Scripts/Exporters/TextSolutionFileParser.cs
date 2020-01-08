@@ -216,7 +216,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                             {
                                 // SAMPLE: {<PROJECT_GUID_TOKEN>}.<SOLUTION_CONFIGURATION_TOKEN>|<SOLUTION_PLATFORM_TOKEN>.ActiveCfg = <PROJECT_CONFIGURATION_TOKEN>|<PROJECT_PLATFORM_TOKEN>
                                 // SAMPLE: {<PROJECT_GUID_TOKEN>}.<SOLUTION_CONFIGURATION_TOKEN>|<SOLUTION_PLATFORM_TOKEN>.Build.0 = <PROJECT_CONFIGURATION_TOKEN>|<PROJECT_PLATFORM_TOKEN>
-                                string regex = @"{([^}]+)}\.([^\|]+)\|([^\.]+)([^\s]+)\s+=\s+([^\|]+)\|(.+)";
+                                string regex = @"{([^}]+)}\.([^\|]+)\|([^\.]+)\.([^\s]+)\s+=\s+([^\|]+)\|(.+)";
                                 Match configMatch = Regex.Match(l, regex);
                                 Guid projectGuid = Guid.Parse(configMatch.Groups[1].Captures[0].Value);
                                 if (!projectConfigurationEntries.TryGetValue(projectGuid, out List<ProjectConfigurationEntry> list))
