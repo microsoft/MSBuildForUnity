@@ -335,6 +335,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
                 return set;
             }
+
+            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
+            {
+                AddConfigurationMapping(configMapping, configMapping, properties);
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
+            {
+                Mappings[solutionMapping] = projectMapping;
+                HashSet<string> set = GetPropertySet(solutionMapping);
+                foreach (string property in properties)
+                {
+                    set.Add(property);
+                }
+            }
         }
 
         private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
@@ -361,60 +376,89 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             List<Guid> projectOrdering = new List<Guid>();
             Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping = new Dictionary<Guid, ProjectConfigurationMapping>();
 
-            void ProcessDefaultMappings(ProjectConfigurationMapping mapping, ConfigPlatformPair? projectConfigOverride = null)
+            void ProcessDefaultMappings(ProjectConfigurationMapping mapping, Dictionary<string, List<string>> enabledMappings)
             {
                 // Process defaults
                 foreach (KeyValuePair<string, SortedSet<string>> pair in configPlatformMap)
                 {
+                    string projectConfig = pair.Key;
+                    string defaultPlatform = null;
+                    if (!enabledMappings.TryGetValue(projectConfig, out List<string> enabledPlatforms))
+                    {
+                        KeyValuePair<string, List<string>> enabledPair = enabledMappings.First();
+                        projectConfig = enabledPair.Key;
+                        defaultPlatform = enabledPair.Value[0];
+                    }
+
                     foreach (string platform in pair.Value)
                     {
-                        ConfigPlatformPair configPair = new ConfigPlatformPair(pair.Key, platform);
-                        if (!mapping.Mappings.ContainsKey(configPair))
+                        ConfigPlatformPair slnConfigPair = new ConfigPlatformPair(pair.Key, platform);
+                        if (!mapping.Mappings.ContainsKey(slnConfigPair))
                         {
-                            mapping.Mappings[configPair] = projectConfigOverride ?? configPair;
-                            HashSet<string> set = mapping.GetPropertySet(configPair);
+                            ConfigPlatformPair projectPair;
+                            if (!(enabledPlatforms?.Contains(platform) ?? false))
+                            {
+                                projectPair = new ConfigPlatformPair(projectConfig, enabledPlatforms?[0] ?? defaultPlatform);
+                            }
+                            else
+                            {
+                                projectPair = new ConfigPlatformPair(projectConfig, platform);
+                            }
+                            mapping.Mappings[slnConfigPair] = projectPair;
+                            HashSet<string> set = mapping.GetPropertySet(slnConfigPair);
                             set.Add("ActiveCfg");
                         }
                     }
                 }
             }
 
+            // Iterate over every project
             foreach (CSProjectInfo project in orderedProjects)
             {
+                // Mark as generated item
                 generatedItems.Add(project.Guid);
+
+                // Add it to the ordering List for output
                 projectOrdering.Add(project.Guid);
 
+                // Create mapping container for the project
                 ProjectConfigurationMapping mapping = new ProjectConfigurationMapping();
                 projectConfigMapping.Add(project.Guid, mapping);
 
-                void ProcessProjectPlatforms(string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
+                void ProcessProjectPlatforms(string configuration, IEnumerable<string> platforms)
                 {
-                    foreach (KeyValuePair<BuildTarget, CompilationPlatformInfo> pair in platforms)
+                    foreach (string platform in platforms)
                     {
-                        ConfigPlatformPair configPair = new ConfigPlatformPair(configuration, pair.Value.Name);
-                        mapping.Mappings[configPair] = configPair;
-                        HashSet<string> set = mapping.GetPropertySet(configPair);
-                        set.Add("ActiveCfg");
-                        set.Add("Build.0");
+                        mapping.AddConfigurationMapping(new ConfigPlatformPair(configuration, platform), "ActiveCfg", "Build.0");
                     }
                 }
 
-                ProcessProjectPlatforms("InEditor", project.InEditorPlatforms);
-                ProcessProjectPlatforms("Player", project.PlayerPlatforms);
+                List<string> enabledInEditorPlatforms = project.InEditorPlatforms.Select(t => t.Value.Name).ToList();
+                List<string> enabledPlayerPlatforms = project.PlayerPlatforms.Select(t => t.Value.Name).ToList();
 
-                ProcessDefaultMappings(mapping);
+                // Add InEditor and Player platform mappings that are enabled for build
+                ProcessProjectPlatforms("InEditor", enabledInEditorPlatforms);
+                ProcessProjectPlatforms("Player", enabledPlayerPlatforms);
+
+                // Add all other known solution mappings, map to itself or allowed mappings
+                ProcessDefaultMappings(mapping, new Dictionary<string, List<string>> { { "InEditor", enabledInEditorPlatforms }, { "Player", enabledPlayerPlatforms } });
             }
 
-            // TODO finish
+            // Process the Dependencies Project now
             generatedItems.Add(config.DependenciesProjectGuid);
             projectOrdering.Add(config.DependenciesProjectGuid);
 
             ProjectConfigurationMapping dependencyProjectMapping = new ProjectConfigurationMapping();
             projectConfigMapping.Add(config.DependenciesProjectGuid, dependencyProjectMapping);
 
-            ProcessDefaultMappings(dependencyProjectMapping, new ConfigPlatformPair("Debug", "Any CPU"));
+            // Add default Release/Debug mappings
+            dependencyProjectMapping.AddConfigurationMapping(new ConfigPlatformPair("Debug", "Any CPU"), "ActiveCfg", "Build.0");
+            dependencyProjectMapping.AddConfigurationMapping(new ConfigPlatformPair("Release", "Any CPU"), "ActiveCfg", "Build.0");
 
-            // Now process for projects not part of our list
+            List<string> anyCpuPlatform = new List<string> { "Any CPU" };
+            ProcessDefaultMappings(dependencyProjectMapping, new Dictionary<string, List<string>> { { "Debug", anyCpuPlatform }, { "Release", anyCpuPlatform } });
+
+            // Process projects that we aren't generating, but were added to the solution file
             if (solutionFileInfo != null)
             {
                 foreach (KeyValuePair<Guid, List<ProjectConfigurationEntry>> pair in solutionFileInfo.ProjectConfigurationEntires)
