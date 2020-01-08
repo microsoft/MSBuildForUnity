@@ -234,8 +234,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             if (File.Exists(solutionFilePath))
             {
                 TextSolutionFileParser.TryParseExistingSolutionFile(solutionFilePath, out solutionFileInfo);
-
-                File.Delete(solutionFilePath);
             }
 
             ITemplatePart rootTemplatePart = solutionFileTemplate.Root;
@@ -259,10 +257,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ProcessSolutionFolders(rootTemplatePart, rootReplacementSet, folderNestedItems, generatedItems, solutionFileInfo);
 
             // Process Solution file configurations
-            ProcessSolutionConfigurationPlatform(unityProjectInfo, rootTemplatePart, rootReplacementSet, solutionFileInfo);
+            SortedDictionary<string, SortedSet<string>> configPlatformMap = GetSolutuonConfigurationPlatformMap(unityProjectInfo, solutionFileInfo);
+            ProcessSolutionConfigurationPlatform(rootTemplatePart, rootReplacementSet, configPlatformMap);
 
             // Process Configurations Mappings
-            ProcessConfigPlatformMappings(unityProjectInfo, config, rootTemplatePart, rootReplacementSet, orderedProjects, generatedItems, solutionFileInfo);
+            ProcessConfigPlatformMappings(unityProjectInfo, config, rootTemplatePart, rootReplacementSet, orderedProjects, generatedItems, configPlatformMap, solutionFileInfo);
 
             // Write Solution Properties
             ITemplatePart solutionPropertiesTemplate = rootTemplatePart.Templates["SOLUTION_PROPERTIES"];
@@ -289,6 +288,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             GenerateTopLevelDependenciesProject(unityProjectInfo, config.DependenciesProjectGuid);
 
+            // Delete before we write to minimize chance of just deleting in case above fails
+            if (File.Exists(solutionFilePath))
+            {
+                File.Delete(solutionFilePath);
+            }
+
             solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
         }
 
@@ -305,32 +310,132 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void ProcessConfigPlatformMappings(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config, ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, List<CSProjectInfo> orderedProjects, HashSet<Guid> generatedItems, SolutionFileInfo solutionFileInfo)
+        private void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid projectGuid, string slnConfiguration, string slnPlatform, string property, string projConfiguration, string projPlatform)
         {
-            ITemplatePart configPlatformPropertyTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_PROPERTY"];
-            foreach (CSProjectInfo project in orderedProjects.Select(t => t))
-            {
-                generatedItems.Add(project.Guid);
-                ProcessMappings(unityProjectInfo, configPlatformPropertyTemplate, rootReplacementSet, project.Guid, "InEditor", b => project.InEditorPlatforms.ContainsKey(b));
-                ProcessMappings(unityProjectInfo, configPlatformPropertyTemplate, rootReplacementSet, project.Guid, "Player", b => project.PlayerPlatforms.ContainsKey(b));
-            }
+            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
+            templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, slnConfiguration);
+            templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, slnPlatform);
+            templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
+            templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
+            templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
+        }
 
-            generatedItems.Add(config.DependenciesProjectGuid);
-            // For dependencies project all mappings exist and are enabled but mapped to Debug|Any CPU by default
-            ProcessMappings(unityProjectInfo, configPlatformPropertyTemplate, rootReplacementSet, config.DependenciesProjectGuid, "InEditor", b => true, "Debug", "Any CPU");
-            ProcessMappings(unityProjectInfo, configPlatformPropertyTemplate, rootReplacementSet, config.DependenciesProjectGuid, "Player", b => true, "Debug", "Any CPU");
+        private class ProjectConfigurationMapping
+        {
+            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
 
-            if (solutionFileInfo != null)
+            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
+
+            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
             {
-                foreach (ProjectConfigurationEntry item in solutionFileInfo.ProjectConfigurationEntires)
+                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
                 {
-                    if (solutionFileInfo.Projects.ContainsKey(item.ProjectGuid))
+                    propertySet.Add(configPair, set = new HashSet<string>());
+                }
+
+                return set;
+            }
+        }
+
+        private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
+        {
+            foreach (Guid projectGuid in projectOrdering)
+            {
+                ProjectConfigurationMapping mapping = projectConfigMapping[projectGuid];
+
+                foreach (KeyValuePair<ConfigPlatformPair, ConfigPlatformPair> configSet in mapping.Mappings)
+                {
+                    foreach (string property in mapping.GetPropertySet(configSet.Key))
                     {
                         TemplateReplacementSet configMappingReplacementSet = configPlatformPropertyTemplate.CreateReplacementSet(rootReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformPropertyTemplate, configMappingReplacementSet, item.ProjectGuid, item.SolutionConfiguration, item.SolutionPlatform, item.Property, item.ProjectConfiguration, item.ProjectPlatform);
+                        ConfigurationTemplateReplace(configPlatformPropertyTemplate, configMappingReplacementSet, projectGuid, configSet.Key.Configuration, configSet.Key.Platform, property, configSet.Value.Configuration, configSet.Value.Platform);
                     }
                 }
             }
+        }
+
+        private void ProcessConfigPlatformMappings(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config, ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, List<CSProjectInfo> orderedProjects, HashSet<Guid> generatedItems, SortedDictionary<string, SortedSet<string>> configPlatformMap, SolutionFileInfo solutionFileInfo)
+        {
+            ITemplatePart configPlatformPropertyTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_PROPERTY"];
+
+            List<Guid> projectOrdering = new List<Guid>();
+            Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping = new Dictionary<Guid, ProjectConfigurationMapping>();
+
+            void ProcessDefaultMappings(ProjectConfigurationMapping mapping, ConfigPlatformPair? projectConfigOverride = null)
+            {
+                // Process defaults
+                foreach (KeyValuePair<string, SortedSet<string>> pair in configPlatformMap)
+                {
+                    foreach (string platform in pair.Value)
+                    {
+                        ConfigPlatformPair configPair = new ConfigPlatformPair(pair.Key, platform);
+                        if (!mapping.Mappings.ContainsKey(configPair))
+                        {
+                            mapping.Mappings[configPair] = projectConfigOverride ?? configPair;
+                            HashSet<string> set = mapping.GetPropertySet(configPair);
+                            set.Add("ActiveCfg");
+                        }
+                    }
+                }
+            }
+
+            foreach (CSProjectInfo project in orderedProjects)
+            {
+                generatedItems.Add(project.Guid);
+                projectOrdering.Add(project.Guid);
+
+                ProjectConfigurationMapping mapping = new ProjectConfigurationMapping();
+                projectConfigMapping.Add(project.Guid, mapping);
+
+                void ProcessProjectPlatforms(string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
+                {
+                    foreach (KeyValuePair<BuildTarget, CompilationPlatformInfo> pair in platforms)
+                    {
+                        ConfigPlatformPair configPair = new ConfigPlatformPair(configuration, pair.Value.Name);
+                        mapping.Mappings[configPair] = configPair;
+                        HashSet<string> set = mapping.GetPropertySet(configPair);
+                        set.Add("ActiveCfg");
+                        set.Add("Build.0");
+                    }
+                }
+
+                ProcessProjectPlatforms("InEditor", project.InEditorPlatforms);
+                ProcessProjectPlatforms("Player", project.PlayerPlatforms);
+
+                ProcessDefaultMappings(mapping);
+            }
+
+            // TODO finish
+            generatedItems.Add(config.DependenciesProjectGuid);
+            projectOrdering.Add(config.DependenciesProjectGuid);
+
+            ProjectConfigurationMapping dependencyProjectMapping = new ProjectConfigurationMapping();
+            projectConfigMapping.Add(config.DependenciesProjectGuid, dependencyProjectMapping);
+
+            ProcessDefaultMappings(dependencyProjectMapping, new ConfigPlatformPair("Debug", "Any CPU"));
+
+            // Now process for projects not part of our list
+            if (solutionFileInfo != null)
+            {
+                foreach (KeyValuePair<Guid, List<ProjectConfigurationEntry>> pair in solutionFileInfo.ProjectConfigurationEntires)
+                {
+                    if (solutionFileInfo.Projects.ContainsKey(pair.Key))
+                    {
+                        projectOrdering.Add(pair.Key);
+
+                        ProjectConfigurationMapping mapping = new ProjectConfigurationMapping();
+                        projectConfigMapping.Add(pair.Key, mapping);
+
+                        foreach (ProjectConfigurationEntry item in pair.Value)
+                        {
+                            mapping.Mappings[item.SolutionConfig] = item.ProjectConfig;
+                            mapping.GetPropertySet(item.SolutionConfig).Add(item.Property);
+                        }
+                    }
+                }
+            }
+
+            ProcessMappings(configPlatformPropertyTemplate, rootReplacementSet, projectOrdering, projectConfigMapping);
         }
 
         private void ProcessPropertiesSet(ITemplatePart solutionPropertiesTemplate, TemplateReplacementSet rootReplacementSet, Dictionary<string, string> propertySet, Dictionary<string, string> existingPropertySet)
@@ -359,20 +464,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void ProcessSolutionConfigurationPlatform(UnityProjectInfo unityProjectInfo, ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, SolutionFileInfo solutionFileInfo)
+        private SortedDictionary<string, SortedSet<string>> GetSolutuonConfigurationPlatformMap(UnityProjectInfo unityProjectInfo, SolutionFileInfo solutionFileInfo)
         {
-            ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
-
-            ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
-            ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
-
-            void WriteConfigPlatformMapping(string configValue, string platformValue)
-            {
-                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
-                configPlatform_ConfigurationToken.AssignValue(replacementSet, configValue);
-                configPlatform_PlatformToken.AssignValue(replacementSet, platformValue);
-            }
-
             SortedDictionary<string, SortedSet<string>> configPlatformMap = new SortedDictionary<string, SortedSet<string>>();
 
             void AddPairToMap(string configuration, string platform)
@@ -399,36 +492,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
+            return configPlatformMap;
+        }
+
+        private void ProcessSolutionConfigurationPlatform(ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, SortedDictionary<string, SortedSet<string>> configPlatformMap)
+        {
+            ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
+
+            ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
+            ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
+
+            void WriteConfigPlatformMapping(string configValue, string platformValue)
+            {
+                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
+                configPlatform_ConfigurationToken.AssignValue(replacementSet, configValue);
+                configPlatform_PlatformToken.AssignValue(replacementSet, platformValue);
+            }
+
             foreach (KeyValuePair<string, SortedSet<string>> setPair in configPlatformMap)
             {
                 foreach (string platform in setPair.Value)
                 {
                     WriteConfigPlatformMapping(setPair.Key, platform);
-                }
-            }
-        }
-
-        private void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid guid, string slnConfiguration, string slnPlatform, string property, string projConfiguration, string projPlatform)
-        {
-            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
-            templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, slnConfiguration);
-            templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, slnPlatform);
-            templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
-            templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
-            templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
-        }
-
-        private void ProcessMappings(UnityProjectInfo unityProjectInfo, ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, Guid guid, string configuration, Func<BuildTarget, bool> isEnabledConfigFunc, string projConfigOverride = null, string projPlatformOverride = null)
-        {
-            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
-            {
-                TemplateReplacementSet configMappingReplacementSet = configPlatformPropertyTemplate.CreateReplacementSet(rootReplacementSet);
-                ConfigurationTemplateReplace(configPlatformPropertyTemplate, configMappingReplacementSet, guid, configuration, platform.Name, "ActiveCfg", projConfigOverride ?? configuration, projPlatformOverride ?? platform.Name);
-
-                if (isEnabledConfigFunc(platform.BuildTarget))
-                {
-                    TemplateReplacementSet replacemetSet = configPlatformPropertyTemplate.CreateReplacementSet(rootReplacementSet);
-                    ConfigurationTemplateReplace(configPlatformPropertyTemplate, replacemetSet, guid, configuration, platform.Name, "Build.0", projConfigOverride ?? configuration, projPlatformOverride ?? platform.Name);
                 }
             }
         }

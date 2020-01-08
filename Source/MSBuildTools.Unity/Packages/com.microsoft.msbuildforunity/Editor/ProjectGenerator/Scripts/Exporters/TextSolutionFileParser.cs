@@ -38,7 +38,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public Dictionary<string, string> SolutionNotes { get; set; }
 
-        public List<ProjectConfigurationEntry> ProjectConfigurationEntires { get; set; }
+        public Dictionary<Guid, List<ProjectConfigurationEntry>> ProjectConfigurationEntires { get; set; }
 
         public HashSet<Guid> MSB4UGeneratedItems { get; set; }
     }
@@ -57,28 +57,39 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public override bool Equals(object obj)
         {
-            return obj is ConfigPlatformPair other && Equals(Configuration, other.Configuration) && Equals(Platform, other.Platform);
+            return obj is ConfigPlatformPair other
+                && Equals(Configuration, other.Configuration)
+                && Equals(Platform, other.Platform);
         }
 
         public override int GetHashCode()
         {
-            return (Configuration?.GetHashCode() ?? 0) ^ (Platform?.GetHashCode() ?? 0);
+            return (Configuration?.GetHashCode() ?? 0)
+                ^ (Platform?.GetHashCode() ?? 0);
+        }
+
+        internal struct Comparer : IComparer<ConfigPlatformPair>
+        {
+            internal static Comparer Instance { get; } = new Comparer();
+
+            public int Compare(ConfigPlatformPair x, ConfigPlatformPair y)
+            {
+                int results = string.Compare(x.Configuration, y.Configuration);
+
+                return results == 0
+                    ? string.Compare(x.Platform, y.Platform)
+                    : results;
+            }
         }
     }
 
     internal struct ProjectConfigurationEntry
     {
-        public Guid ProjectGuid { get; set; }
+        public ConfigPlatformPair SolutionConfig { get; set; }
 
-        public string SolutionConfiguration { get; set; }
-
-        public string SolutionPlatform { get; set; }
+        public ConfigPlatformPair ProjectConfig { get; set; }
 
         public string Property { get; set; }
-
-        public string ProjectConfiguration { get; set; }
-
-        public string ProjectPlatform { get; set; }
     }
 
     internal struct SolutionFileSection<T>
@@ -133,7 +144,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             Dictionary<string, string> extensibilityGlobals = new Dictionary<string, string>();
             Dictionary<string, string> solutionNotes = new Dictionary<string, string>();
             Dictionary<Guid, Guid> childToParentNestedMapping = new Dictionary<Guid, Guid>();
-            List<ProjectConfigurationEntry> projectConfigurationEntries = new List<ProjectConfigurationEntry>();
+            Dictionary<Guid, List<ProjectConfigurationEntry>> projectConfigurationEntries = new Dictionary<Guid, List<ProjectConfigurationEntry>>();
 
             HashSet<Guid> msb4uGeneratedItems = new HashSet<Guid>();
 
@@ -207,14 +218,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                                 // SAMPLE: {<PROJECT_GUID_TOKEN>}.<SOLUTION_CONFIGURATION_TOKEN>|<SOLUTION_PLATFORM_TOKEN>.Build.0 = <PROJECT_CONFIGURATION_TOKEN>|<PROJECT_PLATFORM_TOKEN>
                                 string regex = @"{([^}]+)}\.([^\|]+)\|([^\.]+)([^\s]+)\s+=\s+([^\|]+)\|(.+)";
                                 Match configMatch = Regex.Match(l, regex);
-                                projectConfigurationEntries.Add(new ProjectConfigurationEntry()
+                                Guid projectGuid = Guid.Parse(configMatch.Groups[1].Captures[0].Value);
+                                if (!projectConfigurationEntries.TryGetValue(projectGuid, out List<ProjectConfigurationEntry> list))
                                 {
-                                    ProjectGuid = Guid.Parse(configMatch.Groups[1].Captures[0].Value),
-                                    SolutionConfiguration = configMatch.Groups[2].Captures[0].Value,
-                                    SolutionPlatform = configMatch.Groups[3].Captures[0].Value,
-                                    Property = configMatch.Groups[4].Captures[0].Value,
-                                    ProjectConfiguration = configMatch.Groups[5].Captures[0].Value,
-                                    ProjectPlatform = configMatch.Groups[6].Captures[0].Value
+                                    projectConfigurationEntries.Add(projectGuid, list = new List<ProjectConfigurationEntry>());
+                                }
+
+                                list.Add(new ProjectConfigurationEntry()
+                                {
+                                    SolutionConfig = new ConfigPlatformPair(configMatch.Groups[2].Captures[0].Value, configMatch.Groups[3].Captures[0].Value),
+                                    ProjectConfig = new ConfigPlatformPair(configMatch.Groups[5].Captures[0].Value, configMatch.Groups[6].Captures[0].Value),
+                                    Property = configMatch.Groups[4].Captures[0].Value
                                 });
                             });
                             break;
