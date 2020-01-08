@@ -91,7 +91,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public void RefreshPlugins()
         {
-            Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(ScanForPluginDLLs());
+            ScanForReferences(out List<PluginAssemblyInfo> plugins, out List<WinMDInfo> winmds);
+            Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(plugins);
 
             foreach (PluginAssemblyInfo plugin in Plugins)
             {
@@ -102,7 +103,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            WinMDs = new ReadOnlyCollection<WinMDInfo>(ScanForWinMDs());
+            WinMDs = new ReadOnlyCollection<WinMDInfo>(winmds);
 
             RefreshProjects();
         }
@@ -272,18 +273,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 Uri dependencies = new Uri(Path.Combine(Utilities.AssetPath, "Dependencies\\"));
                 foreach (PluginAssemblyInfo plugin in Plugins.Where(t => t.Type != PluginType.Native))
                 {
+                    Debug.Log($"Plugin: {plugin.Name} {plugin.Type} {plugin.AutoReferenced} {plugin.ReferencePath}");
                     if (!dependencies.IsBaseOf(plugin.ReferencePath) && (plugin.AutoReferenced || assemblyDefinitionInfo.PrecompiledAssemblyReferences.Contains(plugin.Name)))
                     {
+                        Debug.Log($"Plugin referenced: {plugin.Name}");
                         toReturn.AddDependency(plugin);
                     }
                 }
 
                 foreach (WinMDInfo winmd in WinMDs)
                 {
-                    Debug.Log($"winmd: {winmd.Name} {winmd.ReferencePath}");
                     if (!dependencies.IsBaseOf(winmd.ReferencePath))
                     {
-                        Debug.Log($"WinMD referenced: {winmd.Name}");
                         toReturn.AddDependency(winmd);
                     }
                 }
@@ -313,13 +314,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return toReturn;
         }
 
-        private List<PluginAssemblyInfo> ScanForPluginDLLs()
+        private void ScanForReferences(out List<PluginAssemblyInfo> plugins, out List<WinMDInfo> winmds)
         {
-            List<PluginAssemblyInfo> toReturn = new List<PluginAssemblyInfo>();
+            plugins = new List<PluginAssemblyInfo>();
+            winmds = new List<WinMDInfo>();
 
-            foreach (string assetAssemblyPath in Directory.GetFiles(Utilities.AssetPath, "*.dll", SearchOption.AllDirectories))
+            IEnumerable<string> assetReferences = Directory.GetFiles(Utilities.AssetPath, "*.*", SearchOption.AllDirectories)
+                .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
+            foreach (string assetPath in assetReferences)
             {
-                string assetRelativePath = Utilities.GetAssetsRelativePathFrom(assetAssemblyPath);
+                string assetRelativePath = Utilities.GetAssetsRelativePathFrom(assetPath);
                 PluginImporter importer = (PluginImporter)AssetImporter.GetAtPath(assetRelativePath);
                 if (importer == null)
                 {
@@ -327,17 +331,27 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     continue;
                 }
 
-                PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetAssemblyPath, importer.isNativePlugin ? PluginType.Native : PluginType.Managed);
-                toReturn.Add(toAdd);
+                if (assetRelativePath.EndsWith(".dll"))
+                {
+                    PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetPath, importer.isNativePlugin ? PluginType.Native : PluginType.Managed);
+                    plugins.Add(toAdd);
+                }
+                else if (assetRelativePath.EndsWith(".winmd"))
+                {
+                    WinMDInfo toAdd = new WinMDInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetPath);
+                    winmds.Add(toAdd);
+                }
             }
 
-            foreach (string packageDllPath in Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.dll", SearchOption.AllDirectories))
+            IEnumerable<string> packageReferences = Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.*", SearchOption.AllDirectories)
+                .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
+            foreach (string packagePath in packageReferences)
             {
-                string metaPath = packageDllPath + ".meta";
+                string metaPath = packagePath + ".meta";
 
                 if (!File.Exists(metaPath))
                 {
-                    Debug.LogWarning($"Skipping a packages DLL that didn't have an associated meta: '{packageDllPath}'");
+                    Debug.LogWarning($"Skipping a packages reference that didn't have an associated meta: '{packagePath}'");
                     continue;
                 }
                 Guid guid;
@@ -346,62 +360,23 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     string guidLine = reader.ReadUntil("guid");
                     if (!Guid.TryParse(guidLine.Split(':')[1].Trim(), out guid))
                     {
-                        Debug.LogWarning($"Skipping a packages DLL that didn't have a valid guid in the .meta file: '{packageDllPath}'");
+                        Debug.LogWarning($"Skipping a packages reference that didn't have a valid guid in the .meta file: '{packagePath}'");
                         continue;
                     }
                 }
 
-                bool isManaged = Utilities.IsManagedAssembly(packageDllPath);
-                PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, guid, packageDllPath, isManaged ? PluginType.Managed : PluginType.Native);
-                toReturn.Add(toAdd);
-            }
-
-            return toReturn;
-        }
-
-        private List<WinMDInfo> ScanForWinMDs()
-        {
-            List<WinMDInfo> toReturn = new List<WinMDInfo>();
-
-            foreach (string assetWinmdPath in Directory.GetFiles(Utilities.AssetPath, "*.winmd", SearchOption.AllDirectories))
-            {
-                string assetRelativePath = Utilities.GetAssetsRelativePathFrom(assetWinmdPath);
-                PluginImporter importer = (PluginImporter)AssetImporter.GetAtPath(assetRelativePath);
-                if (importer == null)
+                if (packagePath.EndsWith(".dll"))
                 {
-                    Debug.LogWarning($"Didn't get an importer for '{assetRelativePath}', most likely due to it being in a Unity hidden folder (prefixed by a .)");
-                    continue;
+                    bool isManaged = Utilities.IsManagedAssembly(packagePath);
+                    PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, guid, packagePath, isManaged ? PluginType.Managed : PluginType.Native);
+                    plugins.Add(toAdd);
                 }
-
-                WinMDInfo toAdd = new WinMDInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetWinmdPath);
-                toReturn.Add(toAdd);
-            }
-
-            foreach (string packageWinmdPath in Directory.GetFiles(Utilities.PackageLibraryCachePath, "*.winmd", SearchOption.AllDirectories))
-            {
-                string metaPath = packageWinmdPath + ".meta";
-
-                if (!File.Exists(metaPath))
+                else if (packagePath.EndsWith(".winmd"))
                 {
-                    Debug.LogWarning($"Skipping a packages winmd that didn't have an associated meta: '{packageWinmdPath}'");
-                    continue;
+                    WinMDInfo toAdd = new WinMDInfo(this, guid, packagePath);
+                    winmds.Add(toAdd);
                 }
-                Guid guid;
-                using (StreamReader reader = new StreamReader(metaPath))
-                {
-                    string guidLine = reader.ReadUntil("guid");
-                    if (!Guid.TryParse(guidLine.Split(':')[1].Trim(), out guid))
-                    {
-                        Debug.LogWarning($"Skipping a packages winmd that didn't have a valid guid in the .meta file: '{packageWinmdPath}'");
-                        continue;
-                    }
-                }
-
-                WinMDInfo toAdd = new WinMDInfo(this, guid, packageWinmdPath);
-                toReturn.Add(toAdd);
             }
-
-            return toReturn;
         }
     }
 }
