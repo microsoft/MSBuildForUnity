@@ -163,9 +163,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             BuildTarget.StandaloneWindows,
             BuildTarget.StandaloneWindows64,
             BuildTarget.StandaloneOSX,
-            BuildTarget.StandaloneLinux,
             BuildTarget.StandaloneLinux64,
+#if UNITY_2018
+            BuildTarget.StandaloneLinux,
             BuildTarget.StandaloneLinuxUniversal,
+#endif
             BuildTarget.iOS,
             BuildTarget.Android,
             BuildTarget.WSAPlayer
