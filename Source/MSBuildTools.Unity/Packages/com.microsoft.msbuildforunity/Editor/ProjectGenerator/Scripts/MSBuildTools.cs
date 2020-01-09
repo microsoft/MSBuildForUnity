@@ -131,6 +131,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 guid = Guid.NewGuid();
                 field = guid.ToString();
+
+                needToSave = true;
             }
 
             return guid;

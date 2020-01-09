@@ -257,7 +257,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ProcessSolutionFolders(rootTemplatePart, rootReplacementSet, folderNestedItems, generatedItems, solutionFileInfo);
 
             // Process Solution file configurations
-            SortedDictionary<string, SortedSet<string>> configPlatformMap = GetSolutuonConfigurationPlatformMap(unityProjectInfo, solutionFileInfo);
+            SortedDictionary<string, SortedSet<string>> configPlatformMap = GetSolutionConfigurationPlatformMap(unityProjectInfo, solutionFileInfo);
             ProcessSolutionConfigurationPlatform(rootTemplatePart, rootReplacementSet, configPlatformMap);
 
             // Process Configurations Mappings
@@ -509,7 +509,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private SortedDictionary<string, SortedSet<string>> GetSolutuonConfigurationPlatformMap(UnityProjectInfo unityProjectInfo, SolutionFileInfo solutionFileInfo)
+        private SortedDictionary<string, SortedSet<string>> GetSolutionConfigurationPlatformMap(UnityProjectInfo unityProjectInfo, SolutionFileInfo solutionFileInfo)
         {
             SortedDictionary<string, SortedSet<string>> configPlatformMap = new SortedDictionary<string, SortedSet<string>>();
 

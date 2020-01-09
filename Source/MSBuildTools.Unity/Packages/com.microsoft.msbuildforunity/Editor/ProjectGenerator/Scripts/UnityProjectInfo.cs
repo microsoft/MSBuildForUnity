@@ -178,7 +178,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                                 guid = config.AssemblyCSharpFirstPassEditorGuid;
                                 break;
                             default:
-                                throw new InvalidOperationException($"Predefined assembly '{assemblyDefinitionInfo.Name}' was not recognized, this generally means it should be added to the switch statement in CSProjectInfo:GetProjectType. Treating is as a PredefinedAssembly instead of PredefinedEditorAssembly.");
+                                throw new InvalidOperationException($"Predefined assembly '{assemblyDefinitionInfo.Name}' was not recognized, this generally means it should be added to the switch statement in CSProjectInfo:GetProjectType.");
                         }
 
                         assemblyDefinitionInfo = AssemblyDefinitionInfo.GetDefaultAssemblyCSharpInfo(pair.Value, guid);

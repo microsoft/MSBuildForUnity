@@ -23,6 +23,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Creates an instance of <see cref="AssemblyDefinitionInfo"/> for the default projects (such as Assembly-CSharp)
         /// </summary>
         /// <param name="assembly">The Unity assembly reference.</param>
+        /// <param name="guid">The guid for this assembly reference.</param>
         /// <returns>A new instance.</returns>
         public static AssemblyDefinitionInfo GetDefaultAssemblyCSharpInfo(Assembly assembly, Guid guid)
         {
