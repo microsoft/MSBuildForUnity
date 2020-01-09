@@ -27,6 +27,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         /// <summary>
+        /// For some Unity packages, references don't match the appropriate asmdef name.
+        /// </summary>
+        private static readonly Dictionary<string, string> ProjectAliases = new Dictionary<string, string>()
+        {
+            { "Unity.ugui", "UnityEngine.UI" }
+        };
+
+        /// <summary>
         /// Gets the name of this Unity Project.
         /// </summary>
         public string UnityProjectName { get; }
@@ -261,8 +269,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (!asmDefInfoMap.TryGetValue(projectKey, out AssemblyDefinitionInfo assemblyDefinitionInfo))
             {
-                Debug.Log($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
-                return null;
+                if (ProjectAliases.TryGetValue(projectKey, out string projectAlias) && asmDefInfoMap.TryGetValue(projectAlias, out assemblyDefinitionInfo))
+                {
+                    Debug.Log($"A reference was found for {projectKey}, which has known project alias ({projectAlias}). References were made to {projectAlias} instead of {projectKey}.");
+                    projectKey = projectAlias;
+                }
+                else
+                {
+                    Debug.Log($"Can't find an asmdef for project: {projectKey}; Unity actually allows this, so proceeding.");
+                    return null;
+                }
             }
 
             CSProjectInfo toReturn = new CSProjectInfo(this, assemblyDefinitionInfo);
