@@ -23,10 +23,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// Creates an instance of <see cref="AssemblyDefinitionInfo"/> for the default projects (such as Assembly-CSharp)
         /// </summary>
         /// <param name="assembly">The Unity assembly reference.</param>
+        /// <param name="guid">The guid for this assembly reference.</param>
         /// <returns>A new instance.</returns>
-        public static AssemblyDefinitionInfo GetDefaultAssemblyCSharpInfo(Assembly assembly)
+        public static AssemblyDefinitionInfo GetDefaultAssemblyCSharpInfo(Assembly assembly, Guid guid)
         {
-            AssemblyDefinitionInfo toReturn = new AssemblyDefinitionInfo() { IsDefaultAssembly = true, Guid = Guid.NewGuid(), Directory = new DirectoryInfo(Utilities.AssetPath) };
+            AssemblyDefinitionInfo toReturn = new AssemblyDefinitionInfo() { IsDefaultAssembly = true, Guid = guid, Directory = new DirectoryInfo(Utilities.AssetPath) };
             toReturn.assembly = assembly;
             toReturn.name = assembly.name;
             toReturn.references = assembly.assemblyReferences.Select(t => t.name).ToArray();

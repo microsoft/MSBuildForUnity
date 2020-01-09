@@ -36,7 +36,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// Exports the MSBuild solution given the <see cref="UnityProjectInfo"/> information.
         /// </summary>
         /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
-        void ExportSolution(UnityProjectInfo unityProjectInfo);
+        /// <param name="config">Configuration for MSBuild tools.</param>
+        void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config);
 
         /// <summary>
         /// Generates the Directory.Build.props file that is expected to be used by both generated and non-generated projects alike.

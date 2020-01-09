@@ -18,6 +18,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     public class TemplatedProjectExporter : IProjectExporter
     {
         private const string MSBuildFileSuffix = "msb4u";
+        private static readonly Guid FolderProjectTypeGuid = Guid.Parse("2150E333-8FDC-42A3-9474-1A3956D46DE8");
+
+        private readonly Dictionary<string, string> solutionProperties = new Dictionary<string, string>()
+        {
+            { "HideSolutionNode", "FALSE" }
+        };
 
         private readonly DirectoryInfo generatedOutputFolder;
 
@@ -218,26 +224,350 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         }
 
         ///<inherit-doc/>
-        public void ExportSolution(UnityProjectInfo unityProjectInfo)
+        public void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config)
         {
             string solutionFilePath = GetSolutionFilePath(unityProjectInfo);
 
+            SolutionFileInfo solutionFileInfo = null;
+
+            // Parse existing solution
+            if (File.Exists(solutionFilePath))
+            {
+                TextSolutionFileParser.TryParseExistingSolutionFile(solutionFilePath, out solutionFileInfo);
+            }
+
+            ITemplatePart rootTemplatePart = solutionFileTemplate.Root;
+            TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
+
+            // Remove known folders & projects
+            if (solutionFileInfo != null)
+            {
+                solutionFileInfo.Projects.Remove(config.BuiltInPackagesFolderGuid);
+                solutionFileInfo.Projects.Remove(config.ImportedPackagesFolderGuid);
+                solutionFileInfo.Projects.Remove(config.ExternalPackagesFolderGuid);
+            }
+
+            List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems = new List<Tuple<CSProjectInfo, Guid, string>>();
+            List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
+
+            ProcessProjects(unityProjectInfo, config, solutionFileInfo, solutionFilePath, rootTemplatePart, rootReplacementSet, folderNestedItems, orderedProjects);
+
+            HashSet<Guid> generatedItems = new HashSet<Guid>();
+
+            ProcessSolutionFolders(rootTemplatePart, rootReplacementSet, folderNestedItems, generatedItems, solutionFileInfo);
+
+            // Process Solution file configurations
+            SortedDictionary<string, SortedSet<string>> configPlatformMap = GetSolutionConfigurationPlatformMap(unityProjectInfo, solutionFileInfo);
+            ProcessSolutionConfigurationPlatform(rootTemplatePart, rootReplacementSet, configPlatformMap);
+
+            // Process Configurations Mappings
+            ProcessConfigPlatformMappings(unityProjectInfo, config, rootTemplatePart, rootReplacementSet, orderedProjects, generatedItems, configPlatformMap, solutionFileInfo);
+
+            // Write Solution Properties
+            ITemplatePart solutionPropertiesTemplate = rootTemplatePart.Templates["SOLUTION_PROPERTIES"];
+            ProcessPropertiesSet(solutionPropertiesTemplate, rootReplacementSet, solutionProperties, solutionFileInfo?.Properties);
+
+            // Write Extensibility Globals
+            Dictionary<string, string> extensibilityGlobals = new Dictionary<string, string>() { { "SolutionGuid", "{" + config.SolutionGuid.ToString().ToUpper() + "}" } };
+            ITemplatePart extensibilityGlobalsTemplate = rootTemplatePart.Templates["EXTENSIBILITY_GLOBALS"];
+            ProcessPropertiesSet(extensibilityGlobalsTemplate, rootReplacementSet, extensibilityGlobals, solutionFileInfo?.ExtensibilityGlobals);
+
+            // Write Solution Notes
+            ITemplatePart solutuonNotesTemplate = rootTemplatePart.Templates["SOLUTION_NOTES"];
+            Dictionary<string, string> generatedDictionary = generatedItems.ToDictionary(t => "{" + t.ToString().ToUpper() + "}", t => "msb4u.generated");
+            ProcessPropertiesSet(solutuonNotesTemplate, rootReplacementSet, generatedDictionary, solutionFileInfo?.SolutionNotes);
+
+            // Write Extra Sections found in the read Solution
+            ProcessExtraSolutionSections(rootTemplatePart, rootReplacementSet, solutionFileInfo);
+
+            // Export projects
+            foreach (CSProjectInfo project in unityProjectInfo.CSProjects.Values)
+            {
+                ExportProject(unityProjectInfo, project);
+            }
+
+            GenerateTopLevelDependenciesProject(unityProjectInfo, config.DependenciesProjectGuid);
+
+            // Delete before we write to minimize chance of just deleting in case above fails
             if (File.Exists(solutionFilePath))
             {
                 File.Delete(solutionFilePath);
             }
-            ITemplatePart rootTemplatePart = solutionFileTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootTemplatePart.CreateReplacementSet();
 
-            ITemplatePart projectTemplate = rootTemplatePart.Templates["PROJECT"];
-            ITemplatePart folderTemplate = rootTemplatePart.Templates["FOLDER"];
+            solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
+        }
+
+        private void ProcessExtraSolutionSections(ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, SolutionFileInfo solutionFileInfo)
+        {
+            if (solutionFileInfo != null)
+            {
+                ITemplatePart extraSectionTemplate = rootTemplatePart.Templates["EXTRA_GLOBAL_SECTION"];
+
+                foreach (SolutionFileSection<SolutionGlobalSectionType> section in solutionFileInfo.SolutionSections.Values)
+                {
+                    ProcessExtraSection(extraSectionTemplate, rootReplacementSet, section.Name, section.Type == SolutionGlobalSectionType.PreSolution ? "preSolution" : "postSolution", section.Lines);
+                }
+            }
+        }
+
+        private void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, Guid projectGuid, string slnConfiguration, string slnPlatform, string property, string projConfiguration, string projPlatform)
+        {
+            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
+            templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, slnConfiguration);
+            templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, slnPlatform);
+            templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
+            templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
+            templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
+        }
+
+        private class ProjectConfigurationMapping
+        {
+            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
+
+            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
+
+            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
+            {
+                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
+                {
+                    propertySet.Add(configPair, set = new HashSet<string>());
+                }
+
+                return set;
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
+            {
+                AddConfigurationMapping(configMapping, configMapping, properties);
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
+            {
+                Mappings[solutionMapping] = projectMapping;
+                HashSet<string> set = GetPropertySet(solutionMapping);
+                foreach (string property in properties)
+                {
+                    set.Add(property);
+                }
+            }
+        }
+
+        private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
+        {
+            foreach (Guid projectGuid in projectOrdering)
+            {
+                ProjectConfigurationMapping mapping = projectConfigMapping[projectGuid];
+
+                foreach (KeyValuePair<ConfigPlatformPair, ConfigPlatformPair> configSet in mapping.Mappings)
+                {
+                    foreach (string property in mapping.GetPropertySet(configSet.Key))
+                    {
+                        TemplateReplacementSet configMappingReplacementSet = configPlatformPropertyTemplate.CreateReplacementSet(rootReplacementSet);
+                        ConfigurationTemplateReplace(configPlatformPropertyTemplate, configMappingReplacementSet, projectGuid, configSet.Key.Configuration, configSet.Key.Platform, property, configSet.Value.Configuration, configSet.Value.Platform);
+                    }
+                }
+            }
+        }
+
+        private void ProcessConfigPlatformMappings(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config, ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, List<CSProjectInfo> orderedProjects, HashSet<Guid> generatedItems, SortedDictionary<string, SortedSet<string>> configPlatformMap, SolutionFileInfo solutionFileInfo)
+        {
+            ITemplatePart configPlatformPropertyTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_PROPERTY"];
+
+            List<Guid> projectOrdering = new List<Guid>();
+            Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping = new Dictionary<Guid, ProjectConfigurationMapping>();
+
+            void ProcessDefaultMappings(ProjectConfigurationMapping mapping, Dictionary<string, List<string>> enabledMappings)
+            {
+                // Process defaults
+                foreach (KeyValuePair<string, SortedSet<string>> pair in configPlatformMap)
+                {
+                    string projectConfig = pair.Key;
+                    string defaultPlatform = null;
+                    if (!enabledMappings.TryGetValue(projectConfig, out List<string> enabledPlatforms) || enabledPlatforms.Count == 0)
+                    {
+                        KeyValuePair<string, List<string>> enabledPair = enabledMappings.First();
+                        projectConfig = enabledPair.Key;
+                        defaultPlatform = enabledPair.Value[0];
+                    }
+
+                    foreach (string platform in pair.Value)
+                    {
+                        ConfigPlatformPair slnConfigPair = new ConfigPlatformPair(pair.Key, platform);
+                        if (!mapping.Mappings.ContainsKey(slnConfigPair))
+                        {
+                            ConfigPlatformPair projectPair;
+                            if (!(enabledPlatforms?.Contains(platform) ?? false))
+                            {
+                                string platformToUse = (enabledPlatforms == null || enabledPlatforms.Count == 0) ? defaultPlatform : enabledPlatforms[0];
+                                projectPair = new ConfigPlatformPair(projectConfig, platformToUse);
+                            }
+                            else
+                            {
+                                projectPair = new ConfigPlatformPair(projectConfig, platform);
+                            }
+                            mapping.Mappings[slnConfigPair] = projectPair;
+                            HashSet<string> set = mapping.GetPropertySet(slnConfigPair);
+                            set.Add("ActiveCfg");
+                        }
+                    }
+                }
+            }
+
+            // Iterate over every project
+            foreach (CSProjectInfo project in orderedProjects)
+            {
+                // Mark as generated item
+                generatedItems.Add(project.Guid);
+
+                // Add it to the ordering List for output
+                projectOrdering.Add(project.Guid);
+
+                // Create mapping container for the project
+                ProjectConfigurationMapping mapping = new ProjectConfigurationMapping();
+                projectConfigMapping.Add(project.Guid, mapping);
+
+                void ProcessProjectPlatforms(string configuration, IEnumerable<string> platforms)
+                {
+                    foreach (string platform in platforms)
+                    {
+                        mapping.AddConfigurationMapping(new ConfigPlatformPair(configuration, platform), "ActiveCfg", "Build.0");
+                    }
+                }
+
+                List<string> enabledInEditorPlatforms = project.InEditorPlatforms.Select(t => t.Value.Name).ToList();
+                List<string> enabledPlayerPlatforms = project.PlayerPlatforms.Select(t => t.Value.Name).ToList();
+
+                // Add InEditor and Player platform mappings that are enabled for build
+                ProcessProjectPlatforms("InEditor", enabledInEditorPlatforms);
+                ProcessProjectPlatforms("Player", enabledPlayerPlatforms);
+
+                // Add all other known solution mappings, map to itself or allowed mappings
+                ProcessDefaultMappings(mapping, new Dictionary<string, List<string>> { { "InEditor", enabledInEditorPlatforms }, { "Player", enabledPlayerPlatforms } });
+            }
+
+            // Process the Dependencies Project now
+            generatedItems.Add(config.DependenciesProjectGuid);
+            projectOrdering.Add(config.DependenciesProjectGuid);
+
+            ProjectConfigurationMapping dependencyProjectMapping = new ProjectConfigurationMapping();
+            projectConfigMapping.Add(config.DependenciesProjectGuid, dependencyProjectMapping);
+
+            // Add default Release/Debug mappings
+            dependencyProjectMapping.AddConfigurationMapping(new ConfigPlatformPair("Debug", "Any CPU"), "ActiveCfg", "Build.0");
+            dependencyProjectMapping.AddConfigurationMapping(new ConfigPlatformPair("Release", "Any CPU"), "ActiveCfg", "Build.0");
+
+            List<string> anyCpuPlatform = new List<string> { "Any CPU" };
+            ProcessDefaultMappings(dependencyProjectMapping, new Dictionary<string, List<string>> { { "Debug", anyCpuPlatform }, { "Release", anyCpuPlatform } });
+
+            // Process projects that we aren't generating, but were added to the solution file
+            if (solutionFileInfo != null)
+            {
+                foreach (KeyValuePair<Guid, List<ProjectConfigurationEntry>> pair in solutionFileInfo.ProjectConfigurationEntires)
+                {
+                    if (solutionFileInfo.Projects.ContainsKey(pair.Key))
+                    {
+                        projectOrdering.Add(pair.Key);
+
+                        ProjectConfigurationMapping mapping = new ProjectConfigurationMapping();
+                        projectConfigMapping.Add(pair.Key, mapping);
+
+                        foreach (ProjectConfigurationEntry item in pair.Value)
+                        {
+                            mapping.Mappings[item.SolutionConfig] = item.ProjectConfig;
+                            mapping.GetPropertySet(item.SolutionConfig).Add(item.Property);
+                        }
+                    }
+                }
+            }
+
+            ProcessMappings(configPlatformPropertyTemplate, rootReplacementSet, projectOrdering, projectConfigMapping);
+        }
+
+        private void ProcessPropertiesSet(ITemplatePart solutionPropertiesTemplate, TemplateReplacementSet rootReplacementSet, Dictionary<string, string> propertySet, Dictionary<string, string> existingPropertySet)
+        {
+            void WriteSolutionProperty(string key, string value)
+            {
+                TemplateReplacementSet replacementSet = solutionPropertiesTemplate.CreateReplacementSet(rootReplacementSet);
+                solutionPropertiesTemplate.Tokens["PROPERTY_KEY"].AssignValue(replacementSet, key);
+                solutionPropertiesTemplate.Tokens["PROPERTY_VALUE"].AssignValue(replacementSet, value);
+            }
+
+            foreach (KeyValuePair<string, string> prop in propertySet)
+            {
+                WriteSolutionProperty(prop.Key, prop.Value);
+            }
+
+            if (existingPropertySet != null)
+            {
+                foreach (KeyValuePair<string, string> prop in existingPropertySet)
+                {
+                    if (!propertySet.ContainsKey(prop.Key))
+                    {
+                        WriteSolutionProperty(prop.Key, prop.Value);
+                    }
+                }
+            }
+        }
+
+        private SortedDictionary<string, SortedSet<string>> GetSolutionConfigurationPlatformMap(UnityProjectInfo unityProjectInfo, SolutionFileInfo solutionFileInfo)
+        {
+            SortedDictionary<string, SortedSet<string>> configPlatformMap = new SortedDictionary<string, SortedSet<string>>();
+
+            void AddPairToMap(string configuration, string platform)
+            {
+                if (!configPlatformMap.TryGetValue(configuration, out SortedSet<string> set))
+                {
+                    configPlatformMap[configuration] = set = new SortedSet<string>();
+                }
+
+                set.Add(platform);
+            }
+
+            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+            {
+                AddPairToMap("InEditor", platform.Name);
+                AddPairToMap("Player", platform.Name);
+            }
+
+            if (solutionFileInfo != null)
+            {
+                foreach (ConfigPlatformPair item in solutionFileInfo.ConfigPlatformPairs)
+                {
+                    AddPairToMap(item.Configuration, item.Platform);
+                }
+            }
+
+            return configPlatformMap;
+        }
+
+        private void ProcessSolutionConfigurationPlatform(ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, SortedDictionary<string, SortedSet<string>> configPlatformMap)
+        {
             ITemplatePart configPlatformTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM"];
-            ITemplatePart configPlatformMappingTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_MAPPING"];
-            ITemplatePart configPlatformEnabledTemplate = rootTemplatePart.Templates["CONFIGURATION_PLATFORM_ENABLED"];
-            ITemplatePart folderNestedProjectsTemplate = rootTemplatePart.Templates["FOLDER_NESTED_PROJECTS"];
+
+            ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
+            ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
+
+            void WriteConfigPlatformMapping(string configValue, string platformValue)
+            {
+                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
+                configPlatform_ConfigurationToken.AssignValue(replacementSet, configValue);
+                configPlatform_PlatformToken.AssignValue(replacementSet, platformValue);
+            }
+
+            foreach (KeyValuePair<string, SortedSet<string>> setPair in configPlatformMap)
+            {
+                foreach (string platform in setPair.Value)
+                {
+                    WriteConfigPlatformMapping(setPair.Key, platform);
+                }
+            }
+        }
+
+        private void ProcessProjects(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config, SolutionFileInfo solutionFileInfo, string solutionFilePath, ITemplatePart rootTemplatePart, TemplateReplacementSet rootReplacementSet, List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems, List<CSProjectInfo> orderedProjects)
+        {
+            ITemplatePart projectTemplate = rootTemplatePart.Templates["PROJECT"];
 
             CSProjectInfo[] unorderedProjects = unityProjectInfo.CSProjects.Select(t => t.Value).ToArray();
-            List<CSProjectInfo> orderedProjects = new List<CSProjectInfo>();
 
             while (orderedProjects.Count < unorderedProjects.Length)
             {
@@ -265,92 +595,73 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
-            List<CSProjectInfo> builtinPackages = new List<CSProjectInfo>();
-            List<CSProjectInfo> importedPacakges = new List<CSProjectInfo>();
-            List<CSProjectInfo> externalPackages = new List<CSProjectInfo>();
             foreach (CSProjectInfo project in orderedProjects)
             {
+                IEnumerable<SolutionFileSection<SolutionProjecSectionType>> extraSections = null;
+                if (solutionFileInfo != null)
+                {
+                    if (solutionFileInfo.Projects.TryGetValue(project.Guid, out Project existingProject))
+                    {
+                        solutionFileInfo.Projects.Remove(project.Guid);
+                        extraSections = existingProject.Sections.Values;
+                    }
+                }
+
                 TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
-                ProcessProjectEntry(project.Name, GetProjectPath(project).FullName, project.Guid, project.ProjectDependencies, projectTemplate, replacementSet);
+                ProcessProjectEntry(project.Name + ".msb4u", Utilities.GetRelativePath(Path.GetDirectoryName(solutionFilePath), GetProjectPath(project).FullName), project.Guid, project.ProjectDependencies.Select(t => t.Dependency.Guid).ToList(), projectTemplate, replacementSet, extraSections);
 
                 switch (project.AssemblyDefinitionInfo.AssetLocation)
                 {
                     case AssetLocation.BuiltInPackage:
-                        builtinPackages.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.BuiltInPackagesFolderGuid, "Built In Packages"));
                         break;
                     case AssetLocation.PackageLibraryCache:
-                        importedPacakges.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.ImportedPackagesFolderGuid, "Imported Packages"));
                         break;
                     case AssetLocation.External:
-                        externalPackages.Add(project);
+                        folderNestedItems.Add(new Tuple<CSProjectInfo, Guid, string>(project, config.ExternalPackagesFolderGuid, "External Packages"));
                         break;
                     default: break;
                 }
             }
 
             // Add the "Dependencies" project
-            ProcessProjectEntry("Dependencies", GetProjectFilePath(Utilities.AssetPath, "Dependencies"), Guid.NewGuid(), null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet));
-
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Built In Packages", builtinPackages);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "Imported Packages", importedPacakges);
-            PopulateFolder(folderTemplate, folderNestedProjectsTemplate, rootReplacementSet, "External Packages", externalPackages);
-
-            ITemplateToken configPlatform_ConfigurationToken = configPlatformTemplate.Tokens["CONFIGURATION"];
-            ITemplateToken configPlatform_PlatformToken = configPlatformTemplate.Tokens["PLATFORM"];
-            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
             {
-                TemplateReplacementSet replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
-                configPlatform_ConfigurationToken.AssignValue(replacementSet, "InEditor");
-                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
+                string dependencyRelativePath = Utilities.GetRelativePath(Path.GetDirectoryName(solutionFilePath), GetProjectFilePath(Utilities.AssetPath, "Dependencies"));
+                IEnumerable<SolutionFileSection<SolutionProjecSectionType>> extraSections = null;
 
-                replacementSet = configPlatformTemplate.CreateReplacementSet(rootReplacementSet);
-                configPlatform_ConfigurationToken.AssignValue(replacementSet, "Player");
-                configPlatform_PlatformToken.AssignValue(replacementSet, platform.Name);
-            }
-
-            List<string> disabled = new List<string>();
-
-            foreach (CSProjectInfo project in orderedProjects.Select(t => t))
-            {
-                void ConfigurationTemplateReplace(ITemplatePart templatePart, TemplateReplacementSet replacementSet, string guid, string configuration, string platform)
+                if (solutionFileInfo != null)
                 {
-                    templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, guid.ToString().ToUpper());
-                    templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                    templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, platform);
-                    templatePart.Tokens["SOLUTION_CONFIGURATION"].AssignValue(replacementSet, configuration);
-                    templatePart.Tokens["SOLUTION_PLATFORM"].AssignValue(replacementSet, platform);
-                }
-
-                void ProcessMappings(Guid guid, string configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
-                {
-                    foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
+                    if (solutionFileInfo.Projects.TryGetValue(config.DependenciesProjectGuid, out Project existingProject))
                     {
-                        TemplateReplacementSet replacemetSet = configPlatformMappingTemplate.CreateReplacementSet(rootReplacementSet);
-                        ConfigurationTemplateReplace(configPlatformMappingTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
-
-                        if (platforms.ContainsKey(platform.BuildTarget))
-                        {
-                            replacemetSet = configPlatformEnabledTemplate.CreateReplacementSet(rootReplacementSet);
-                            ConfigurationTemplateReplace(configPlatformEnabledTemplate, replacemetSet, guid.ToString(), configuration, platform.Name);
-                        }
+                        solutionFileInfo.Projects.Remove(config.DependenciesProjectGuid);
+                        extraSections = existingProject.Sections.Values;
                     }
                 }
-
-                ProcessMappings(project.Guid, "InEditor", project.InEditorPlatforms);
-                ProcessMappings(project.Guid, "Player", project.PlayerPlatforms);
+                ProcessProjectEntry("Dependencies.msb4u", dependencyRelativePath, config.DependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet), extraSections);
             }
 
-            foreach (CSProjectInfo project in unityProjectInfo.CSProjects.Values)
+            if (solutionFileInfo != null)
             {
-                ExportProject(unityProjectInfo, project);
+                foreach (Guid guid in solutionFileInfo.MSB4UGeneratedItems)
+                {
+                    solutionFileInfo.Projects.Remove(guid);
+                }
+
+                // Process existing projects
+                foreach (Project project in solutionFileInfo.Projects.Values)
+                {
+                    // Don't process folders or what we previously thought were generated projects
+                    if (project.TypeGuid != FolderProjectTypeGuid)
+                    {
+                        TemplateReplacementSet replacementSet = projectTemplate.CreateReplacementSet(rootReplacementSet);
+                        ProcessProjectEntry(project.Name, project.RelativePath, project.Guid, project.Dependencies, projectTemplate, replacementSet, project.Sections.Values);
+                    }
+                }
             }
-
-            GenerateTopLevelDependenciesProject(unityProjectInfo);
-
-            solutionFileTemplate.Write(solutionFilePath, rootReplacementSet);
         }
 
-        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
+        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid)
         {
             string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
             string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
@@ -360,6 +671,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
 
             TemplateReplacementSet replacementSet = propsFileTemplate.CreateReplacementSet();
+
+            propsFileTemplate.Tokens["PROJECT_GUID"].AssignValue(replacementSet, dependenciesProjectGuid.ToString().ToUpper());
 
             // We use this to emulate the platform support for all 
             Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
@@ -381,21 +694,63 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private void PopulateFolder(ITemplatePart folderTemplate, ITemplatePart folderNestedProjectsTemplate, TemplateReplacementSet parentReplacementSet, string folderName, List<CSProjectInfo> projects)
+        private void ProcessSolutionFolders(ITemplatePart rootTemplatePart, TemplateReplacementSet parentReplacementSet, List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems, HashSet<Guid> generatedItems, SolutionFileInfo solutionFileInfo)
         {
-            if (projects.Count > 0)
+            ITemplatePart folderTemplate = rootTemplatePart.Templates["FOLDER"];
+            ITemplatePart folderNestedProjectsTemplate = rootTemplatePart.Templates["FOLDER_NESTED_PROJECTS"];
+
+            void AddFolder(string name, string guid)
             {
-                string folderGuid = Guid.NewGuid().ToString().ToUpper();
-
                 TemplateReplacementSet replacementSet = folderTemplate.CreateReplacementSet(parentReplacementSet);
-                folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, folderName);
-                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
+                folderTemplate.Tokens["FOLDER_NAME"].AssignValue(replacementSet, name);
+                folderTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, guid);
+            }
 
-                foreach (CSProjectInfo project in projects)
+            void AddNestedMapping(string parentGuid, string childGuid)
+            {
+                TemplateReplacementSet nestedReplacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
+                folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(nestedReplacementSet, parentGuid);
+                folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(nestedReplacementSet, childGuid);
+            }
+
+            HashSet<string> addedFolders = new HashSet<string>();
+
+            foreach (Tuple<CSProjectInfo, Guid, string> tuple in folderNestedItems)
+            {
+                string guidStr = tuple.Item2.ToString().ToUpper();
+
+                generatedItems.Add(tuple.Item2);
+
+                if (addedFolders.Add(guidStr))
                 {
-                    replacementSet = folderNestedProjectsTemplate.CreateReplacementSet(parentReplacementSet);
-                    folderNestedProjectsTemplate.Tokens["FOLDER_GUID"].AssignValue(replacementSet, folderGuid);
-                    folderNestedProjectsTemplate.Tokens["CHILD_GUID"].AssignValue(replacementSet, project.Guid.ToString().ToUpper());
+                    AddFolder(tuple.Item3, guidStr);
+                }
+
+                Guid childGuid = tuple.Item1.Guid;
+                AddNestedMapping(guidStr, childGuid.ToString().ToUpper());
+                if (solutionFileInfo != null)
+                {
+                    solutionFileInfo.ChildToParentNestedMappings.Remove(childGuid);
+                }
+            }
+
+            if (solutionFileInfo != null)
+            {
+                foreach (Project project in solutionFileInfo.Projects.Values)
+                {
+                    if (project.TypeGuid == FolderProjectTypeGuid)
+                    {
+                        string guidString = project.Guid.ToString().ToUpper();
+                        if (addedFolders.Add(guidString))
+                        {
+                            AddFolder(project.Name, guidString);
+                        }
+                    }
+                }
+
+                foreach (KeyValuePair<Guid, Guid> mapping in solutionFileInfo.ChildToParentNestedMappings)
+                {
+                    AddNestedMapping(mapping.Value.ToString().ToUpper(), mapping.Key.ToString().ToUpper());
                 }
             }
         }
@@ -477,21 +832,48 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return toReturn;
         }
 
-        private void ProcessProjectEntry(string projectName, string projectPath, Guid projectGuid, IReadOnlyCollection<CSProjectDependency<CSProjectInfo>> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet replacementSet)
+        private void ProcessProjectEntry(string projectName, string projectRelativePath, Guid projectGuid, IReadOnlyCollection<Guid> projectDependencies, ITemplatePart templatePart, TemplateReplacementSet projectReplacementSet, IEnumerable<SolutionFileSection<SolutionProjecSectionType>> extraSections = null)
         {
-            templatePart.Tokens["PROJECT_NAME"].AssignValue(replacementSet, projectName);
-            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(replacementSet, projectPath);
-            templatePart.Tokens["PROJECT_GUID"].AssignValue(replacementSet, projectGuid.ToString().ToUpper());
+            templatePart.Tokens["PROJECT_NAME"].AssignValue(projectReplacementSet, projectName);
+            templatePart.Tokens["PROJECT_RELATIVE_PATH"].AssignValue(projectReplacementSet, projectRelativePath);
+            templatePart.Tokens["PROJECT_GUID"].AssignValue(projectReplacementSet, projectGuid.ToString().ToUpper());
 
-            ITemplatePart dependencyTemplate = templatePart.Templates["PROJECT_DEPENDENCY"];
+            ITemplatePart projectSectionTemplate = templatePart.Templates["PROJECT_SECTION"];
+            ITemplatePart dependencyTemplate = projectSectionTemplate.Templates["PROJECT_DEPENDENCY"];
 
             if (projectDependencies != null && projectDependencies.Count > 0)
             {
-                foreach (CSProjectDependency<CSProjectInfo> project in projectDependencies)
+                TemplateReplacementSet projectSectionReplacementSet = projectSectionTemplate.CreateReplacementSet(projectReplacementSet);
+                foreach (Guid dependencyGuid in projectDependencies)
                 {
-                    TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(replacementSet);
-                    dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, project.Dependency.Guid.ToString().ToUpper());
+                    TemplateReplacementSet set = dependencyTemplate.CreateReplacementSet(projectSectionReplacementSet);
+                    dependencyTemplate.Tokens["DEPENDENCY_GUID"].AssignValue(set, dependencyGuid.ToString().ToUpper());
                 }
+            }
+
+            ITemplatePart extraProjectSectionTemplate = templatePart.Templates["EXTRA_PROJECT_SECTION"];
+
+            if (extraSections != null)
+            {
+                foreach (SolutionFileSection<SolutionProjecSectionType> section in extraSections)
+                {
+                    ProcessExtraSection(extraProjectSectionTemplate, projectReplacementSet, section.Name, section.Type == SolutionProjecSectionType.PreProject ? "preProject" : "postProject", section.Lines);
+                }
+            }
+        }
+
+        private void ProcessExtraSection(ITemplatePart extraSectionTemplate, TemplateReplacementSet parentReplacementSet, string sectionName, string sectionType, IEnumerable<string> sectionLines)
+        {
+            ITemplatePart extraSectionLineTemplate = extraSectionTemplate.Templates["EXTRA_SECTION_LINE"];
+
+            TemplateReplacementSet sectionReplacementSet = extraSectionTemplate.CreateReplacementSet(parentReplacementSet);
+            extraSectionTemplate.Tokens["SECTION_NAME"].AssignValue(sectionReplacementSet, sectionName);
+            extraSectionTemplate.Tokens["PRE_POST_SECTION"].AssignValue(sectionReplacementSet, sectionType);
+
+            foreach (string line in sectionLines)
+            {
+                TemplateReplacementSet lineReplacementSet = extraSectionLineTemplate.CreateReplacementSet(sectionReplacementSet);
+                extraSectionLineTemplate.Tokens["SECTION_LINE"].AssignValue(lineReplacementSet, line);
             }
         }
 

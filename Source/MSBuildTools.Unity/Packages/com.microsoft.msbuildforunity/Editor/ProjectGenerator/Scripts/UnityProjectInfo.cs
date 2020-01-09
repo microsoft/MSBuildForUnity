@@ -61,10 +61,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public IReadOnlyCollection<WinMDInfo> WinMDs { get; private set; }
 
-        public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets)
+        public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets, MSBuildToolsConfig config)
         {
             AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
-                    .Where(t=> Utilities.IsPlatformInstalled(t.BuildTarget))
+                    .Where(t => Utilities.IsPlatformInstalled(t.BuildTarget))
                     .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
                     .Select(CompilationPlatformInfo.GetCompilationPlatform)
                     .OrderBy(t => t.Name).ToList());
@@ -79,7 +79,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             RefreshPlugins();
-            RefreshProjects();
+            RefreshProjects(config);
 
             CurrentPlayerPlatform = AvailablePlatforms.First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget);
         }
@@ -104,16 +104,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             WinMDs = new ReadOnlyCollection<WinMDInfo>(winmds);
-
-            RefreshProjects();
         }
 
-        public void RefreshProjects()
+        public void RefreshProjects(MSBuildToolsConfig config)
         {
-            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects());
+            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects(config));
         }
 
-        private Dictionary<string, CSProjectInfo> CreateUnityProjects()
+        private Dictionary<string, CSProjectInfo> CreateUnityProjects(MSBuildToolsConfig config)
         {
             // Not all of these will be converted to C# objects, only the ones found to be referenced
             Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap = new Dictionary<string, AssemblyDefinitionInfo>();
@@ -164,7 +162,26 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                             throw new InvalidOperationException($"Failed to retrieve AsmDef for script assembly: {pair.Key}");
                         }
 
-                        assemblyDefinitionInfo = AssemblyDefinitionInfo.GetDefaultAssemblyCSharpInfo(pair.Value);
+                        Guid guid;
+                        switch (pair.Key)
+                        {
+                            case "Assembly-CSharp":
+                                guid = config.AssemblyCSharpGuid;
+                                break;
+                            case "Assembly-CSharp-firstpass":
+                                guid = config.AssemblyCSharpFirstPassGuid;
+                                break;
+                            case "Assembly-CSharp-Editor":
+                                guid = config.AssemblyCSharpEditorGuid;
+                                break;
+                            case "Assembly-CSharp-Editor-firstpass":
+                                guid = config.AssemblyCSharpFirstPassEditorGuid;
+                                break;
+                            default:
+                                throw new InvalidOperationException($"Predefined assembly '{assemblyDefinitionInfo.Name}' was not recognized, this generally means it should be added to the switch statement in CSProjectInfo:GetProjectType.");
+                        }
+
+                        assemblyDefinitionInfo = AssemblyDefinitionInfo.GetDefaultAssemblyCSharpInfo(pair.Value, guid);
                         projectsToProcess.Enqueue(pair.Key);
                     }
                     else
