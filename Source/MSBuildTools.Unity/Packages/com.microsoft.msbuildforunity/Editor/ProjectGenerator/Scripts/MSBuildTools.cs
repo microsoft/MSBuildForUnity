@@ -84,6 +84,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private void Save()
         {
+            // Ensure directory exists first
+            Directory.CreateDirectory(Path.GetDirectoryName(MSBuildSettingsFilePath));
             File.WriteAllText(MSBuildSettingsFilePath, EditorJsonUtility.ToJson(this));
         }
 
