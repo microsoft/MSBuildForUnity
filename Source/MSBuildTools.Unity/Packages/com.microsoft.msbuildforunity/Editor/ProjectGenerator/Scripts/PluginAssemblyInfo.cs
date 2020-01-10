@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -33,6 +34,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// </summary>
     public class PluginAssemblyInfo : ReferenceItemInfo
     {
+        private const string EditorPlatformName = "Editor";
+
         /// <summary>
         /// Gets the type of Plugin
         /// </summary>
@@ -84,21 +87,30 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 string isExplicitlyReferenced;
                 if (defineConstraints.Contains("defineConstraints:"))
                 {
-                    if (!defineConstraints.Contains("[]"))
+                    // Match anything, then '[', then match a group of anything then ']' than anything
+                    string inLineEntryPattern = @"[^\[]*\[([^\]]*)\][^\]]*";
+                    Match match = Regex.Match(defineConstraints, inLineEntryPattern);
+                    if (match.Success && string.IsNullOrWhiteSpace(match.Groups[1].Value))
+                    {
+                        // No define constraints
+                    }
+                    else if (match.Success) // We have non-empty string in teh contents of the group we matched; NUnit has this:  defineConstraints: ["UNITY_INCLUDE_TESTS"]
+                    {
+                        // Yaml kinda allows this
+                        string[] defines = match.Groups[1].Value.Trim().Split(',');
+                        foreach (string define in defines)
+                        {
+                            ProcessDefineEntry(define);
+                        }
+                    }
+                    else
                     {
                         reader.ReadWhile(line =>
                         {
                             line = line.Trim();
                             if (line.StartsWith("-"))
                             {
-                                string define = line.Substring(1).Trim();
-
-                                if (define.StartsWith("'") && define.EndsWith("'"))
-                                {
-                                    define = define.Substring(1, define.Length - 2);
-                                }
-
-                                DefineConstraints.Add(define);
+                                ProcessDefineEntry(line.Substring(1));
                                 return true;
                             }
                             // else
@@ -135,7 +147,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             Dictionary<BuildTarget, CompilationPlatformInfo> inEditorPlatforms = new Dictionary<BuildTarget, CompilationPlatformInfo>();
-            if (enabledPlatforms.TryGetValue("Editor", out bool platformEnabled) && platformEnabled)
+            if (enabledPlatforms.TryGetValue(EditorPlatformName, out bool platformEnabled) && platformEnabled)
             {
                 foreach (CompilationPlatformInfo platform in UnityProjectInfo.AvailablePlatforms)
                 {
@@ -145,17 +157,29 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             Dictionary<BuildTarget, CompilationPlatformInfo> playerPlatforms = new Dictionary<BuildTarget, CompilationPlatformInfo>();
 
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Win", BuildTarget.StandaloneWindows);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Win64", BuildTarget.StandaloneWindows64);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "WindowsStoreApps", BuildTarget.WSAPlayer);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "iOS", BuildTarget.iOS);
-            TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, "Android", BuildTarget.Android);
+            foreach (KeyValuePair<BuildTarget, string> pair in MSBuildTools.SupportedBuildTargets)
+            {
+                TryAddEnabledPlatform(playerPlatforms, enabledPlatforms, pair.Value, pair.Key);
+            }
 
             FilterPlatformsBasedOnDefineConstraints(inEditorPlatforms, true);
             FilterPlatformsBasedOnDefineConstraints(playerPlatforms, false);
 
             InEditorPlatforms = new ReadOnlyDictionary<BuildTarget, CompilationPlatformInfo>(inEditorPlatforms);
             PlayerPlatforms = new ReadOnlyDictionary<BuildTarget, CompilationPlatformInfo>(playerPlatforms);
+        }
+
+        private void ProcessDefineEntry(string defineEntry)
+        {
+            string define = defineEntry.Trim();
+
+            if ((define.StartsWith("'") && define.EndsWith("'"))
+                || (define.StartsWith("\"") && define.EndsWith("\"")))
+            {
+                define = define.Substring(1, define.Length - 2);
+            }
+
+            DefineConstraints.Add(define);
         }
 
         private void ParsePlatformData(StreamReader reader, Dictionary<string, bool> enabledPlatforms)
@@ -165,8 +189,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 // We reached the end
                 return;
             }
-
-            if (reader.ReadLine().Contains("'': Any")) // Try use exclude method
+            string nextLine = reader.ReadLine();
+            if (nextLine.Contains("'': Any")) // Try use exclude method
             {
                 string settingsLine = reader.ReadUntil("settings:", "userData:");
                 if (settingsLine.Contains("userData:"))
@@ -177,12 +201,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 // We are fine to use exclude method if we have a set of settings
                 if (!settingsLine.Contains("settings: {}"))
                 {
+                    // We need to add all
+                    SetAllPlatformsEnabled(enabledPlatforms);
+
                     reader.ReadWhile(l =>
                     {
                         if (l.Contains("Exclude"))
                         {
                             string[] parts = l.Trim().Replace("Exclude ", string.Empty).Split(':');
-                            enabledPlatforms.Add(parts[0], parts[1].Trim() == "0"); // These are exclude, so check for 0 if to include
+                            bool isExclude = parts[1].Trim() == "1";
+                            if (isExclude)
+                            {
+                                enabledPlatforms.Remove(parts[0]);
+                            }
                             return true;
                         }
 
@@ -206,8 +237,32 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
                 string enabledLine = reader.ReadUntil("enabled:");
 
-                enabledPlatforms.Add(platform, enabledLine.Split(':')[1].Trim() == "1");
+                bool isEnabled = enabledLine.Split(':')[1].Trim() == "1";
+
+                if (isEnabled)
+                {
+                    if (platformLineParts[0].Trim().Equals("Any"))
+                    {
+                        // All platforms are indeed enabled
+                        SetAllPlatformsEnabled(enabledPlatforms);
+                        return;
+                    }
+                    else
+                    {
+                        enabledPlatforms.Add(platform, isEnabled);
+                    }
+                }
             }
+        }
+
+        private void SetAllPlatformsEnabled(Dictionary<string, bool> enabledPlatforms)
+        {
+            foreach (CompilationPlatformInfo platform in UnityProjectInfo.AvailablePlatforms)
+            {
+                enabledPlatforms.Add(MSBuildTools.SupportedBuildTargets[platform.BuildTarget], true);
+            }
+
+            enabledPlatforms.Add(EditorPlatformName, true);
         }
 
         private bool ContainsDefineHelper(string define, bool inEditor, CompilationPlatformInfo platform)
