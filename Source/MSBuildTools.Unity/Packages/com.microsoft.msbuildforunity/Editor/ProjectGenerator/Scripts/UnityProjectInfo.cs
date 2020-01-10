@@ -221,8 +221,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            // Now we have all of the assembly definiton files, let's run a quick validation on the references to correct known errors like "unity.ugui" supposed to be "UnityEngine.UI"
-            /// <see cref="ProjectAliases"/> for the correction map.
+            // Now we have all of the assembly definiton files, let's run a quick validation. 
             CorrectReferences(asmDefInfoMap);
 
             int index = 0;
@@ -241,6 +240,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return projectsMap;
         }
 
+        /// <summary>
+        /// This performs reference correction, for example this corrects "Unity.ugui" to be "UnityEngine.UI" (a known error of TextMeshPro). For correction map see <see cref="ProjectAliases"/>.
+        /// </summary>
         private void CorrectReferences(Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap)
         {
             foreach (KeyValuePair<string, AssemblyDefinitionInfo> asmDefPair in asmDefInfoMap)

@@ -94,7 +94,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     {
                         // No define constraints
                     }
-                    else if (match.Success) // We have non-empty string in teh contents of the group we matched; NUnit has this:  defineConstraints: ["UNITY_INCLUDE_TESTS"]
+                    else if (match.Success) // We have non-empty string in the contents of the group we matched; NUnit has this:  defineConstraints: ["UNITY_INCLUDE_TESTS"]
                     {
                         // Yaml kinda allows this
                         string[] defines = match.Groups[1].Value.Trim().Split(',');
