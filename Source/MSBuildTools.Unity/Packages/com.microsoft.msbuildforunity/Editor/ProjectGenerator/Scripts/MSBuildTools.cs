@@ -158,17 +158,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
-        private static readonly HashSet<BuildTarget> supportedBuildTargets = new HashSet<BuildTarget>()
+        public static readonly Dictionary<BuildTarget, string> SupportedBuildTargets = new Dictionary<BuildTarget, string>()
         {
-            BuildTarget.StandaloneWindows,
-            BuildTarget.StandaloneWindows64,
-            BuildTarget.StandaloneOSX,
-            BuildTarget.StandaloneLinux,
-            BuildTarget.StandaloneLinux64,
-            BuildTarget.StandaloneLinuxUniversal,
-            BuildTarget.iOS,
-            BuildTarget.Android,
-            BuildTarget.WSAPlayer
+            { BuildTarget.StandaloneWindows, "Win" },
+            { BuildTarget.StandaloneWindows64, "Win64" },
+            { BuildTarget.StandaloneOSX, "OSXUniversal" },
+            { BuildTarget.StandaloneLinux64, "Linux64" },
+#if UNITY_2018
+            { BuildTarget.StandaloneLinux, "Linux" },
+            { BuildTarget.StandaloneLinuxUniversal, "LinuxUniversal" },
+#endif
+            { BuildTarget.iOS, "iOS" },
+            { BuildTarget.Android, "Android" },
+            { BuildTarget.WSAPlayer, "WindowsStoreApps" }
         };
 
         public const string CSharpVersion = "7.3";
@@ -179,7 +181,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static UnityProjectInfo unityProjectInfo;
 
-        public static UnityProjectInfo UnityProjectInfo => unityProjectInfo ?? (unityProjectInfo = new UnityProjectInfo(supportedBuildTargets, Config));
+        public static UnityProjectInfo UnityProjectInfo => unityProjectInfo ?? (unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config));
 
         private static IProjectExporter exporter = null;
 
@@ -230,7 +232,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void RegenerateSDKProjects()
         {
-            RegenerateEverything(reparseUnityData:true);
+            RegenerateEverything(reparseUnityData: true);
             Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
         }
 
@@ -275,7 +277,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
-                        
+
             if (shouldClean)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.

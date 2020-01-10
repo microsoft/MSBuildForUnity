@@ -27,6 +27,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         /// <summary>
+        /// For some Unity packages, references don't match the appropriate asmdef name.
+        /// </summary>
+        private static readonly Dictionary<string, string> ProjectAliases = new Dictionary<string, string>()
+        {
+            { "Unity.ugui", "UnityEngine.UI" }
+        };
+
+        /// <summary>
         /// Gets the name of this Unity Project.
         /// </summary>
         public string UnityProjectName { get; }
@@ -61,11 +69,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public IReadOnlyCollection<WinMDInfo> WinMDs { get; private set; }
 
-        public UnityProjectInfo(HashSet<BuildTarget> supportedBuildTargets, MSBuildToolsConfig config)
+        public UnityProjectInfo(Dictionary<BuildTarget, string> supportedBuildTargets, MSBuildToolsConfig config)
         {
             AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
                     .Where(t => Utilities.IsPlatformInstalled(t.BuildTarget))
-                    .Where(t => supportedBuildTargets.Contains(t.BuildTarget))
+                    .Where(t => supportedBuildTargets.ContainsKey(t.BuildTarget))
                     .Select(CompilationPlatformInfo.GetCompilationPlatform)
                     .OrderBy(t => t.Name).ToList());
 
@@ -213,6 +221,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
+            // Now we have all of the assembly definiton files, let's run a quick validation. 
+            CorrectReferences(asmDefInfoMap);
+
             int index = 0;
             ProcessSortedAsmDef(asmDefDirectoriesSorted.ToArray(), ref index, (uri) => true, (a) => { });
 
@@ -227,6 +238,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             return projectsMap;
+        }
+
+        /// <summary>
+        /// This performs reference correction, for example this corrects "Unity.ugui" to be "UnityEngine.UI" (a known error of TextMeshPro). For correction map see <see cref="ProjectAliases"/>.
+        /// </summary>
+        private void CorrectReferences(Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap)
+        {
+            foreach (KeyValuePair<string, AssemblyDefinitionInfo> asmDefPair in asmDefInfoMap)
+            {
+                for (int i = 0; i < asmDefPair.Value.References.Length; i++)
+                {
+                    string reference = asmDefPair.Value.References[i];
+                    if (!asmDefInfoMap.ContainsKey(reference))
+                    {
+                        if (ProjectAliases.TryGetValue(reference, out string correctedReference))
+                        {
+                            Debug.Log($"Correcting package '{reference}' to '{correctedReference}'.");
+                            asmDefPair.Value.References[i] = correctedReference;
+                        }
+                    }
+                }
+            }
         }
 
         private void ProcessSortedAsmDef(AssemblyDefinitionInfo[] set, ref int currentIndex, Func<Uri, bool> childOfParentFunc, Action<AssemblyDefinitionInfo> addAsChild)
