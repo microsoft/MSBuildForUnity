@@ -35,10 +35,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         /// <summary>
-        /// Another patching technique to add defines to some assembly defintion file. TestRunner for example, is only referenced by projects with UNITY_INCLUDE_TESTS and references nunit that has UNITY_INCLUDE_TESTS;
+        /// Another patching technique to add defines to some assembly defintion files. TestRunner for example, is only referenced by projects with UNITY_INCLUDE_TESTS and references nunit that has UNITY_INCLUDE_TESTS;
         /// However it doesn't have the define itself. This breaks Player build, and as it appears that Unity specially handles this case as well.
         /// </summary>
-        private static readonly Dictionary<string, List<string>> ImpledDefinesForAsmDefs = new Dictionary<string, List<string>>()
+        private static readonly Dictionary<string, List<string>> ImpliedDefinesForAsmDefs = new Dictionary<string, List<string>>()
         {
             { "UnityEditor.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
             { "UnityEngine.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
@@ -232,7 +232,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             // Now we have all of the assembly definiton files, let's run a quick validation. 
-            CorrectReferences(asmDefInfoMap);
+            ValidateAndPatchAssemblyDefinitions(asmDefInfoMap);
 
             int index = 0;
             ProcessSortedAsmDef(asmDefDirectoriesSorted.ToArray(), ref index, (uri) => true, (a) => { });
@@ -253,7 +253,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <summary>
         /// This performs reference correction, for example this corrects "Unity.ugui" to be "UnityEngine.UI" (a known error of TextMeshPro). For correction map see <see cref="ProjectAliases"/>.
         /// </summary>
-        private void CorrectReferences(Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap)
+        private void ValidateAndPatchAssemblyDefinitions(Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap)
         {
             foreach (KeyValuePair<string, AssemblyDefinitionInfo> asmDefPair in asmDefInfoMap)
             {
@@ -270,7 +270,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     }
                 }
 
-                if (ImpledDefinesForAsmDefs.TryGetValue(asmDefPair.Key, out List<string> defines))
+                if (ImpliedDefinesForAsmDefs.TryGetValue(asmDefPair.Key, out List<string> defines))
                 {
                     foreach (string define in defines)
                     {
