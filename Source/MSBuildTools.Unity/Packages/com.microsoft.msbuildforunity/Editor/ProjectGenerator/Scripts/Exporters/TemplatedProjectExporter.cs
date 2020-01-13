@@ -413,8 +413,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
-            List<string> availablePlatformsNames = unityProjectInfo.AvailablePlatforms.Select(t => t.Name).ToList();
-            Dictionary<string, List<string>> defaultPlatformsMap = new Dictionary<string, List<string>> { { "InEditor", availablePlatformsNames }, { "Player", availablePlatformsNames } };
+            List<string> availablePlatformNames = unityProjectInfo.AvailablePlatforms.Select(t => t.Name).ToList();
+            Dictionary<string, List<string>> defaultPlatformsMap = new Dictionary<string, List<string>> { { "InEditor", availablePlatformNames }, { "Player", availablePlatformNames } };
 
             // Iterate over every project
             foreach (CSProjectInfo project in orderedProjects)
