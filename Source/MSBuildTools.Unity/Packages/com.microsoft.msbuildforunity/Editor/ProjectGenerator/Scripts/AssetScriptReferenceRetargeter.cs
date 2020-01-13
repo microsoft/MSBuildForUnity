@@ -502,6 +502,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 .GetDirectories("*", SearchOption.AllDirectories)
                 .SelectMany(t => t.EnumerateFiles().Where(f => f.FullName.EndsWith(".dll") || f.FullName.EndsWith(".pdb")))
                 .GroupBy(t => Path.GetFileNameWithoutExtension(t.Name))
+                .Where(t => assemblyInformation.ContainsKey(t.Key))
                 .ToDictionary(t => assemblyInformation[t.Key], t => t.ToArray());
 
             foreach (KeyValuePair<AssemblyInformation, FileInfo[]> mapping in mappings)
