@@ -35,6 +35,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         /// <summary>
+        /// Another patching technique to add defines to some assembly defintion file. TestRunner for example, is only referenced by projects with UNITY_INCLUDE_TESTS and references nunit that has UNITY_INCLUDE_TESTS;
+        /// However it doesn't have the define itself. This breaks Player build, and as it appears that Unity specially handles this case as well.
+        /// </summary>
+        private static readonly Dictionary<string, List<string>> ImpledDefinesForAsmDefs = new Dictionary<string, List<string>>()
+        {
+            { "UnityEditor.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
+            { "UnityEngine.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
+        };
+
+        /// <summary>
         /// Gets the name of this Unity Project.
         /// </summary>
         public string UnityProjectName { get; }
@@ -257,6 +267,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                             Debug.Log($"Correcting package '{reference}' to '{correctedReference}'.");
                             asmDefPair.Value.References[i] = correctedReference;
                         }
+                    }
+                }
+
+                if (ImpledDefinesForAsmDefs.TryGetValue(asmDefPair.Key, out List<string> defines))
+                {
+                    foreach (string define in defines)
+                    {
+                        asmDefPair.Value.DefineConstraints.Add(define);
                     }
                 }
             }

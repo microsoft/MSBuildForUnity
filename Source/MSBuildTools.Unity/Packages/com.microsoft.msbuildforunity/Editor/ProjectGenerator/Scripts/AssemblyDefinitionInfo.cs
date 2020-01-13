@@ -70,6 +70,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             toReturn.BuiltInPackage = isBuiltInPackage;
             toReturn.Validate(unityProjectInfo.AvailablePlatforms);
             toReturn.PrecompiledAssemblyReferences = new HashSet<string>(toReturn.precompiledReferences?.Select(t => t.Replace(".dll", string.Empty)) ?? Array.Empty<string>());
+            toReturn.DefineConstraints = new HashSet<string>(toReturn.defineConstraints ?? (toReturn.defineConstraints = new string[0]));
             return toReturn;
         }
 
@@ -90,7 +91,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private string[] precompiledReferences = null;
         public bool autoReferenced;
-        public string[] defineConstraints;
+
+        [SerializeField]
+        private string[] defineConstraints = null;
 
         /// <summary>
         /// Gets or sets the parsed Guid of the AssemblyDefinition asset.
@@ -147,7 +150,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public HashSet<string> PrecompiledAssemblyReferences { get; private set; }
 
+        /// <summary>
+        /// Gets assembly defintions that are nested (in terms of folder hierarchy) in respect to this assembly defintion.
+        /// </summary>
         public HashSet<AssemblyDefinitionInfo> NestedAssemblyDefinitionFiles { get; } = new HashSet<AssemblyDefinitionInfo>();
+
+        /// <summary>
+        /// Gets the define constraints for this assembly defintion.
+        /// </summary>
+        public HashSet<string> DefineConstraints { get; private set; }
 
         /// <summary>
         /// After it's parsed from JSON, this method should be invoked to validate some of the values and set additional properties.
