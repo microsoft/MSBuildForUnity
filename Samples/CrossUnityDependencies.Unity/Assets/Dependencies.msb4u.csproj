@@ -32,9 +32,10 @@
 
   <!-- SDK.props is imported inside this props file -->
   <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.props" />
-    <!-- Add your references here -->
+  
   <ItemGroup>
-    
+    <!-- Add your references here -->
+    <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj" />
   </ItemGroup>
 
   <!-- SDK.targets is imported inside this props file -->

@@ -8,9 +8,9 @@
   <!--IMPORT SDK.targets-->
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
-  <!-- Propogate info about this project through-->
+  <!-- Propagate info about this project through-->
   <PropertyGroup>
-    <_GenerateRestoreGraphProjectEntryInputProperties>$(_GenerateRestoreGraphProjectEntryInputProperties);UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropogateProperties)</_GenerateRestoreGraphProjectEntryInputProperties>
+    <_GenerateRestoreGraphProjectEntryInputProperties>UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropagateProperties);$(_GenerateRestoreGraphProjectEntryInputProperties)</_GenerateRestoreGraphProjectEntryInputProperties>
   </PropertyGroup>
 
   <!--We control whether we build the project this way, depending on the platform/configuration-->

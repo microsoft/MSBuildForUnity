@@ -1,6 +1,6 @@
-<Project InitialTargets="_PropogateMSB4UProperties">
+<Project InitialTargets="_PropagateMSB4UProperties">
   
-  <!-- These are specific to this Unity project and can't be overriden -->
+  <!-- These are specific to this Unity project and can't be overridden -->
   <PropertyGroup>
     <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>
     
@@ -23,17 +23,21 @@
     
     <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
     <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
-    
-    <_MSB4UPropogateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);</_MSB4UPropogateProperties>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <_MSB4UPropagateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);</_MSB4UPropagateProperties>
   </PropertyGroup>
   
   <Target Name="_RemoveOutputDirectory" AfterTargets="Clean">
     <RemoveDir Directories="$(OutputPath)"/>
   </Target>
   
-  <Target Name="_PropogateMSB4UProperties">
+  <Target Name="_PropagateMSB4UProperties">
     <ItemGroup>
-      <ProjectReference AdditionalProperties="$(AdditionalProperties);UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropogateProperties)"/>
+      <ProjectReference>
+        <AdditionalProperties>UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropagateProperties);$(AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
     </ItemGroup>
   </Target>
 </Project>
