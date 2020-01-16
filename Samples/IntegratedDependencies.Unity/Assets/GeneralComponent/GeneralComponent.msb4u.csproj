@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0">
+﻿<Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in as long as the following rules are met:
@@ -29,8 +29,8 @@
   <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.props" />
 
   <ItemGroup>
-  <!-- Add your references here -->
-    <ProjectReference Include="..\External\CommonLibrary\CommonLibrary.csproj" />
+    <!-- Add your references here -->
+    <ProjectReference Include="..\..\External\CommonLibrary\CommonLibrary.csproj" />
   </ItemGroup>
 
   <!-- SDK.targets is imported inside this props file -->

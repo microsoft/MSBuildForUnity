@@ -15,7 +15,7 @@
     <ProjectGuid><!--PROJECT_GUID_TOKEN--></ProjectGuid>
     <UnityConfiguration>InEditor</UnityConfiguration>
     <!-- Make sure Unity ignores the contents of the intermediate output path. -->
-    <BaseIntermediateOutputPath>$(MSBuildForUnityGeneratedOutputDirectory)\..\Output\obj\Dependencies</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildForUnityBuildOutputDirectory)\obj\Dependencies</BaseIntermediateOutputPath>
     <OutputPath>Dependencies</OutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!--Copy the NuGet package reference dlls as well.-->
@@ -39,7 +39,6 @@
     <!--PROJECT_REFERENCE_TEMPLATE_START-->
     <ProjectReference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
         <Private>false</Private>
-        <Properties>UnityPlatform=$(UnityPlatform);UnityConfiguration=$(UnityConfiguration)</Properties>
     </ProjectReference>
     <!--PROJECT_REFERENCE_TEMPLATE_END-->
   </ItemGroup>

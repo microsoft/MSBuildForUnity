@@ -1,9 +1,21 @@
-<Project>
+<Project InitialTargets="_PropogateMSB4UProperties">
+  
+  <!-- These are specific to this Unity project and can't be overriden -->
   <PropertyGroup>
+    <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>
+    
+    <_MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></_MSBuildForUnityGeneratedOutputDirectory>
+    <MSBuildForUnityGeneratedProjectDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Projects</MSBuildForUnityGeneratedProjectDirectory>
+  </PropertyGroup>
+  
+  <!-- We set these common properties for current MSBuild and Unity project, unless we are being invoked from a different MSBuild and Unity project -->
+  <PropertyGroup Condition="'$(MSBuildForUnityVersion)'==''">
     <MSBuildForUnityVersion>0.8.3</MSBuildForUnityVersion>
     
-    <MSBuildForUnityGeneratedOutputDirectory><!--GENERATED_OUTPUT_DIRECTORY_TOKEN--></MSBuildForUnityGeneratedOutputDirectory>
-    <UnityProjectAssetsPath><!--UNITY_PROJECT_ASSETS_PATH_TOKEN--></UnityProjectAssetsPath>
+    <MSBuildForUnityPlatformPropsDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Projects</MSBuildForUnityPlatformPropsDirectory>
+    <MSBuildForUnityBuildOutputDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Output</MSBuildForUnityBuildOutputDirectory>
+    <MSBuildForUnityPublishDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Publish</MSBuildForUnityPublishDirectory>
+    
     <MSBuildForUnityDefaultOutputPath>$(UnityProjectAssetsPath)\Dependencies</MSBuildForUnityDefaultOutputPath>
     
     <UnityCurrentPlatform><!--CURRENT_UNITY_PLATFORM_TOKEN--></UnityCurrentPlatform>
@@ -11,9 +23,17 @@
     
     <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
     <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
+    
+    <_MSB4UPropogateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);</_MSB4UPropogateProperties>
   </PropertyGroup>
   
   <Target Name="_RemoveOutputDirectory" AfterTargets="Clean">
     <RemoveDir Directories="$(OutputPath)"/>
+  </Target>
+  
+  <Target Name="_PropogateMSB4UProperties">
+    <ItemGroup>
+      <ProjectReference AdditionalProperties="$(AdditionalProperties);UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropogateProperties)"/>
+    </ItemGroup>
   </Target>
 </Project>
