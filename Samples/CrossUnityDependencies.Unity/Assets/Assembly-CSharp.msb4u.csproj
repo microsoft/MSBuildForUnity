@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <!-- Add your references here -->
-    <!-- This reference to a seperate Unity project should also be placed in Dependencies.msb4u.csproj. -->
+    <!-- This reference to a separate Unity project should also be placed in Dependencies.msb4u.csproj. -->
     <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj"/>
   </ItemGroup>
 
