@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -138,12 +137,29 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
 
             // We only are an asmdef at this point, as above we handle all PredfinedAssemblies, then EditorAsmDef and PredefinedEditorAssembly for inEditor and not inEditor cases above
-            Func<CompilationPlatformInfo, bool> predicate = AssemblyDefinitionInfo.includePlatforms.Length > 0
-                ? predicate = (t) => AssemblyDefinitionInfo.includePlatforms.Contains(t.Name)
-                : predicate = (t) => !AssemblyDefinitionInfo.excludePlatforms.Contains(t.Name);
+            bool IsPlatformSupported(CompilationPlatformInfo platform)
+            {
+                HashSet<string> additionalSet = inEditor ? platform.AdditionalInEditorDefines : platform.AdditionalPlayerDefines;
+
+                // Check for defines to ensure they are included in the platform (differentiate between editor/player)
+                foreach (string define in AssemblyDefinitionInfo.DefineConstraints)
+                {
+                    if (!platform.CommonPlatformDefines.Contains(define) && !additionalSet.Contains(define))
+                    {
+                        return false;
+                    }
+                }
+
+                if (AssemblyDefinitionInfo.includePlatforms.Length > 0)
+                {
+                    return AssemblyDefinitionInfo.includePlatforms.Contains(platform.Name);
+                }
+                // else
+                return !AssemblyDefinitionInfo.excludePlatforms.Contains(platform.Name);
+            }
 
             return new ReadOnlyDictionary<BuildTarget, CompilationPlatformInfo>(
-                UnityProjectInfo.AvailablePlatforms.Where(predicate)
+                UnityProjectInfo.AvailablePlatforms.Where(IsPlatformSupported)
                     .ToDictionary(t => t.BuildTarget, t => t));
         }
 

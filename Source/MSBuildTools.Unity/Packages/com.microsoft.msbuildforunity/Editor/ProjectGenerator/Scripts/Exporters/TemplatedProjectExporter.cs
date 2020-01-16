@@ -412,6 +412,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
             }
 
+            List<string> availablePlatformNames = unityProjectInfo.AvailablePlatforms.Select(t => t.Name).ToList();
+            Dictionary<string, List<string>> defaultPlatformsMap = new Dictionary<string, List<string>> { { "InEditor", availablePlatformNames }, { "Player", availablePlatformNames } };
+
             // Iterate over every project
             foreach (CSProjectInfo project in orderedProjects)
             {
@@ -441,7 +444,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 ProcessProjectPlatforms("Player", enabledPlayerPlatforms);
 
                 // Add all other known solution mappings, map to itself or allowed mappings
-                ProcessDefaultMappings(mapping, new Dictionary<string, List<string>> { { "InEditor", enabledInEditorPlatforms }, { "Player", enabledPlayerPlatforms } });
+                ProcessDefaultMappings(mapping, defaultPlatformsMap);
             }
 
             // Process the Dependencies Project now
