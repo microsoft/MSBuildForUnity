@@ -393,7 +393,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static void ExportCommonPropsFile(IUnityProjectExporter exporter, CompilationPlatformInfo currentPlayerPlatform)
         {
-            ICommonPropsExporter propsExporter = exporter.CreateCommonPropsExporter(Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props"));
+            ICommonPropsExporter propsExporter = exporter.CreateCommonPropsExporter(new FileInfo(Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props")));
 
             string[] versionParts = Application.unityVersion.Split('.');
             propsExporter.UnityMajorVersion = versionParts[0];

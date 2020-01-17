@@ -59,7 +59,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             set => UpdateToken(ref generatedProjectOutputPath, value, GeneratedOutputDirectoryToken, t => t.FullName);
         }
 
-        internal TemplatedCommonPropsExporter(FileTemplate fileTemplate, string exportPath)
+        internal TemplatedCommonPropsExporter(FileTemplate fileTemplate, FileInfo exportPath)
             : base(fileTemplate, exportPath)
         {
         }

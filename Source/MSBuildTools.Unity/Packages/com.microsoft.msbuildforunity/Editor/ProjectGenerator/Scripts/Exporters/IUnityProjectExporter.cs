@@ -40,10 +40,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config);
 
         /// <summary>
-        /// Creates an exporter for the commom MSBuild file that is expected to be used by both generated and non-generated projects alike.
+        /// Creates an exporter for the commom MSBuild file that is expected to be used by both generated (by MSBuildForUnity) and non-generated (NuGet .targets/.props, or hand-crafted) projects alike.
         /// </summary>
-        /// <param name="path">Where this path should be exported.</param>
-        ICommonPropsExporter CreateCommonPropsExporter(string path);
+        /// <param name="path">The <see cref="FileInfo"/> representing where this props file will be written.</param>
+        ICommonPropsExporter CreateCommonPropsExporter(FileInfo path);
 
         /// <summary>
         /// Exports the Common props file based on the given compilation platform and whether to export it as an In-Editor flavor vs Player.

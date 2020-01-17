@@ -17,12 +17,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         string UnityMajorVersion { get; set; }
 
         /// <summary>
-        /// Gets or sets the Unity minir version.
+        /// Gets or sets the Unity minor version.
         /// </summary>
         string UnityMinorVersion { get; set; }
 
         /// <summary>
-        /// Gets or sets the current unity platform selected in the editor.
+        /// Gets or sets the current Unity platform selected in the editor.
         /// </summary>
         string CurrentUnityPlatform { get; set; }
 

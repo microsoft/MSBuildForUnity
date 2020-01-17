@@ -202,9 +202,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             return true;
         }
 
-        public ICommonPropsExporter CreateCommonPropsExporter(string outputPath)
+        public ICommonPropsExporter CreateCommonPropsExporter(FileInfo path)
         {
-            return new TemplatedCommonPropsExporter(msbuildForUnityCommonTemplate, outputPath);
+            return new TemplatedCommonPropsExporter(msbuildForUnityCommonTemplate, path);
         }
 
         ///<inherit-doc/>

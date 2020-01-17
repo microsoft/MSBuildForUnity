@@ -3,7 +3,7 @@
 
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Templates;
-using System;
+using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
@@ -13,9 +13,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     internal class TemplatedExporterBase : TemplatedExporterPart
     {
         private readonly FileTemplate templateFile;
-        private readonly string exportPath;
+        private readonly FileInfo exportPath;
 
-        protected TemplatedExporterBase(FileTemplate templateFile, string exportPath)
+        protected TemplatedExporterBase(FileTemplate templateFile, FileInfo exportPath)
             : base(templateFile.Root, templateFile.Root.CreateReplacementSet())
         {
             this.templateFile = templateFile;
@@ -27,7 +27,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         /// </summary>
         public void Write()
         {
-            templateFile.Write(exportPath, replacementSet);
+            // Ensure the parent directories are created
+            Directory.CreateDirectory(exportPath.Directory.FullName);
+
+            templateFile.Write(exportPath.FullName, replacementSet);
         }
     }
 }
