@@ -101,6 +101,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.{MSBuildFileSuffix}.sln");
         }
 
+        public void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
+        {
+
+        }
+
         ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
@@ -201,6 +206,61 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             File.SetAttributes(targetsFilePath, FileAttributes.ReadOnly);
 
             return true;
+        }
+        public class TemplatedCommonPropsWriter : ICommonPropsWriter
+        {
+            private const string UnityMajorVersionToken = "UNITY_MAJOR_VERSION";
+            private const string UnityMinorVersionToken = "UNITY_MINOR_VERSION";
+            private const string CurrentUnityPlatformToken = "CURRENT_UNITY_PLATFORM";
+            private const string CurrentTargetFrameworkToken = "CURRENT_TARGET_FRAMEWORK";
+            private const string GeneratedOutputDirectoryToken = "GENERATED_OUTPUT_DIRECTORY";
+            private const string UnityProjectAssetsDirectoryToken = "UNITY_PROJECT_ASSETS_PATH";
+
+            private readonly ITemplatePart template;
+            private readonly TemplateReplacementSet replacementSet;
+
+            private string unityMajorVersion;
+            private string unityMinorVersion;
+            private string currentUnityPlatform;
+            private string currentTargetFramework;
+
+            public string UnityMajorVersion
+            {
+                get => unityMajorVersion;
+                set => UpdateToken(ref unityMajorVersion, value, UnityMajorVersionToken);
+            }
+
+            public string UnityMinorVersion
+            {
+                get => unityMinorVersion;
+                set => UpdateToken(ref unityMinorVersion, value, UnityMinorVersionToken);
+            }
+
+            public string CurrentUnityPlatform
+            {
+                get => currentUnityPlatform;
+                set => UpdateToken(ref currentUnityPlatform, value, CurrentUnityPlatformToken);
+            }
+
+            public string CurrentTargetFramework
+            {
+                get => currentTargetFramework;
+                set => UpdateToken(ref currentTargetFramework, value, CurrentTargetFrameworkToken);
+            }
+
+            private void UpdateToken(ref string field, string value, string token)
+            {
+                UpdateToken(ref field, value, token, t => t);
+            }
+
+            private void UpdateToken<T>(ref T field, T value, string token, Func<T, string> toStringFunc)
+            {
+                if (!Equals(field, value))
+                {
+                    field = value;
+                    template.Tokens[token].AssignValue(replacementSet, value);
+                }
+            }
         }
 
         public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
@@ -318,38 +378,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
             templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
             templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
-        }
-
-        private class ProjectConfigurationMapping
-        {
-            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
-
-            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
-
-            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
-            {
-                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
-                {
-                    propertySet.Add(configPair, set = new HashSet<string>());
-                }
-
-                return set;
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
-            {
-                AddConfigurationMapping(configMapping, configMapping, properties);
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
-            {
-                Mappings[solutionMapping] = projectMapping;
-                HashSet<string> set = GetPropertySet(solutionMapping);
-                foreach (string property in properties)
-                {
-                    set.Add(property);
-                }
-            }
         }
 
         private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
@@ -962,6 +990,38 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 if (!referenceNames.Add(reference))
                 {
                     Debug.LogError($"Duplicate assembly reference found for platform '{buildTarget}' - {reference} ignoring.");
+                }
+            }
+        }
+
+        private class ProjectConfigurationMapping
+        {
+            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
+
+            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
+
+            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
+            {
+                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
+                {
+                    propertySet.Add(configPair, set = new HashSet<string>());
+                }
+
+                return set;
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
+            {
+                AddConfigurationMapping(configMapping, configMapping, properties);
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
+            {
+                Mappings[solutionMapping] = projectMapping;
+                HashSet<string> set = GetPropertySet(solutionMapping);
+                foreach (string property in properties)
+                {
+                    set.Add(property);
                 }
             }
         }

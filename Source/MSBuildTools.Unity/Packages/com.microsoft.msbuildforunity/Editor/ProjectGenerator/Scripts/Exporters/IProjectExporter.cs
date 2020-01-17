@@ -52,5 +52,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="inEditorConfiguration">True if this is an In-Editor flavor, false otherwise.</param>
         void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
     }
+
+    public interface ICommonPropsWriter
+    {
+        string UnityMajorVersion { get; set; }
+
+        string UnityMinorVersion { get; set; }
+
+        string CurrentUnityPlatform { get; set; }
+
+        string CurrentTargetFramework { get; set; }
+    }
 }
 #endif
