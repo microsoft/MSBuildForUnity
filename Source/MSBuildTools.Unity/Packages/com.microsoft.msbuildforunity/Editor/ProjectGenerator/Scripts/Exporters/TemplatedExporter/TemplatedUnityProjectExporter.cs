@@ -10,12 +10,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
+namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
     /// <summary>
     /// This interface exposes teh APIs for exporting projects.
     /// </summary>
-    public class TemplatedProjectExporter : IProjectExporter
+    public class TemplatedUnityProjectExporter : IUnityProjectExporter
     {
         private const string MSBuildFileSuffix = "msb4u";
         private static readonly Guid FolderProjectTypeGuid = Guid.Parse("2150E333-8FDC-42A3-9474-1A3956D46DE8");
@@ -40,7 +40,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly FileTemplate dependenciesTargetsTemplate;
 
         /// <summary>
-        /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
+        /// Creates a new instance of the template driven <see cref="IUnityProjectExporter"/>.
         /// </summary>
         /// <param name="generatedOutputFolder">The output folder for the projects and props.</param>
         /// <param name="solutionFileTemplatePath">The path to the solution template.</param>
@@ -52,7 +52,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="dependenciesProjectTemplatePath">Path to the dependencies project template file.</param>
         /// <param name="dependenciesPropsTemplatePath">Path to the dependencies props template file.</param>
         /// <param name="dependenciesTargetsTemplatePath">Path to the dependencies targets template file.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
+        public TemplatedUnityProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
@@ -206,80 +206,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
             return true;
         }
-        public class TemplatedCommonPropsWriter : ICommonPropsWriter
+
+        public ICommonPropsExporter CreateCommonPropsExporter(string outputPath)
         {
-            private const string UnityMajorVersionToken = "UNITY_MAJOR_VERSION";
-            private const string UnityMinorVersionToken = "UNITY_MINOR_VERSION";
-            private const string CurrentUnityPlatformToken = "CURRENT_UNITY_PLATFORM";
-            private const string CurrentTargetFrameworkToken = "CURRENT_TARGET_FRAMEWORK";
-            private const string GeneratedOutputDirectoryToken = "GENERATED_OUTPUT_DIRECTORY";
-            private const string UnityProjectAssetsDirectoryToken = "UNITY_PROJECT_ASSETS_PATH";
-
-            private readonly ITemplatePart template;
-            private readonly TemplateReplacementSet replacementSet;
-
-            private string unityMajorVersion;
-            private string unityMinorVersion;
-            private string currentUnityPlatform;
-            private string currentTargetFramework;
-
-            public string UnityMajorVersion
-            {
-                get => unityMajorVersion;
-                set => UpdateToken(ref unityMajorVersion, value, UnityMajorVersionToken);
-            }
-
-            public string UnityMinorVersion
-            {
-                get => unityMinorVersion;
-                set => UpdateToken(ref unityMinorVersion, value, UnityMinorVersionToken);
-            }
-
-            public string CurrentUnityPlatform
-            {
-                get => currentUnityPlatform;
-                set => UpdateToken(ref currentUnityPlatform, value, CurrentUnityPlatformToken);
-            }
-
-            public string CurrentTargetFramework
-            {
-                get => currentTargetFramework;
-                set => UpdateToken(ref currentTargetFramework, value, CurrentTargetFrameworkToken);
-            }
-
-            private void UpdateToken(ref string field, string value, string token)
-            {
-                UpdateToken(ref field, value, token, t => t);
-            }
-
-            private void UpdateToken<T>(ref T field, T value, string token, Func<T, string> toStringFunc)
-            {
-                if (!Equals(field, value))
-                {
-                    field = value;
-                    template.Tokens[token].AssignValue(replacementSet, value);
-                }
-            }
-        }
-
-        public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
-        {
-            string outputPath = Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props");
-
-            ITemplatePart rootTemplate = msbuildForUnityCommonTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);
-
-            rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.Parent.FullName);
-            rootTemplate.Tokens["UNITY_PROJECT_ASSETS_PATH"].AssignValue(rootReplacementSet, Path.GetFullPath(Application.dataPath));
-
-            rootTemplate.Tokens["CURRENT_UNITY_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.Name);
-            rootTemplate.Tokens["CURRENT_TARGET_FRAMEWORK"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.TargetFramework.AsMSBuildString());
-
-            string[] versionParts = Application.unityVersion.Split('.');
-            rootTemplate.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
-            rootTemplate.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
-
-            msbuildForUnityCommonTemplate.Write(outputPath, rootReplacementSet);
+            return new TemplatedCommonPropsExporter(msbuildForUnityCommonTemplate, outputPath);
         }
 
         ///<inherit-doc/>

@@ -9,7 +9,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     /// <summary>
     /// This interface exposes the APIs for exporting projects.
     /// </summary>
-    public interface IProjectExporter
+    public interface IUnityProjectExporter
     {
         /// <summary>
         /// Given a C# project, get its export path.
@@ -40,10 +40,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config);
 
         /// <summary>
-        /// Generates the Directory.Build.props file that is expected to be used by both generated and non-generated projects alike.
+        /// Creates an exporter for the commom MSBuild file that is expected to be used by both generated and non-generated projects alike.
         /// </summary>
-        /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
-        void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo);
+        /// <param name="path">Where this path should be exported.</param>
+        ICommonPropsExporter CreateCommonPropsExporter(string path);
 
         /// <summary>
         /// Exports the Common props file based on the given compilation platform and whether to export it as an In-Editor flavor vs Player.
@@ -51,17 +51,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="platform">The platform to export.</param>
         /// <param name="inEditorConfiguration">True if this is an In-Editor flavor, false otherwise.</param>
         void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
-    }
-
-    public interface ICommonPropsWriter
-    {
-        string UnityMajorVersion { get; set; }
-
-        string UnityMinorVersion { get; set; }
-
-        string CurrentUnityPlatform { get; set; }
-
-        string CurrentTargetFramework { get; set; }
     }
 }
 #endif
