@@ -100,12 +100,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             return Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.{MSBuildFileSuffix}.sln");
         }
-
-        public void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo)
-        {
-
-        }
-
+        
         ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
