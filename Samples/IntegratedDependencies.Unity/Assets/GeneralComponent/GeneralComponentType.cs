@@ -1,4 +1,7 @@
-﻿using CommonLibrary;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using CommonLibrary;
 using UnityEngine;
 
 public class GeneralComponentType : MonoBehaviour
@@ -11,6 +14,6 @@ public class GeneralComponentType : MonoBehaviour
 
     public string GetThisDataToo()
     {
-        return "IntegartedDependencies Project + {commonComponent.GetData()}";
+        return $"IntegartedDependencies Project + {commonComponent.GetData()}";
     }
 }
