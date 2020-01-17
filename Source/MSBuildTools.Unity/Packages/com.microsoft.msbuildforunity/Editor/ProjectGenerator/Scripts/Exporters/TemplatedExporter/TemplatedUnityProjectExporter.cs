@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
@@ -10,12 +10,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
+namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
     /// <summary>
     /// This interface exposes teh APIs for exporting projects.
     /// </summary>
-    public class TemplatedProjectExporter : IProjectExporter
+    public class TemplatedUnityProjectExporter : IUnityProjectExporter
     {
         private const string MSBuildFileSuffix = "msb4u";
         private static readonly Guid FolderProjectTypeGuid = Guid.Parse("2150E333-8FDC-42A3-9474-1A3956D46DE8");
@@ -40,7 +40,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly FileTemplate dependenciesTargetsTemplate;
 
         /// <summary>
-        /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
+        /// Creates a new instance of the template driven <see cref="IUnityProjectExporter"/>.
         /// </summary>
         /// <param name="generatedOutputFolder">The output folder for the projects and props.</param>
         /// <param name="solutionFileTemplatePath">The path to the solution template.</param>
@@ -52,7 +52,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="dependenciesProjectTemplatePath">Path to the dependencies project template file.</param>
         /// <param name="dependenciesPropsTemplatePath">Path to the dependencies props template file.</param>
         /// <param name="dependenciesTargetsTemplatePath">Path to the dependencies targets template file.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
+        public TemplatedUnityProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
@@ -100,7 +100,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         {
             return Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.{MSBuildFileSuffix}.sln");
         }
-
+        
         ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
@@ -202,24 +202,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return true;
         }
 
-        public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
+        public ICommonPropsExporter CreateCommonPropsExporter(FileInfo path)
         {
-            string outputPath = Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props");
-
-            ITemplatePart rootTemplate = msbuildForUnityCommonTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);
-
-            rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.Parent.FullName);
-            rootTemplate.Tokens["UNITY_PROJECT_ASSETS_PATH"].AssignValue(rootReplacementSet, Path.GetFullPath(Application.dataPath));
-
-            rootTemplate.Tokens["CURRENT_UNITY_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.Name);
-            rootTemplate.Tokens["CURRENT_TARGET_FRAMEWORK"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.TargetFramework.AsMSBuildString());
-
-            string[] versionParts = Application.unityVersion.Split('.');
-            rootTemplate.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
-            rootTemplate.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
-
-            msbuildForUnityCommonTemplate.Write(outputPath, rootReplacementSet);
+            return new TemplatedCommonPropsExporter(msbuildForUnityCommonTemplate, path);
         }
 
         ///<inherit-doc/>
@@ -317,38 +302,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
             templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
             templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
-        }
-
-        private class ProjectConfigurationMapping
-        {
-            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
-
-            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
-
-            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
-            {
-                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
-                {
-                    propertySet.Add(configPair, set = new HashSet<string>());
-                }
-
-                return set;
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
-            {
-                AddConfigurationMapping(configMapping, configMapping, properties);
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
-            {
-                Mappings[solutionMapping] = projectMapping;
-                HashSet<string> set = GetPropertySet(solutionMapping);
-                foreach (string property in properties)
-                {
-                    set.Add(property);
-                }
-            }
         }
 
         private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
@@ -961,6 +914,38 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 if (!referenceNames.Add(reference))
                 {
                     Debug.LogError($"Duplicate assembly reference found for platform '{buildTarget}' - {reference} ignoring.");
+                }
+            }
+        }
+
+        private class ProjectConfigurationMapping
+        {
+            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
+
+            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
+
+            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
+            {
+                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
+                {
+                    propertySet.Add(configPair, set = new HashSet<string>());
+                }
+
+                return set;
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
+            {
+                AddConfigurationMapping(configMapping, configMapping, properties);
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
+            {
+                Mappings[solutionMapping] = projectMapping;
+                HashSet<string> set = GetPropertySet(solutionMapping);
+                foreach (string property in properties)
+                {
+                    set.Add(property);
                 }
             }
         }

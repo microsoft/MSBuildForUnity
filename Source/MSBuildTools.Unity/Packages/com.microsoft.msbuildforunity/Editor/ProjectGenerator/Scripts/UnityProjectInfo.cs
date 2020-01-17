@@ -44,6 +44,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             { "UnityEngine.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
         };
 
+        public static CompilationPlatformInfo GetCurrentPlayerPlatform()
+        {
+            return CompilationPlatformInfo.GetCompilationPlatform(
+                CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                .First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget));
+        }
+
+
         /// <summary>
         /// Gets the name of this Unity Project.
         /// </summary>
