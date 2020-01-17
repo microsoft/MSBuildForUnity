@@ -18,14 +18,13 @@
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <RelativeBuildFolder>..\Output\</RelativeBuildFolder>
-    <BuildFolder>$(MSBuildThisFileDirectory)$(RelativeBuildFolder)</BuildFolder>
+    <BuildFolder>$(MSBuildForUnityBuildOutputDirectory)</BuildFolder>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <!--NOTE: Currently one of the Unity packages has a * in AssemblyVersion identifier in the AssemblyInfo file, so have to do this.-->
     <Deterministic>false</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(PublishOutputPath)'==''">
-    <PublishOutputPath>$(MSBuildThisFileDirectory)..\Publish\</PublishOutputPath>
+    <PublishOutputPath>$(MSBuildForUnityPublishDirectory)\</PublishOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == ''">
@@ -60,18 +59,18 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BaseIntermediateOutputPath>$(BuildFolder)obj\$(ProjectGuid)\</BaseIntermediateOutputPath>
-    <BaseOutputPath>$(BuildFolder)bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(BuildFolder)\obj\$(ProjectGuid)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(BuildFolder)\bin\</BaseOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(UnityConfiguration)\$(UnityPlatform)\</IntermediateOutputPath>
   </PropertyGroup>
 
   <!-- This is special cased here for WSA player only-->
   <PropertyGroup Condition="'$(UnityConfiguration)|$(UnityPlatform)' == 'Player|WSA'">
-    <OutputPath>$(BuildFolder)$(UnityConfiguration)\$(UnityPlatform)\</OutputPath>
+    <OutputPath>$(BuildFolder)\$(UnityConfiguration)\$(UnityPlatform)\</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UnityConfiguration)|$(UnityPlatform)' != 'Player|WSA'">
-    <OutputPath>$(BuildFolder)$(UnityConfiguration)\$(UnityPlatform)\$(MSBuildProjectName)\</OutputPath>
+    <OutputPath>$(BuildFolder)\$(UnityConfiguration)\$(UnityPlatform)\$(MSBuildProjectName)\</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
   </PropertyGroup>
 
@@ -86,10 +85,10 @@
     <AssemblySearchPaths>{CandidateAssemblyFiles};{HintPathFromItem};{RawFileName};</AssemblySearchPaths>
   </PropertyGroup>
 
-  <Import Project="##PLATFORM_PROPS_FOLDER_PATH_TOKEN##\$(UnityPlatform).$(UnityConfiguration).props"/>
+  <Import Project="$(MSBuildForUnityPlatformPropsDirectory)\$(UnityPlatform).$(UnityConfiguration).props"/>
 
   <!-- This is a "special" platform that will override references -->
-  <Import Project="##PLATFORM_PROPS_FOLDER_PATH_TOKEN##\Editor.InEditor.props" Condition="'$(IsEditorOnlyTarget)' == 'true'"/>
+  <Import Project="$(MSBuildForUnityPlatformPropsDirectory)\Editor.InEditor.props" Condition="'$(IsEditorOnlyTarget)' == 'true'"/>
 
   <!-- Add support for Unix based systems (OSX, Linux) that have dotnet core and mono but not netframework. -->
   <Import Project="UnixNetSupport.props"/>
@@ -134,8 +133,5 @@
 
   <ItemGroup>
     <Compile Include="##PROJECT_DIRECTORY_PATH_TOKEN##\**\*.cs" Exclude="@(FoldersToExclude->'%(identity)\**\*.cs')" />
-    <!--<Content Include="$(ProjectGuid).csmap">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>-->
   </ItemGroup>
 </Project>
