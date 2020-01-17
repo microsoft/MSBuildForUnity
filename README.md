@@ -9,6 +9,7 @@ The samples included in this repository best convey the simplicity and value of 
 
 - [Simple NuGet Dependency Sample](Samples/SimpleNuGetDependency.Unity/README.md) - Showcases the simplest and most minimal usage of this component to pull in a dependency.
 - [Integrated Dependencies Sample](Samples/IntegratedDependencies.Unity/README.md) - Showcases the power of this component by relying on project generation.
+- [Cross Unity Dependencies Sample](Samples/CrossUnityDependencies.Unity/README.md) - Showcases how to establish a dependency between two Unity projects (almost like AsmDef-to-AsmDef).
 
 ### Builds and Packages
 
