@@ -100,7 +100,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             return Path.Combine(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.{MSBuildFileSuffix}.sln");
         }
-        
+
         ///<inherit-doc/>
         public void ExportProject(UnityProjectInfo unityProjectInfo, CSProjectInfo projectInfo)
         {
@@ -832,90 +832,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             }
         }
 
-        public void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration)
+        public IPlatformPropsExporter CreatePlatformPropsExporter(FileInfo path, string unityConfiguration, string unityPlatform, ScriptingBackend scriptingBackend)
         {
-            string configuration = inEditorConfiguration ? "InEditor" : "Player";
-
-            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.ScriptingBackend), out FileTemplate fileTemplate))
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(unityPlatform, unityConfiguration, scriptingBackend), out FileTemplate fileTemplate))
             {
                 throw new InvalidOperationException("Failed to parse template file for common props.");
             }
 
-            ITemplatePart rootPart = fileTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootPart.CreateReplacementSet();
-
-            if (inEditorConfiguration)
-            {
-                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalInEditorReferences),
-                    platform.CommonPlatformDefines.Concat(platform.AdditionalInEditorDefines));
-            }
-            else
-            {
-                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalPlayerReferences),
-                    platform.CommonPlatformDefines.Concat(platform.AdditionalPlayerDefines));
-            }
-
-            fileTemplate.Write(Path.Combine(generatedOutputFolder.FullName, $"{platform.Name}.{configuration}.props"), rootReplacementSet);
+            return new TemplatedPlatformPropsExporter(fileTemplate, path);
         }
 
-        private void ProcessPlatformTemplate(ITemplatePart rootPart, TemplateReplacementSet rootReplacementSet, string platformName, string configuration, BuildTarget buildTarget, TargetFramework targetFramework, IEnumerable<string> references, IEnumerable<string> defines, params HashSet<string>[] priorToCheck)
+        public IWSAPlayerPlatformPropsExporter CreateWSAPlayerPlatformPropsExporter(FileInfo path, ScriptingBackend scriptingBackend)
         {
-            ProcessReferences(buildTarget, references, out HashSet<string> platformAssemblySearchPaths, out HashSet<string> platformAssemblyReferencePaths, priorToCheck);
-
-            string minUWPPlatform = EditorUserBuildSettings.wsaMinUWPSDK;
-            if (string.IsNullOrWhiteSpace(minUWPPlatform) || new Version(minUWPPlatform) < MSBuildTools.DefaultMinUWPSDK)
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform("WSA", "Player", scriptingBackend), out FileTemplate fileTemplate))
             {
-                minUWPPlatform = MSBuildTools.DefaultMinUWPSDK.ToString();
+                throw new InvalidOperationException("Failed to parse template file for common props.");
             }
 
-            // This is a try replace because some may hardcode this value
-            rootPart.TryReplaceToken("TARGET_FRAMEWORK", rootReplacementSet, targetFramework.AsMSBuildString());
-
-            rootPart.Tokens["PLATFORM_COMMON_DEFINE_CONSTANTS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", defines));
-            rootPart.Tokens["PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", platformAssemblySearchPaths));
-
-            // These are UWP specific, but they will be no-op if not needed
-            if (buildTarget == BuildTarget.WSAPlayer && configuration == "Player")
-            {
-                string targetUWPPlatform = EditorUserBuildSettings.wsaUWPSDK;
-                if (string.IsNullOrWhiteSpace(targetUWPPlatform))
-                {
-                    targetUWPPlatform = Utilities.GetUWPSDKs().Max().ToString(4);
-                }
-                rootPart.TryReplaceToken("UWP_TARGET_PLATFORM_VERSION", rootReplacementSet, targetUWPPlatform);
-                rootPart.TryReplaceToken("UWP_MIN_PLATFORM_VERSION", rootReplacementSet, minUWPPlatform);
-            }
-
-            ITemplatePart platformCommonReferencePart = rootPart.Templates["PLATFORM_COMMON_REFERENCE"];
-            foreach (string reference in platformAssemblyReferencePaths)
-            {
-                TemplateReplacementSet replacementSet = platformCommonReferencePart.CreateReplacementSet(rootReplacementSet);
-                platformCommonReferencePart.Tokens["REFERENCE"].AssignValue(replacementSet, Path.GetFileNameWithoutExtension(reference));
-                platformCommonReferencePart.Tokens["HINT_PATH"].AssignValue(replacementSet, reference);
-            }
-        }
-
-        private void ProcessReferences(BuildTarget buildTarget, IEnumerable<string> references, out HashSet<string> searchPaths, out HashSet<string> referenceNames, params HashSet<string>[] priorToCheck)
-        {
-            searchPaths = new HashSet<string>();
-            referenceNames = new HashSet<string>();
-
-            foreach (string reference in references)
-            {
-                string directory = Path.GetDirectoryName(reference);
-                string fileName = Path.GetFileName(reference);
-                if (!priorToCheck.Any(t => t.Contains(directory))) // Don't add duplicates
-                {
-                    searchPaths.Add(directory);
-                }
-
-                if (!referenceNames.Add(reference))
-                {
-                    Debug.LogError($"Duplicate assembly reference found for platform '{buildTarget}' - {reference} ignoring.");
-                }
-            }
+            return new TemplatedWSAPlayerPlatformPropsExporter(fileTemplate, path);
         }
 
         private class ProjectConfigurationMapping

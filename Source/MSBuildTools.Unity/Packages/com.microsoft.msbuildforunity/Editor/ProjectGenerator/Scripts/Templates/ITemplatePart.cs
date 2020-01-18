@@ -42,7 +42,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         /// <param name="replacementSet">The replacement set where to encode the value.</param>
         /// <param name="value">The value to encode.</param>
         /// <returns>True if was able to locate the token.</returns>
-        public static bool TryReplaceToken(this ITemplatePart templatePart, string tokenName, TemplateReplacementSet replacementSet, string value)
+        public static bool TryReplaceToken(this ITemplatePart templatePart, string tokenName, TemplateReplacementSet replacementSet, object value)
         {
             if (templatePart.Tokens.TryGetValue(tokenName, out ITemplateToken templateToken))
             {

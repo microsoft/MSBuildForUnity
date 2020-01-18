@@ -16,52 +16,31 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         private const string GeneratedOutputDirectoryToken = "GENERATED_OUTPUT_DIRECTORY";
         private const string UnityProjectAssetsDirectoryToken = "UNITY_PROJECT_ASSETS_PATH";
 
-        private string unityMajorVersion;
-        private string unityMinorVersion;
-        private string currentUnityPlatform;
-        private string currentTargetFramework;
-        private DirectoryInfo unityProjectAssetsDirectory;
-        private DirectoryInfo generatedProjectOutputPath;
+        public string UnityMajorVersion { get; set; }
 
-        public string UnityMajorVersion
-        {
-            get => unityMajorVersion;
-            set => UpdateToken(ref unityMajorVersion, value, UnityMajorVersionToken);
-        }
+        public string UnityMinorVersion { get; set; }
 
-        public string UnityMinorVersion
-        {
-            get => unityMinorVersion;
-            set => UpdateToken(ref unityMinorVersion, value, UnityMinorVersionToken);
-        }
+        public string CurrentUnityPlatform { get; set; }
 
-        public string CurrentUnityPlatform
-        {
-            get => currentUnityPlatform;
-            set => UpdateToken(ref currentUnityPlatform, value, CurrentUnityPlatformToken);
-        }
+        public string CurrentTargetFramework { get; set; }
 
-        public string CurrentTargetFramework
-        {
-            get => currentTargetFramework;
-            set => UpdateToken(ref currentTargetFramework, value, CurrentTargetFrameworkToken);
-        }
+        public DirectoryInfo UnityProjectAssetsDirectory { get; set; }
 
-        public DirectoryInfo UnityProjectAssetsDirectory
-        {
-            get => unityProjectAssetsDirectory;
-            set => UpdateToken(ref unityProjectAssetsDirectory, value, UnityProjectAssetsDirectoryToken, t => t.FullName);
-        }
-
-        public DirectoryInfo GeneratedProjectOutputPath
-        {
-            get => generatedProjectOutputPath;
-            set => UpdateToken(ref generatedProjectOutputPath, value, GeneratedOutputDirectoryToken, t => t.FullName);
-        }
+        public DirectoryInfo GeneratedProjectOutputPath { get; set; }
 
         internal TemplatedCommonPropsExporter(FileTemplate fileTemplate, FileInfo exportPath)
             : base(fileTemplate, exportPath)
         {
+        }
+
+        protected override void Export(TemplatedWriter writer)
+        {
+            writer.Write(UnityMajorVersionToken, UnityMajorVersion);
+            writer.Write(UnityMinorVersionToken, UnityMinorVersion);
+            writer.Write(CurrentUnityPlatformToken, CurrentUnityPlatform);
+            writer.Write(CurrentTargetFrameworkToken, CurrentTargetFramework);
+            writer.Write(UnityProjectAssetsDirectoryToken, UnityProjectAssetsDirectory.FullName);
+            writer.Write(GeneratedOutputDirectoryToken, GeneratedProjectOutputPath.FullName);
         }
     }
 }
