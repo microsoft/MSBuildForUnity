@@ -50,10 +50,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private const string YamlPrefix = "%YAML 1.1";
 
+        private const string InEditorOutputFolderSuffix = "InEditor";
+        private const string WSAPlayerOutputFolder = "WSAPlayer";
+        private const string StandalonePlayerOutputFolder = "WindowsStandalone32Player";
+        private const string AndroidPlayerOutputFolder = "AndroidPlayer";
+        private const string iOSPlayerOutputFolder = "iOSPlayer";
         private static readonly Dictionary<string, string> sourceToOutputFolders = new Dictionary<string, string>
         {
-            { "MSBuild/Publish/Player/WSA", "UAPPlayer" },
-            { "MSBuild/Publish/Player/WindowsStandalone32", "StandalonePlayer" },
+            { "MSBuild/Publish/InEditor/WSA", $"WSA{InEditorOutputFolderSuffix}" },
+            { "MSBuild/Publish/Player/WSA", WSAPlayerOutputFolder },
+            { "MSBuild/Publish/InEditor/WindowsStandalone32", $"WindowsStandalone32{InEditorOutputFolderSuffix}" },
+            { "MSBuild/Publish/Player/WindowsStandalone32", StandalonePlayerOutputFolder },
+            { "MSBuild/Publish/InEditor/Android", $"Android{InEditorOutputFolderSuffix}" },
+            { "MSBuild/Publish/Player/Android", AndroidPlayerOutputFolder },
+            { "MSBuild/Publish/InEditor/iOS", $"iOS{InEditorOutputFolderSuffix}" },
+            { "MSBuild/Publish/Player/iOS", iOSPlayerOutputFolder },
         };
 
         private static readonly HashSet<string> ExcludedYamlAssetExtensions = new HashSet<string> { ".jpg", ".csv", ".meta", ".pfx", ".txt", ".nuspec", ".asmdef", ".yml", ".cs", ".md", ".json", ".ttf", ".png", ".shader", ".wav", ".bin", ".gltf", ".glb", ".fbx", ".pdf", ".cginc", ".rsp", ".xml", ".targets", ".props", ".template", ".csproj", ".sln", ".psd", ".room" };
@@ -92,7 +103,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // DLL name to Guid
             Dictionary<string, string> asmDefMappings = RetrieveAsmDefGuids(allFilesUnderAssets);
 
-            Dictionary<string, AssemblyInformation> compiledClassReferences = ProcessCompiledDLLs("PackagedAssemblies", Application.dataPath.Replace("Assets", "NuGet/Plugins/EditorPlayer"), asmDefMappings);
+            Dictionary<string, AssemblyInformation> compiledClassReferences = ProcessCompiledDLLs("PackagedAssemblies", Application.dataPath.Replace("Assets", $"NuGet/Plugins/WindowsStandalone32{InEditorOutputFolderSuffix}"), asmDefMappings);
             Debug.Log($"Found {compiledClassReferences.Select(t => t.Value.CompiledClasses.Count).Sum()} compiled class references.");
 
             Dictionary<string, Tuple<string, long>> remapDictionary = new Dictionary<string, Tuple<string, long>>();
@@ -288,10 +299,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 {
                     Object[] allAssets = AssetDatabase.LoadAllAssetsAtPath(filePath.Substring(lengthOfPrefix));
                     IEnumerable<MonoScript> allScripts = allAssets.Cast<MonoScript>();
-                    if (allAssets.Length > 1)
-                    {
-                        Debug.Log("Test");
-                    }
 
                     foreach (MonoScript monoScript in allScripts)
                     {
@@ -484,18 +491,30 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 throw new FileNotFoundException("Could not find sample editor dll.meta template.");
             }
 
-            if (!TemplateFiles.Instance.PluginMetaTemplatePaths.TryGetValue(BuildTargetGroup.WSA, out FileInfo uapMetaFile))
+            if (!TemplateFiles.Instance.PluginMetaTemplatePaths.TryGetValue(BuildTargetGroup.WSA, out FileInfo wsaMetaFile))
             {
-                throw new FileNotFoundException("Could not find sample editor dll.meta template.");
+                throw new FileNotFoundException("Could not find sample wsa dll.meta template.");
+            }
+
+            if (!TemplateFiles.Instance.PluginMetaTemplatePaths.TryGetValue(BuildTargetGroup.Android, out FileInfo androidMetaFile))
+            {
+                throw new FileNotFoundException("Could not find sample android dll.meta template.");
+            }
+
+            if (!TemplateFiles.Instance.PluginMetaTemplatePaths.TryGetValue(BuildTargetGroup.iOS, out FileInfo iOSMetaFile))
+            {
+                throw new FileNotFoundException("Could not find sample iOS dll.meta template.");
             }
 
             if (!TemplateFiles.Instance.PluginMetaTemplatePaths.TryGetValue(BuildTargetGroup.Standalone, out FileInfo standaloneMetaFile))
             {
-                throw new FileNotFoundException("Could not find sample editor dll.meta template.");
+                throw new FileNotFoundException("Could not find sample standalone dll.meta template.");
             }
 
             string editorMetaFileTemplate = File.ReadAllText(editorMetaFile.FullName);
-            string uapMetaFileTemplate = File.ReadAllText(uapMetaFile.FullName);
+            string wsaMetaFileTemplate = File.ReadAllText(wsaMetaFile.FullName);
+            string androidMetaFileTemplate = File.ReadAllText(androidMetaFile.FullName);
+            string iOSMetaFileTemplate = File.ReadAllText(iOSMetaFile.FullName);
             string standaloneMetaFileTemplate = File.ReadAllText(standaloneMetaFile.FullName);
 
             Dictionary<AssemblyInformation, FileInfo[]> mappings = new DirectoryInfo(Application.dataPath.Replace("Assets", "NuGet/Plugins"))
@@ -507,60 +526,61 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             foreach (KeyValuePair<AssemblyInformation, FileInfo[]> mapping in mappings)
             {
-                //Editor is guid + 1; which has done when we processed Editor DLLs
-                //Standalone is guid + 2
-                //UAP is guid + 3
-                //Editor PDB is + 4
-                //Standalone PDB is +5
-                //UAP PDB is +6
+                // Note: this is a weird order but has been maintained for an attempt at back compatibility.
+                // Editor is guid + 1; which will have already been applied
+                // Standalone is guid + 2
+                // WSA is guid + 3
+                // Editor PDB is + 4
+                // Standalone PDB is + 5
+                // WSA PDB is + 6
+                // Android is + 7
+                // Android PDB is + 8
+                // iOS is + 9
+                // iOS PDB is + 10
+
                 string templateToUse = editorMetaFileTemplate;
                 foreach (FileInfo file in mapping.Value)
                 {
+                    // The first guid increment happened in RetrieveAsmDefGuids, so our increment value will be one less than specified above.
+                    int increment = 0;
+
+                    if (file.DirectoryName.EndsWith(InEditorOutputFolderSuffix))
+                    {
+                        templateToUse = editorMetaFileTemplate;
+                        increment = file.Extension.Equals(".dll") ? 0 : 3;
+                    }
+                    else if (file.DirectoryName.EndsWith(StandalonePlayerOutputFolder))
+                    {
+                        templateToUse = standaloneMetaFileTemplate;
+                        increment = file.Extension.Equals(".dll") ? 1 : 4;
+                    }
+                    else if (file.DirectoryName.EndsWith(WSAPlayerOutputFolder))
+                    {
+                        templateToUse = wsaMetaFileTemplate;
+                        increment = file.Extension.Equals(".dll") ? 2 : 5;
+                    }
+                    else if (file.DirectoryName.EndsWith(AndroidPlayerOutputFolder))
+                    {
+                        templateToUse = androidMetaFileTemplate;
+                        increment = file.Extension.Equals(".dll") ? 6 : 7;
+                    }
+                    else if (file.DirectoryName.EndsWith(iOSPlayerOutputFolder))
+                    {
+                        templateToUse = iOSMetaFileTemplate;
+                        increment = file.Extension.Equals(".dll") ? 8 : 9;
+                    }
+                    else
+                    {
+                        Debug.LogError($"Failed to create meta file! Meta file template was not found for file: {file.FullName}");
+                        continue;
+                    }
+
                     string dllGuid = mapping.Key.Guid;
-                    // First cycle happens in RetrieveAsmDefGuids
-                    // dllGuid = CycleGuidForward(dllGuid);
-
-                    if (file.Extension.Equals(".dll") && file.DirectoryName.EndsWith("EditorPlayer"))
+                    for (int i = 0; i < increment; i++)
                     {
-                        goto WriteMeta;
+                        dllGuid = CycleGuidForward(dllGuid);
                     }
 
-                    dllGuid = CycleGuidForward(dllGuid);
-
-                    if (file.Extension.Equals(".dll") && file.DirectoryName.EndsWith("Standalone"))
-                    {
-                        templateToUse = standaloneMetaFileTemplate;
-                        goto WriteMeta;
-                    }
-
-                    dllGuid = CycleGuidForward(dllGuid);
-
-                    if (file.Extension.Equals(".dll") && file.DirectoryName.EndsWith("UAP"))
-                    {
-                        templateToUse = uapMetaFileTemplate;
-                        goto WriteMeta;
-                    }
-
-                    if (file.DirectoryName.EndsWith("EditorPlayer"))
-                    {
-                        goto WriteMeta;
-                    }
-
-                    dllGuid = CycleGuidForward(dllGuid);
-
-                    if (file.DirectoryName.EndsWith("Standalone"))
-                    {
-                        templateToUse = standaloneMetaFileTemplate;
-                        goto WriteMeta;
-                    }
-
-                    templateToUse = uapMetaFileTemplate;
-                    dllGuid = CycleGuidForward(dllGuid);
-
-                    // if (file.DirectoryName.EndsWith("UAP"))
-                    // Just fall through
-
-                    WriteMeta:
                     string metaFilePath = $"{file.FullName}.meta";
                     File.WriteAllText(metaFilePath, ProcessMetaTemplate(templateToUse, dllGuid, mapping.Key.ExecutionOrderEntries));
                 }
