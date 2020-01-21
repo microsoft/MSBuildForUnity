@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
@@ -10,12 +10,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
+namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
     /// <summary>
     /// This interface exposes teh APIs for exporting projects.
     /// </summary>
-    public class TemplatedProjectExporter : IProjectExporter
+    public class TemplatedUnityProjectExporter : IUnityProjectExporter
     {
         private const string MSBuildFileSuffix = "msb4u";
         private static readonly Guid FolderProjectTypeGuid = Guid.Parse("2150E333-8FDC-42A3-9474-1A3956D46DE8");
@@ -40,7 +40,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         private readonly FileTemplate dependenciesTargetsTemplate;
 
         /// <summary>
-        /// Creates a new instance of the template driven <see cref="IProjectExporter"/>.
+        /// Creates a new instance of the template driven <see cref="IUnityProjectExporter"/>.
         /// </summary>
         /// <param name="generatedOutputFolder">The output folder for the projects and props.</param>
         /// <param name="solutionFileTemplatePath">The path to the solution template.</param>
@@ -52,7 +52,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="dependenciesProjectTemplatePath">Path to the dependencies project template file.</param>
         /// <param name="dependenciesPropsTemplatePath">Path to the dependencies props template file.</param>
         /// <param name="dependenciesTargetsTemplatePath">Path to the dependencies targets template file.</param>
-        public TemplatedProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
+        public TemplatedUnityProjectExporter(DirectoryInfo generatedOutputFolder, FileInfo solutionFileTemplatePath, FileInfo projectFileTemplatePath, FileInfo generatedProjectFileTemplatePath, FileInfo projectPropsFileTemplatePath, FileInfo projectTargetsFileTemplatePath, FileInfo msbuildForUnityCommonTemplatePath, FileInfo dependenciesProjectTemplatePath, FileInfo dependenciesPropsTemplatePath, FileInfo dependenciesTargetsTemplatePath)
         {
             this.generatedOutputFolder = generatedOutputFolder;
 
@@ -176,7 +176,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             rootTemplatePart.Tokens["SUPPORTED_PLATFORMS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", unityProjectInfo.AvailablePlatforms.Select(t => t.Name)));
             rootTemplatePart.Tokens["INEDITOR_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", inEditorSearchPaths));
             rootTemplatePart.Tokens["PLAYER_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", playerSearchPaths));
-            rootTemplatePart.Tokens["PLATFORM_PROPS_FOLDER_PATH"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
             rootTemplatePart.Tokens["PROJECT_DIRECTORY_PATH"].AssignValue(rootReplacementSet, projectInfo.AssemblyDefinitionInfo.Directory.FullName);
 
             string propsFilePath = projectPath.Replace("csproj", "g.props");
@@ -203,24 +202,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             return true;
         }
 
-        public void GenerateDirectoryPropsFile(UnityProjectInfo unityProjectInfo)
+        public ICommonPropsExporter CreateCommonPropsExporter(FileInfo path)
         {
-            string outputPath = Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props");
-
-            ITemplatePart rootTemplate = msbuildForUnityCommonTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootTemplate.CreateReplacementSet(null);
-
-            rootTemplate.Tokens["GENERATED_OUTPUT_DIRECTORY"].AssignValue(rootReplacementSet, generatedOutputFolder.FullName);
-            rootTemplate.Tokens["UNITY_PROJECT_ASSETS_PATH"].AssignValue(rootReplacementSet, Path.GetFullPath(Application.dataPath));
-
-            rootTemplate.Tokens["CURRENT_UNITY_PLATFORM"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.Name);
-            rootTemplate.Tokens["CURRENT_TARGET_FRAMEWORK"].AssignValue(rootReplacementSet, unityProjectInfo.CurrentPlayerPlatform.TargetFramework.AsMSBuildString());
-
-            string[] versionParts = Application.unityVersion.Split('.');
-            rootTemplate.Tokens["UNITY_MAJOR_VERSION"].AssignValue(rootReplacementSet, versionParts[0]);
-            rootTemplate.Tokens["UNITY_MINOR_VERSION"].AssignValue(rootReplacementSet, versionParts[1]);
-
-            msbuildForUnityCommonTemplate.Write(outputPath, rootReplacementSet);
+            return new TemplatedCommonPropsExporter(msbuildForUnityCommonTemplate, path);
         }
 
         ///<inherit-doc/>
@@ -318,38 +302,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             templatePart.Tokens["PROPERTY"].AssignValue(replacementSet, property);
             templatePart.Tokens["PROJECT_CONFIGURATION"].AssignValue(replacementSet, projConfiguration);
             templatePart.Tokens["PROJECT_PLATFORM"].AssignValue(replacementSet, projPlatform);
-        }
-
-        private class ProjectConfigurationMapping
-        {
-            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
-
-            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
-
-            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
-            {
-                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
-                {
-                    propertySet.Add(configPair, set = new HashSet<string>());
-                }
-
-                return set;
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
-            {
-                AddConfigurationMapping(configMapping, configMapping, properties);
-            }
-
-            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
-            {
-                Mappings[solutionMapping] = projectMapping;
-                HashSet<string> set = GetPropertySet(solutionMapping);
-                foreach (string property in properties)
-                {
-                    set.Add(property);
-                }
-            }
         }
 
         private void ProcessMappings(ITemplatePart configPlatformPropertyTemplate, TemplateReplacementSet rootReplacementSet, IEnumerable<Guid> projectOrdering, Dictionary<Guid, ProjectConfigurationMapping> projectConfigMapping)
@@ -880,88 +832,54 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        public void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration)
+        public IPlatformPropsExporter CreatePlatformPropsExporter(FileInfo path, string unityConfiguration, string unityPlatform, ScriptingBackend scriptingBackend)
         {
-            string configuration = inEditorConfiguration ? "InEditor" : "Player";
-
-            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(platform.Name, configuration, platform.ScriptingBackend), out FileTemplate fileTemplate))
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform(unityPlatform, unityConfiguration, scriptingBackend), out FileTemplate fileTemplate))
             {
                 throw new InvalidOperationException("Failed to parse template file for common props.");
             }
 
-            ITemplatePart rootPart = fileTemplate.Root;
-            TemplateReplacementSet rootReplacementSet = rootPart.CreateReplacementSet();
-
-            if (inEditorConfiguration)
-            {
-                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalInEditorReferences),
-                    platform.CommonPlatformDefines.Concat(platform.AdditionalInEditorDefines));
-            }
-            else
-            {
-                ProcessPlatformTemplate(rootPart, rootReplacementSet, platform.Name, configuration, platform.BuildTarget, platform.TargetFramework,
-                    platform.CommonPlatformReferences.Concat(platform.AdditionalPlayerReferences),
-                    platform.CommonPlatformDefines.Concat(platform.AdditionalPlayerDefines));
-            }
-
-            fileTemplate.Write(Path.Combine(generatedOutputFolder.FullName, $"{platform.Name}.{configuration}.props"), rootReplacementSet);
+            return new TemplatedPlatformPropsExporter(fileTemplate, path);
         }
 
-        private void ProcessPlatformTemplate(ITemplatePart rootPart, TemplateReplacementSet rootReplacementSet, string platformName, string configuration, BuildTarget buildTarget, TargetFramework targetFramework, IEnumerable<string> references, IEnumerable<string> defines, params HashSet<string>[] priorToCheck)
+        public IWSAPlayerPlatformPropsExporter CreateWSAPlayerPlatformPropsExporter(FileInfo path, ScriptingBackend scriptingBackend)
         {
-            ProcessReferences(buildTarget, references, out HashSet<string> platformAssemblySearchPaths, out HashSet<string> platformAssemblyReferencePaths, priorToCheck);
-
-            string minUWPPlatform = EditorUserBuildSettings.wsaMinUWPSDK;
-            if (string.IsNullOrWhiteSpace(minUWPPlatform) || new Version(minUWPPlatform) < MSBuildTools.DefaultMinUWPSDK)
+            if (!FileTemplate.TryParseTemplate(TemplateFiles.Instance.GetTemplateFilePathForPlatform("WSA", "Player", scriptingBackend), out FileTemplate fileTemplate))
             {
-                minUWPPlatform = MSBuildTools.DefaultMinUWPSDK.ToString();
+                throw new InvalidOperationException("Failed to parse template file for common props.");
             }
 
-            // This is a try replace because some may hardcode this value
-            rootPart.TryReplaceToken("TARGET_FRAMEWORK", rootReplacementSet, targetFramework.AsMSBuildString());
-
-            rootPart.Tokens["PLATFORM_COMMON_DEFINE_CONSTANTS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", defines));
-            rootPart.Tokens["PLATFORM_COMMON_ASSEMBLY_SEARCH_PATHS"].AssignValue(rootReplacementSet, new DelimitedStringSet(";", platformAssemblySearchPaths));
-
-            // These are UWP specific, but they will be no-op if not needed
-            if (buildTarget == BuildTarget.WSAPlayer && configuration == "Player")
-            {
-                string targetUWPPlatform = EditorUserBuildSettings.wsaUWPSDK;
-                if (string.IsNullOrWhiteSpace(targetUWPPlatform))
-                {
-                    targetUWPPlatform = Utilities.GetUWPSDKs().Max().ToString(4);
-                }
-                rootPart.TryReplaceToken("UWP_TARGET_PLATFORM_VERSION", rootReplacementSet, targetUWPPlatform);
-                rootPart.TryReplaceToken("UWP_MIN_PLATFORM_VERSION", rootReplacementSet, minUWPPlatform);
-            }
-
-            ITemplatePart platformCommonReferencePart = rootPart.Templates["PLATFORM_COMMON_REFERENCE"];
-            foreach (string reference in platformAssemblyReferencePaths)
-            {
-                TemplateReplacementSet replacementSet = platformCommonReferencePart.CreateReplacementSet(rootReplacementSet);
-                platformCommonReferencePart.Tokens["REFERENCE"].AssignValue(replacementSet, Path.GetFileNameWithoutExtension(reference));
-                platformCommonReferencePart.Tokens["HINT_PATH"].AssignValue(replacementSet, reference);
-            }
+            return new TemplatedWSAPlayerPlatformPropsExporter(fileTemplate, path);
         }
 
-        private void ProcessReferences(BuildTarget buildTarget, IEnumerable<string> references, out HashSet<string> searchPaths, out HashSet<string> referenceNames, params HashSet<string>[] priorToCheck)
+        private class ProjectConfigurationMapping
         {
-            searchPaths = new HashSet<string>();
-            referenceNames = new HashSet<string>();
+            private readonly Dictionary<ConfigPlatformPair, HashSet<string>> propertySet = new Dictionary<ConfigPlatformPair, HashSet<string>>();
 
-            foreach (string reference in references)
+            public SortedDictionary<ConfigPlatformPair, ConfigPlatformPair> Mappings { get; } = new SortedDictionary<ConfigPlatformPair, ConfigPlatformPair>(ConfigPlatformPair.Comparer.Instance);
+
+            public HashSet<string> GetPropertySet(ConfigPlatformPair configPair)
             {
-                string directory = Path.GetDirectoryName(reference);
-                string fileName = Path.GetFileName(reference);
-                if (!priorToCheck.Any(t => t.Contains(directory))) // Don't add duplicates
+                if (!propertySet.TryGetValue(configPair, out HashSet<string> set))
                 {
-                    searchPaths.Add(directory);
+                    propertySet.Add(configPair, set = new HashSet<string>());
                 }
 
-                if (!referenceNames.Add(reference))
+                return set;
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair configMapping, params string[] properties)
+            {
+                AddConfigurationMapping(configMapping, configMapping, properties);
+            }
+
+            public void AddConfigurationMapping(ConfigPlatformPair solutionMapping, ConfigPlatformPair projectMapping, params string[] properties)
+            {
+                Mappings[solutionMapping] = projectMapping;
+                HashSet<string> set = GetPropertySet(solutionMapping);
+                foreach (string property in properties)
                 {
-                    Debug.LogError($"Duplicate assembly reference found for platform '{buildTarget}' - {reference} ignoring.");
+                    set.Add(property);
                 }
             }
         }
