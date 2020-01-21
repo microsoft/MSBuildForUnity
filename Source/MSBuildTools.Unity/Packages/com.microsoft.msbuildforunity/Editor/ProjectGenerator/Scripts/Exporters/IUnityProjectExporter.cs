@@ -46,11 +46,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         ICommonPropsExporter CreateCommonPropsExporter(FileInfo path);
 
         /// <summary>
-        /// Exports the Common props file based on the given compilation platform and whether to export it as an In-Editor flavor vs Player.
+        /// Creates the platform props file exporter.
         /// </summary>
-        /// <param name="platform">The platform to export.</param>
-        /// <param name="inEditorConfiguration">True if this is an In-Editor flavor, false otherwise.</param>
-        void ExportPlatformPropsFile(CompilationPlatformInfo platform, bool inEditorConfiguration);
+        /// <param name="path">The <see cref="FileInfo"/> representing where this props file will be written.</param>
+        /// <param name="unityConfiguration">The configuration for the platform props.</param>
+        /// <param name="unityPlatform">The unity platform for the platform props.</param>
+        /// <param name="scriptingBackend">The scripting backend for the platform props.</param>
+        IPlatformPropsExporter CreatePlatformPropsExporter(FileInfo path, string unityConfiguration, string unityPlatform, ScriptingBackend scriptingBackend);
+
+        /// <summary>
+        /// Creates the specialized platform props file exporter for Player|WSA combination.
+        /// </summary>
+        /// <param name="path">The <see cref="FileInfo"/> representing where this props file will be written.</param>
+        /// <param name="scriptingBackend">The scripting backend for the platform props.</param>
+        IWSAPlayerPlatformPropsExporter CreateWSAPlayerPlatformPropsExporter(FileInfo path, ScriptingBackend scriptingBackend);
     }
 }
 #endif

@@ -10,13 +10,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     /// <summary>
     /// Base class for file based exporters.
     /// </summary>
-    internal class TemplatedExporterBase : TemplatedExporterPart
+    internal abstract class TemplatedExporterBase
     {
         private readonly FileTemplate templateFile;
         private readonly FileInfo exportPath;
 
         protected TemplatedExporterBase(FileTemplate templateFile, FileInfo exportPath)
-            : base(templateFile.Root, templateFile.Root.CreateReplacementSet())
         {
             this.templateFile = templateFile;
             this.exportPath = exportPath;
@@ -30,8 +29,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             // Ensure the parent directories are created
             Directory.CreateDirectory(exportPath.Directory.FullName);
 
+            TemplateReplacementSet replacementSet = templateFile.Root.CreateReplacementSet();
+
+            Export(new TemplatedWriter(templateFile.Root, replacementSet));
+
             templateFile.Write(exportPath.FullName, replacementSet);
         }
+
+        /// <summary>
+        /// Override this method in a derived class to perform the export.
+        /// </summary>
+        /// <param name="writer">The writer to use to export.</param>
+        protected abstract void Export(TemplatedWriter writer);
     }
 }
 #endif

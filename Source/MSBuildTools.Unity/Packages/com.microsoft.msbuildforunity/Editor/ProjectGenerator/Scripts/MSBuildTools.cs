@@ -296,7 +296,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
             if (shouldClean || !doesTokenFileExist)
             {
-                ExportCommonPropsFile(Exporter, CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, CurrentPlayerPlatform);
             }
 
             // We regenerate everything if:
@@ -328,12 +328,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             foreach (CompilationPlatformInfo platform in UnityProject.AvailablePlatforms)
             {
                 // Check for specialized template, otherwise get the common one
-                Exporter.ExportPlatformPropsFile(platform, true);
-                Exporter.ExportPlatformPropsFile(platform, false);
+                MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, platform, true);
+                MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, platform, false);
             }
 
-            Exporter.ExportPlatformPropsFile(UnityProject.EditorPlatform, true);
+            MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, UnityProject.EditorPlatform, true);
         }
+
 
         private static void RegenerateEverything(bool reparseUnityData)
         {
@@ -365,7 +366,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
-                ExportCommonPropsFile(Exporter, UnityProject.CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, UnityProject.CurrentPlayerPlatform);
                 ExportCoreUnityPropFiles();
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
 
@@ -389,23 +390,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 stopwatch.Stop();
                 Debug.Log($"Whole Generate Projects process took {stopwatch.ElapsedMilliseconds} ms; actual generation took {stopwatch.ElapsedMilliseconds - postCleanupAndCopyStamp}; solution export: {solutionExportEnd - solutionExportStart}; exporter creation: {exporterEnd - exporterStart}; props file generation: {propsFileGenerationEnd - propsFileGenerationStart}");
             }
-        }
-
-        private static void ExportCommonPropsFile(IUnityProjectExporter exporter, CompilationPlatformInfo currentPlayerPlatform)
-        {
-            ICommonPropsExporter propsExporter = exporter.CreateCommonPropsExporter(new FileInfo(Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props")));
-
-            string[] versionParts = Application.unityVersion.Split('.');
-            propsExporter.UnityMajorVersion = versionParts[0];
-            propsExporter.UnityMinorVersion = versionParts[1];
-
-            propsExporter.GeneratedProjectOutputPath = new DirectoryInfo(Utilities.MSBuildOutputFolder);
-            propsExporter.UnityProjectAssetsDirectory = new DirectoryInfo(Utilities.AssetPath);
-
-            propsExporter.CurrentTargetFramework = currentPlayerPlatform.TargetFramework.AsMSBuildString();
-            propsExporter.CurrentUnityPlatform = currentPlayerPlatform.Name;
-
-            propsExporter.Write();
         }
 
         private static void GenerateBuildProjectsFile(string fileName, string solutionPath, IEnumerable<CompilationPlatformInfo> compilationPlatforms)

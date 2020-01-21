@@ -247,6 +247,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
+        /// Helper extension method to add all items to a collection.
+        /// </summary>
+        /// <typeparam name="T">Type of item.</typeparam>
+        /// <param name="collection">Collection to add items to.</param>
+        /// <param name="items">The items to add.</param>
+        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
+        {
+            foreach (T item in items)
+            {
+                collection.Add(item);
+            }
+        }
+
+        /// <summary>
         /// A helper to check whether a DLL is a managed assembly.
         /// </summary>
         /// <param name="assemblyPath">The path to the assembly.</param>
