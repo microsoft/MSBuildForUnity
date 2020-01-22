@@ -67,7 +67,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
             propsWriter.Export(propsExportPath);
 
-            new TemplatedWriter(primaryTemplateFile).Export(primaryExportPath);
+            // Don't overwrite primary export path, as that is the file that is allowed to be edited
+            if (!File.Exists(primaryExportPath.FullName))
+            {
+                new TemplatedWriter(primaryTemplateFile).Export(primaryExportPath);
+            }
             new TemplatedWriter(targetsTemplateFile).Export(targetsExportPath);
         }
     }
