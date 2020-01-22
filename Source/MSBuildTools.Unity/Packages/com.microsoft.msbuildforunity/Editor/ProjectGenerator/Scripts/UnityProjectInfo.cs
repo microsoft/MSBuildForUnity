@@ -16,7 +16,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
     /// </summary>
-    public class UnityProjectInfo : IDisposable
+    public class UnityProjectInfo
     {
         /// <summary>
         /// These package references aren't actual packages it appears, manually labeling them for exclusion.
@@ -126,11 +126,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
-        public void Dispose()
-        {
-            // This will be used soon
-        }
-
         public void RefreshPlugins(bool performCompleteParse)
         {
             List<PluginAssemblyInfo> plugins = new List<PluginAssemblyInfo>();
@@ -160,14 +155,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(plugins);
                 WinMDs = new ReadOnlyCollection<WinMDInfo>(winmds);
 
-                foreach (PluginAssemblyInfo plugin in Plugins)
-                {
-                    if (plugin.Type == PluginType.Native)
-                    {
-                        // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
-                        // Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
-                    }
-                }
+                // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
+                //foreach (PluginAssemblyInfo plugin in Plugins)
+                //{
+                //    if (plugin.Type == PluginType.Native)
+                //    {
+                //        Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
+                //    }
+                //}
             }
 
             ExistingCSProjects = new ReadOnlyCollection<string>(existingCSProjectFiles);

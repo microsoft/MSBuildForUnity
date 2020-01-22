@@ -233,7 +233,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void RegenerateSDKProjects()
         {
-            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, true));
+            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, performCompleteParse: true));
             Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
         }
 
@@ -370,7 +370,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
                 Exporter.ExportSolution(unityProjectInfo, Config);
-                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
+                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo); 
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)

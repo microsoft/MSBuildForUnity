@@ -21,11 +21,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// </summary>
         public string Condition { get; set; }
 
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return ReferencePath?.GetHashCode() ?? 0;
         }
 
+        /// <inheritdoc/>
         public override bool Equals(object obj)
         {
             return obj is ProjectReference other && Equals(ReferencePath, other.ReferencePath);
