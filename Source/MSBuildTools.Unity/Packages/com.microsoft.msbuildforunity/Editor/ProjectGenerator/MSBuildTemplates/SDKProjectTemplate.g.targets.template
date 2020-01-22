@@ -8,6 +8,16 @@
   <!--IMPORT SDK.targets-->
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
+  <!-- Override Package/Project References to not have the default private assets-->
+  <ItemGroup>
+    <PackageReference Update="@(PackageReference)">
+      <PrivateAssets>analyzers</PrivateAssets>
+    </PackageReference>
+    <ProjectReference Update="@(ProjectReference)">
+      <PrivateAssets>none</PrivateAssets>
+    </ProjectReference>
+  </ItemGroup>
+
   <!-- Propagate info about this project through-->
   <PropertyGroup>
     <_GenerateRestoreGraphProjectEntryInputProperties>UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropagateProperties);$(_GenerateRestoreGraphProjectEntryInputProperties)</_GenerateRestoreGraphProjectEntryInputProperties>
