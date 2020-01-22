@@ -31,7 +31,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         private static readonly Dictionary<string, string> ProjectAliases = new Dictionary<string, string>()
         {
-            { "Unity.ugui", "UnityEngine.UI" }
+            { "Unity.ugui", "UnityEngine.UI" },
+            { "Unity.ugui.Editor", "UnityEditor.UI" }
         };
 
         /// <summary>
