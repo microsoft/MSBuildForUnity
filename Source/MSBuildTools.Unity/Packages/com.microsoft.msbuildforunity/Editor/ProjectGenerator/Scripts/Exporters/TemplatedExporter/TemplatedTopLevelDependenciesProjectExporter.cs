@@ -20,6 +20,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         private const string ProjectReferenceTemplate_ReferenceToken = "REFERENCE";
         private const string ProjectReferenceTemplate_ConditionToken = "CONDITION";
 
+        private const string PrivateReferenceTemplate = "PRIVATE_REFERENCE";
+
         private readonly FileTemplate primaryTemplateFile;
         private readonly FileTemplate propsTemplateFile;
         private readonly FileTemplate targetsTemplateFile;
@@ -55,6 +57,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
                 TemplatedWriter referenceWriter = propsWriter.CreateWriterFor(ProjectReferenceTemplate);
                 referenceWriter.Write(ProjectReferenceTemplate_ReferenceToken, projectReference.ReferencePath.LocalPath);
                 referenceWriter.Write(ProjectReferenceTemplate_ConditionToken, projectReference.Condition ?? string.Empty);
+
+                if (projectReference.IsGenerated)
+                {
+                    // Creating this is sufficient for the template to be included in the output
+                    referenceWriter.CreateWriterFor(PrivateReferenceTemplate);
+                }
             }
 
             propsWriter.Export(propsExportPath);

@@ -21,6 +21,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// </summary>
         public string Condition { get; set; }
 
+        /// <summary>
+        /// Whether this is an MSBuildForUnity reference or not.
+        /// </summary>
+        public bool IsGenerated { get; set; }
+
         /// <inheritdoc/>
         public override int GetHashCode()
         {

@@ -85,25 +85,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             projectExporter.Guid = config.DependenciesProjectGuid;
 
-            if (unityProjectInfo != null)
+            Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
+            foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
             {
-                Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
-                foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
+                List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
+                projectExporter.References.Add(new ProjectReference()
                 {
-                    List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
-                    projectExporter.References.Add(new ProjectReference()
-                    {
-                        ReferencePath = new Uri(GetProjectPath(projectInfo, generatedProjectFolder).FullName),
-                        Condition = platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions)
-                    });
-                }
+                    ReferencePath = new Uri(GetProjectPath(projectInfo, generatedProjectFolder).FullName),
+                    Condition = platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions),
+                    IsGenerated = true
+                });
             }
 
             foreach (string otherProjectFile in unityProjectInfo.ExistingCSProjects)
             {
                 projectExporter.References.Add(new ProjectReference()
                 {
-                    ReferencePath = new Uri(otherProjectFile)
+                    ReferencePath = new Uri(otherProjectFile),
+                    IsGenerated = false
                 });
             }
 

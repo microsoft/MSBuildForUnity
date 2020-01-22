@@ -38,7 +38,7 @@
   <ItemGroup>
     <!--PROJECT_REFERENCE_TEMPLATE_START-->
     <ProjectReference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
-        <Private>false</Private>
+        <!--PRIVATE_REFERENCE_TEMPLATE_START--><Private>false</Private><!--PRIVATE_REFERENCE_TEMPLATE_END-->
     </ProjectReference>
     <!--PROJECT_REFERENCE_TEMPLATE_END-->
   </ItemGroup>
