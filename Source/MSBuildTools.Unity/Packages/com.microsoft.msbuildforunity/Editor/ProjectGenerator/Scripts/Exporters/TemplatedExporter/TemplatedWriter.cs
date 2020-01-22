@@ -3,7 +3,9 @@
 
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Templates;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
@@ -12,14 +14,21 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     /// </summary>
     internal ref struct TemplatedWriter
     {
+        private readonly FileTemplate fileTemplate;
         private readonly ITemplatePart template;
         private readonly TemplateReplacementSet replacementSet;
 
         /// <summary>
         /// Creates a new instance of the writer.
         /// </summary>
-        internal TemplatedWriter(ITemplatePart template, TemplateReplacementSet replacementSet)
+        internal TemplatedWriter(FileTemplate fileTemplate)
+            : this(fileTemplate, fileTemplate.Root, fileTemplate.Root.CreateReplacementSet())
         {
+        }
+
+        private TemplatedWriter(FileTemplate fileTemplate, ITemplatePart template, TemplateReplacementSet replacementSet)
+        {
+            this.fileTemplate = fileTemplate;
             this.template = template;
             this.replacementSet = replacementSet;
         }
@@ -47,6 +56,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             Write(token, (object)value, optional);
         }
 
+        internal void Export(FileInfo exportPath)
+        {
+            if (fileTemplate == null)
+            {
+                throw new InvalidOperationException("Export must be called on the root templated writer.");
+            }
+
+            // Ensure the parent directories are created
+            Directory.CreateDirectory(exportPath.Directory.FullName);
+
+            fileTemplate.Write(exportPath.FullName, replacementSet);
+        }
+
         /// <summary>
         /// Creates a writer for a sub-template.
         /// </summary>
@@ -55,7 +77,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         internal TemplatedWriter CreateWriterFor(string subTemplateName)
         {
             ITemplatePart subTemplate = template.Templates[subTemplateName];
-            return new TemplatedWriter(subTemplate, subTemplate.CreateReplacementSet(replacementSet));
+            return new TemplatedWriter(null, subTemplate, subTemplate.CreateReplacementSet(replacementSet));
         }
 
         private void Write(string token, object value, bool optional)

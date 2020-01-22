@@ -184,10 +184,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private static UnityProjectInfo unityProjectInfo;
 
-        public static UnityProjectInfo UnityProject => unityProjectInfo ?? (unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config));
-
-        public static CompilationPlatformInfo CurrentPlayerPlatform => unityProjectInfo?.CurrentPlayerPlatform ?? UnityProjectInfo.GetCurrentPlayerPlatform();
-
         private static IUnityProjectExporter exporter = null;
 
         private static IUnityProjectExporter Exporter => exporter ?? (exporter = new TemplatedUnityProjectExporter(new DirectoryInfo(Utilities.MSBuildProjectFolder),
@@ -237,7 +233,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void RegenerateSDKProjects()
         {
-            RegenerateEverything(reparseUnityData: true);
+            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, true));
             Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
         }
 
@@ -291,20 +287,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             bool doesTokenFileExist = File.Exists(TokenFilePath);
 
+            // We regenerate everything if:
+            // - We are forced to
+            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
+            bool regenerateEverything = forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean));
+
+            if (regenerateEverything || unityProjectInfo == null)
+            {
+                // Create the project info only if it's null or we need to regenerate
+                unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, regenerateEverything);
+            }
+
             // We regenerate the common "directory" props file under the following conditions:
             // - Token file doesn't exist which means editor was just started
             // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
             if (shouldClean || !doesTokenFileExist)
             {
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
             }
 
-            // We regenerate everything if:
-            // - We are forced to
-            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
-            if (forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean)))
+            if (regenerateEverything)
             {
-                RegenerateEverything(true);
+                RegenerateEverything(unityProjectInfo);
             }
 
             if (!doesTokenFileExist)
@@ -323,20 +327,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
-        private static void ExportCoreUnityPropFiles()
+        private static void ExportCoreUnityPropFiles(UnityProjectInfo unityProjectInfo)
         {
-            foreach (CompilationPlatformInfo platform in UnityProject.AvailablePlatforms)
+            foreach (CompilationPlatformInfo platform in unityProjectInfo.AvailablePlatforms)
             {
                 // Check for specialized template, otherwise get the common one
                 MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, platform, true);
                 MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, platform, false);
             }
 
-            MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, UnityProject.EditorPlatform, true);
+            MSBuildUnityProjectExporter.ExportCoreUnityPropFile(Exporter, unityProjectInfo.EditorPlatform, true);
         }
 
 
-        private static void RegenerateEverything(bool reparseUnityData)
+        private static void RegenerateEverything(UnityProjectInfo unityProjectInfo)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -357,21 +361,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     Directory.CreateDirectory(Utilities.MSBuildProjectFolder);
                 }
 
-                if (reparseUnityData)
-                {
-                    unityProjectInfo?.Dispose();
-                    unityProjectInfo = null;
-                }
-
                 postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, UnityProject.CurrentPlayerPlatform);
-                ExportCoreUnityPropFiles();
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
+                ExportCoreUnityPropFiles(unityProjectInfo);
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
 
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
-                Exporter.ExportSolution(UnityProject, Config);
+                Exporter.ExportSolution(unityProjectInfo, Config);
+                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
@@ -382,7 +381,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 string buildProjectsFile = "BuildProjects.proj";
                 if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
                 {
-                    GenerateBuildProjectsFile(buildProjectsFile, Exporter.GetSolutionFilePath(UnityProject), UnityProject.AvailablePlatforms);
+                    GenerateBuildProjectsFile(buildProjectsFile, Exporter.GetSolutionFilePath(unityProjectInfo), unityProjectInfo.AvailablePlatforms);
                 }
             }
             finally

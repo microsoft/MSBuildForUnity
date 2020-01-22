@@ -12,7 +12,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     /// <summary>
     /// A class for exporting platform props using templates.
     /// </summary>
-    internal class TemplatedPlatformPropsExporter : TemplatedExporterBase, IPlatformPropsExporter
+    internal class TemplatedPlatformPropsExporter : IPlatformPropsExporter
     {
         private const string TargetFrameworkToken = "TARGET_FRAMEWORK";
         private const string DefineConstantsToken = "PLATFORM_COMMON_DEFINE_CONSTANTS";
@@ -21,6 +21,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         private const string CommonReferenceSubTemplate = "PLATFORM_COMMON_REFERENCE";
         private const string CommonReferencesSubTemplateReferenceToken = "REFERENCE";
         private const string CommonReferencesSubTemplateHintPathToken = "HINT_PATH";
+
+        private readonly FileTemplate fileTemplate;
+        private readonly FileInfo exportPath;
 
         public string TargetFramework { get; set; }
 
@@ -31,13 +34,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         public Dictionary<string, Uri> References { get; } = new Dictionary<string, Uri>(250); // Guess at default size
 
         public TemplatedPlatformPropsExporter(FileTemplate fileTemplate, FileInfo exportPath)
-            : base(fileTemplate, exportPath)
         {
-
+            this.fileTemplate = fileTemplate;
+            this.exportPath = exportPath;
         }
 
-        protected override void Export(TemplatedWriter writer)
+        public void Write()
         {
+            TemplatedWriter writer = new TemplatedWriter(fileTemplate);
+
             writer.Write(TargetFrameworkToken, TargetFramework, optional: true);
 
             writer.Write(DefineConstantsToken, DefineConstants);
@@ -49,7 +54,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
                 subTemplateWriter.Write(CommonReferencesSubTemplateReferenceToken, reference.Key);
                 subTemplateWriter.Write(CommonReferencesSubTemplateHintPathToken, reference.Value.LocalPath);
             }
+
+            OnWrite(writer);
+
+            writer.Export(exportPath);
         }
+
+        protected virtual void OnWrite(TemplatedWriter writer) { }
     }
 }
 #endif

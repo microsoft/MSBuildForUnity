@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
-    internal class TemplatedCommonPropsExporter : TemplatedExporterBase, ICommonPropsExporter
+    internal class TemplatedCommonPropsExporter : ICommonPropsExporter
     {
         private const string UnityMajorVersionToken = "UNITY_MAJOR_VERSION";
         private const string UnityMinorVersionToken = "UNITY_MINOR_VERSION";
@@ -15,6 +15,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         private const string CurrentTargetFrameworkToken = "CURRENT_TARGET_FRAMEWORK";
         private const string GeneratedOutputDirectoryToken = "GENERATED_OUTPUT_DIRECTORY";
         private const string UnityProjectAssetsDirectoryToken = "UNITY_PROJECT_ASSETS_PATH";
+
+        private readonly FileTemplate fileTemplate;
+        private readonly FileInfo exportPath;
 
         public string UnityMajorVersion { get; set; }
 
@@ -29,18 +32,23 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         public DirectoryInfo GeneratedProjectOutputPath { get; set; }
 
         internal TemplatedCommonPropsExporter(FileTemplate fileTemplate, FileInfo exportPath)
-            : base(fileTemplate, exportPath)
         {
+            this.fileTemplate = fileTemplate;
+            this.exportPath = exportPath;
         }
 
-        protected override void Export(TemplatedWriter writer)
+        public void Write()
         {
+            TemplatedWriter writer = new TemplatedWriter(fileTemplate);
+
             writer.Write(UnityMajorVersionToken, UnityMajorVersion);
             writer.Write(UnityMinorVersionToken, UnityMinorVersion);
             writer.Write(CurrentUnityPlatformToken, CurrentUnityPlatform);
             writer.Write(CurrentTargetFrameworkToken, CurrentTargetFramework);
             writer.Write(UnityProjectAssetsDirectoryToken, UnityProjectAssetsDirectory.FullName);
             writer.Write(GeneratedOutputDirectoryToken, GeneratedProjectOutputPath.FullName);
+
+            writer.Export(exportPath);
         }
     }
 }

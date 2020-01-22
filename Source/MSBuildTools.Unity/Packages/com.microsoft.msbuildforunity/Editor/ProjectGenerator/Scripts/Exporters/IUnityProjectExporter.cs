@@ -46,6 +46,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         ICommonPropsExporter CreateCommonPropsExporter(FileInfo path);
 
         /// <summary>
+        /// Creates an exporter for the top-level dependencies project that is responsible for bringing in the MSB4U resolved dependencies into the Unity project.
+        /// </summary>
+        /// <param name="projectPath">The path to the project output.</param>
+        /// <param name="generatedProjectFolder">The path to the generated project folder.</param>
+        ITopLevelDependenciesProjectExporter CreateTopLevelDependenciesProjectExporter(FileInfo projectPath, DirectoryInfo generatedProjectFolder);
+
+        /// <summary>
         /// Creates the platform props file exporter.
         /// </summary>
         /// <param name="path">The <see cref="FileInfo"/> representing where this props file will be written.</param>
