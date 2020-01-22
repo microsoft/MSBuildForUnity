@@ -317,10 +317,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 return !importer.isNativePlugin;
             }
-            else
-            {
-
-            }
 
             using (Stream fileStream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader binaryReader = new BinaryReader(fileStream))
