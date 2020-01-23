@@ -29,9 +29,11 @@
     <_MSB4UPropagateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);</_MSB4UPropagateProperties>
   </PropertyGroup>
   
+<!-- Disabling Clean; brief testing showed there wasn't any errors. If errors are encountered, this should be re-enabled.
   <Target Name="_RemoveOutputDirectory" AfterTargets="Clean">
     <RemoveDir Directories="$(OutputPath)"/>
   </Target>
+-->
   
   <Target Name="_PropagateMSB4UProperties">
     <ItemGroup>

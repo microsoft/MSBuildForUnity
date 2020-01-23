@@ -580,7 +580,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
             // Add the "Dependencies" project
             {
-                string dependencyRelativePath = Utilities.GetRelativePath(Path.GetDirectoryName(solutionFilePath), GetProjectFilePath(Utilities.AssetPath, "Dependencies"));
+                string dependencyRelativePath = Utilities.GetRelativePath(Path.GetDirectoryName(solutionFilePath), GetProjectFilePath(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.Dependencies"));
                 IEnumerable<SolutionFileSection<SolutionProjecSectionType>> extraSections = null;
 
                 if (solutionFileInfo != null)
@@ -591,7 +591,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
                         extraSections = existingProject.Sections.Values;
                     }
                 }
-                ProcessProjectEntry("Dependencies.msb4u", dependencyRelativePath, config.DependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet), extraSections);
+                ProcessProjectEntry($"{unityProjectInfo.UnityProjectName}.Dependencies.msb4u", dependencyRelativePath, config.DependenciesProjectGuid, null, projectTemplate, projectTemplate.CreateReplacementSet(rootReplacementSet), extraSections);
             }
 
             if (solutionFileInfo != null)
