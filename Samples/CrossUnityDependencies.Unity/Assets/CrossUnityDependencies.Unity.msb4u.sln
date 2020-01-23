@@ -27,7 +27,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly-CSharp.msb4u", "As
 		{0FDA7EBE-61AB-2164-383D-10E32EFB9C6E} = {0FDA7EBE-61AB-2164-383D-10E32EFB9C6E}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dependencies.msb4u", "Dependencies.msb4u.csproj", "{F462FC4F-630C-4212-83AE-9208D85AD084}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrossUnityDependencies.Unity.Dependencies.msb4u", "CrossUnityDependencies.Unity.Dependencies.msb4u.csproj", "{F462FC4F-630C-4212-83AE-9208D85AD084}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GeneralComponent.msb4u", "..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj", "{C47857AB-4B18-4AED-94F8-E6ACB45B6484}"
 EndProject
