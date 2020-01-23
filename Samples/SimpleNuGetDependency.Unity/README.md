@@ -21,20 +21,50 @@ The project file structure has several required parts to it:
   - This file contains some core properties that we require.
 - Conditional declaration of `TargetFramework` that depends on whether `UnityCurrentTargetFramework` property is available from above import.
   - The target framework is what determines which DLL of a NuGet package is pulled in. MSBuildForUnity keeps the property up to date in `MSBuildForUnity.Common.props`.
-- Setting the `BaseIntermediateOutputPath` (object directory) to be invisible by Unity, by prefixing it with a '.'
-- Naming the `OutputPath` that will be seen by Unity, this is where the NuGet output will be dumped into.
-- Package reference to `MSBuildForUnity` NuGet package that enables the correct resolution of dependencies.
-- `Sdk.props` and `Sdk.targets` import that doesn't produce a dll (`Microsoft.Build.NoTargets`).
+- Setting the `BaseIntermediateOutputPath` (object directory) and `OutputPath` to be invisible by Unity, by prefixing it with a '.'
+- `Sdk.props` and `Sdk.targets` import that doesn't produce a dll (`Microsoft.Build.NoTargets`), must be version `1.0.85`.
 
-The `Assets/NewtonSoftDependency/NewtonSoftDependency.csproj` contains all of this, plus the NuGet reference to "NewtonSoft.Json" and is a total of 33 lines long.
+The `Assets/NewtonSoftDependency/NewtonSoftDependency.csproj` contains all of this, plus the NuGet reference to "NewtonSoft.Json" and is a total of 30 lines long.
 
-![C# Project File Contents](docs/CSProjectContents.png)
+```xml
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
+  
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' == ''">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' != ''">
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <!-- Make sure Unity ignores the contents of the output path. -->
+    <BaseIntermediateOutputPath>.obj\</BaseIntermediateOutputPath>
+    <OutputPath>.bin\</OutputPath>
+  </PropertyGroup>
+  
+  <!-- Note that this is the special "NoTarget" SDK to prevent this project from producing a dll. -->
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.85" />
+  
+  <ItemGroup>
+    <!-- Standard NuGet package -->
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+
+    <!-- A MSBuildForUnity enabled NuGet package that has additional behavior for Unity specific (no difference in import) -->
+    <PackageReference Include="Microsoft.MixedReality.QR" Version="0.5.2085"/>
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.85" />
+</Project>
+```
 
 ## The Process
 
 When MSBuildForUnity is brought into the project, the following happens:
 
 1. Generates the small `MSBuildForUnity.Common.props` file.
+2. Generates a top-level `{ProjectName}.Dependencies.msb4u.csproj` file.
 2. Auto-processes all of the .csproj files in the repository, and builds them.
 
 ## Question & Answer

@@ -58,7 +58,7 @@ namespace Microsoft.Build.Unity
             {
                 msBuildProjectReference.profiles = profiles.ToArray();
             }
-            else if (Path.GetFileNameWithoutExtension(assetRelativePath).EndsWith(".msb4u") && !Path.GetFileName(assetRelativePath).Equals("Dependencies.msb4u.csproj"))
+            else if (Path.GetFileNameWithoutExtension(assetRelativePath).EndsWith(".msb4u") && !Path.GetFileName(assetRelativePath).EndsWith("Dependencies.msb4u.csproj"))
             {
                 msBuildProjectReference.profiles = null;
             }

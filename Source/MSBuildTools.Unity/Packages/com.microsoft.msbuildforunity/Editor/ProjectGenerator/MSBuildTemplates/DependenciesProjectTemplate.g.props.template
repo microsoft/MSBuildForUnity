@@ -30,7 +30,7 @@
   </ItemGroup>
   
   <!-- Note that this is the special "NoTarget" SDK to prevent this project from producing a dll. -->
-  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.85" />
 
   <!-- Add support for Unix based systems (OSX, Linux) that have dotnet core and mono but not netframework. -->
   <Import Project="UnixNetSupport.props" />

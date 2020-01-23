@@ -80,21 +80,24 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void ExportTopLevelDependenciesProject(IUnityProjectExporter exporter, MSBuildToolsConfig config, DirectoryInfo generatedProjectFolder, UnityProjectInfo unityProjectInfo)
         {
-            string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
+            string projectPath = GetProjectFilePath(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.Dependencies");
             ITopLevelDependenciesProjectExporter projectExporter = exporter.CreateTopLevelDependenciesProjectExporter(new FileInfo(projectPath), generatedProjectFolder);
 
             projectExporter.Guid = config.DependenciesProjectGuid;
 
-            Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
-            foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
+            if (unityProjectInfo.AvailablePlatforms != null)
             {
-                List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
-                projectExporter.References.Add(new ProjectReference()
+                Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
+                foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
                 {
-                    ReferencePath = new Uri(GetProjectPath(projectInfo, generatedProjectFolder).FullName),
-                    Condition = platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions),
-                    IsGenerated = true
-                });
+                    List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
+                    projectExporter.References.Add(new ProjectReference()
+                    {
+                        ReferencePath = new Uri(GetProjectPath(projectInfo, generatedProjectFolder).FullName),
+                        Condition = platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions),
+                        IsGenerated = true
+                    });
+                }
             }
 
             foreach (string otherProjectFile in unityProjectInfo.ExistingCSProjects)

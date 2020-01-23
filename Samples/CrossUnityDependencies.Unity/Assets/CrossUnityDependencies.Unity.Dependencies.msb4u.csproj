@@ -35,7 +35,7 @@
   
   <ItemGroup>
     <!--Add NuGet or Project references here-->
-    <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj" />
+    <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj"/>
   </ItemGroup>
 
   <!-- SDK.targets is imported inside this props file -->

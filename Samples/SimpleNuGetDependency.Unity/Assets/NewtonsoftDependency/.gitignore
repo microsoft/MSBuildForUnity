@@ -1,4 +1,5 @@
 Plugins/
 .obj/
+.bin/
 Plugins.meta
 !*.csproj

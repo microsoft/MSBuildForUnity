@@ -156,7 +156,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 if (EditorAnalyticsSessionInfo.elapsedTime > 0)
                 {
-                    RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+                    RefreshGeneratedOutput(forceGenerateEverything: true, forceCompleteGeneration: false);
                 }
             }
         }
@@ -205,7 +205,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
             Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
             // If we just toggled on, regenerate everything
-            RefreshGeneratedOutput(forceGenerateEverything: Config.AutoGenerateEnabled);
+            RefreshGeneratedOutput(forceGenerateEverything: true, forceCompleteGeneration: false);
         }
 
         [MenuItem(AutoGenerate, true, priority = 101)]
@@ -221,7 +221,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         {
             try
             {
-                RefreshGeneratedOutput(forceGenerateEverything: true);
+                RefreshGeneratedOutput(forceGenerateEverything: true, forceCompleteGeneration: false);
                 Debug.Log($"{nameof(GenerateSDKProjects)} Completed Succesfully.");
             }
             catch
@@ -233,7 +233,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void RegenerateSDKProjects()
         {
-            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, performCompleteParse: true));
+            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, performCompleteParse: true), completeGeneration: true);
             Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
         }
 
@@ -255,16 +255,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 void OnUpdate()
                 {
                     EditorApplication.update -= OnUpdate;
-                    RefreshGeneratedOutput(forceGenerateEverything: false);
+                    RefreshGeneratedOutput(forceGenerateEverything: false, forceCompleteGeneration: false);
                 }
             }
             else
             {
-                RefreshGeneratedOutput(forceGenerateEverything: false);
+                RefreshGeneratedOutput(forceGenerateEverything: false, forceCompleteGeneration: false);
             }
         }
 
-        private static void RefreshGeneratedOutput(bool forceGenerateEverything)
+        private static void RefreshGeneratedOutput(bool forceGenerateEverything, bool forceCompleteGeneration)
         {
             // In this method, the following must happen
             // - Clean up builds if necessary
@@ -295,7 +295,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             if (regenerateEverything || unityProjectInfo == null)
             {
                 // Create the project info only if it's null or we need to regenerate
-                unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, regenerateEverything);
+                unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, Config.AutoGenerateEnabled || forceCompleteGeneration);
             }
 
             // We regenerate the common "directory" props file under the following conditions:
@@ -308,7 +308,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (regenerateEverything)
             {
-                RegenerateEverything(unityProjectInfo);
+                RegenerateEverything(unityProjectInfo, Config.AutoGenerateEnabled || forceCompleteGeneration);
             }
 
             if (!doesTokenFileExist)
@@ -340,7 +340,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
 
-        private static void RegenerateEverything(UnityProjectInfo unityProjectInfo)
+        private static void RegenerateEverything(UnityProjectInfo unityProjectInfo, bool completeGeneration)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -365,12 +365,18 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
                 MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
-                ExportCoreUnityPropFiles(unityProjectInfo);
+                if (completeGeneration)
+                {
+                    ExportCoreUnityPropFiles(unityProjectInfo);
+                }
                 propsFileGenerationEnd = stopwatch.ElapsedMilliseconds;
 
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
-                Exporter.ExportSolution(unityProjectInfo, Config);
-                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo); 
+                if (completeGeneration)
+                {
+                    Exporter.ExportSolution(unityProjectInfo, Config);
+                }
+                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
@@ -378,10 +384,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     File.Copy(otherFile, Path.Combine(Utilities.MSBuildProjectFolder, Path.GetFileName(otherFile)));
                 }
 
-                string buildProjectsFile = "BuildProjects.proj";
-                if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
+                if (completeGeneration)
                 {
-                    GenerateBuildProjectsFile(buildProjectsFile, Exporter.GetSolutionFilePath(unityProjectInfo), unityProjectInfo.AvailablePlatforms);
+                    string buildProjectsFile = "BuildProjects.proj";
+                    if (!File.Exists(Path.Combine(Utilities.MSBuildOutputFolder, buildProjectsFile)))
+                    {
+                        GenerateBuildProjectsFile(buildProjectsFile, Exporter.GetSolutionFilePath(unityProjectInfo), unityProjectInfo.AvailablePlatforms);
+                    }
                 }
             }
             finally

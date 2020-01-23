@@ -10,25 +10,21 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <!-- Make sure Unity ignores the contents of the intermediate output path. -->
-    <BaseIntermediateOutputPath>.obj</BaseIntermediateOutputPath>
-    <OutputPath>Plugins</OutputPath>
-    <OutputPath Condition="'$(MSBuildForUnityDefaultOutputPath)' != ''">$(MSBuildForUnityDefaultOutputPath)</OutputPath>
+    <!-- Make sure Unity ignores the contents of the output path. -->
+    <BaseIntermediateOutputPath>.obj\</BaseIntermediateOutputPath>
+    <OutputPath>.bin\</OutputPath>
   </PropertyGroup>
   
-  <ItemGroup>
-    <PackageReference Include="MSBuildForUnity" Version="$(MSB4U_DependencyVersion)">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-  
   <!-- Note that this is the special "NoTarget" SDK to prevent this project from producing a dll. -->
-  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="1.0.85" />
   
   <ItemGroup>
+    <!-- Standard NuGet package -->
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+
+    <!-- A MSBuildForUnity enabled NuGet package that has additional behavior for Unity specific (no difference in import) -->
+    <PackageReference Include="Microsoft.MixedReality.QR" Version="0.5.2085"/>
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.80" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" Version="1.0.85" />
 </Project>
