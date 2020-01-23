@@ -1,8 +1,8 @@
 fileFormatVersion: 2
-guid: 780daffcc77b35645849186e155316d4
+guid: 4c19391e4150d0e4b924554825807164
 ScriptedImporter:
   fileIDToRecycleName:
-    11400000: Dependencies.msb4u
+    11400000: Project.Unity.Dependencies.msb4u
   externalObjects: {}
   userData: 
   assetBundleName: 

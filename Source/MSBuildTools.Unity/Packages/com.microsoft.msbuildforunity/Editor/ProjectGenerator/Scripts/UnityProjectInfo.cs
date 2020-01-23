@@ -16,7 +16,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
     /// </summary>
-    public class UnityProjectInfo : IDisposable
+    public class UnityProjectInfo
     {
         /// <summary>
         /// These package references aren't actual packages it appears, manually labeling them for exclusion.
@@ -44,14 +44,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             { "UnityEditor.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
             { "UnityEngine.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
         };
-
-        public static CompilationPlatformInfo GetCurrentPlayerPlatform()
-        {
-            return CompilationPlatformInfo.GetCompilationPlatform(
-                CompilationPipeline.GetAssemblyDefinitionPlatforms()
-                .First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget));
-        }
-
 
         /// <summary>
         /// Gets the name of this Unity Project.
@@ -88,15 +80,37 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         public IReadOnlyCollection<WinMDInfo> WinMDs { get; private set; }
 
-        public UnityProjectInfo(Dictionary<BuildTarget, string> supportedBuildTargets, MSBuildToolsConfig config)
-        {
-            AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
-                    .Where(t => Utilities.IsPlatformInstalled(t.BuildTarget))
-                    .Where(t => supportedBuildTargets.ContainsKey(t.BuildTarget))
-                    .Select(CompilationPlatformInfo.GetCompilationPlatform)
-                    .OrderBy(t => t.Name).ToList());
+        /// <summary>
+        /// Existing projects that are found under the Assets folder, or as part of a UPM Package.
+        /// </summary>
+        public IReadOnlyCollection<string> ExistingCSProjects { get; private set; }
 
-            EditorPlatform = CompilationPlatformInfo.GetEditorPlatform();
+        /// <summary>
+        /// Parses the current state of the Unity project.
+        /// </summary>
+        /// <param name="supportedBuildTargets">BuildTargets that are considered supported.</param>
+        /// <param name="config">Config for MSBuildTools.</param>
+        /// <param name="performCompleteParse">If this is false, UnityProjectInfo will parse only the minimum required information about current project. Includes: <see cref="ExistingCSProjects"/> <see cref="CurrentPlayerPlatform"/>.</param>
+        public UnityProjectInfo(Dictionary<BuildTarget, string> supportedBuildTargets, MSBuildToolsConfig config, bool performCompleteParse = true)
+        {
+            if (performCompleteParse)
+            {
+                AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                        .Where(t => Utilities.IsPlatformInstalled(t.BuildTarget))
+                        .Where(t => supportedBuildTargets.ContainsKey(t.BuildTarget))
+                        .Select(CompilationPlatformInfo.GetCompilationPlatform)
+                        .OrderBy(t => t.Name).ToList());
+
+                EditorPlatform = CompilationPlatformInfo.GetEditorPlatform();
+
+                CurrentPlayerPlatform = AvailablePlatforms.First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget);
+            }
+            else
+            {
+                CurrentPlayerPlatform = CompilationPlatformInfo.GetCompilationPlatform(
+                    CompilationPipeline.GetAssemblyDefinitionPlatforms()
+                        .First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget));
+            }
 
             UnityProjectName = Application.productName;
 
@@ -105,32 +119,54 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 UnityProjectName = "UnityProject";
             }
 
-            RefreshPlugins();
-            RefreshProjects(config);
+            RefreshPlugins(performCompleteParse);
 
-            CurrentPlayerPlatform = AvailablePlatforms.First(t => t.BuildTarget == EditorUserBuildSettings.activeBuildTarget);
-        }
-
-        public void Dispose()
-        {
-            // This will be used soon
-        }
-
-        public void RefreshPlugins()
-        {
-            ScanForReferences(out List<PluginAssemblyInfo> plugins, out List<WinMDInfo> winmds);
-            Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(plugins);
-
-            foreach (PluginAssemblyInfo plugin in Plugins)
+            if (performCompleteParse)
             {
-                if (plugin.Type == PluginType.Native)
-                {
-                    // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
-                    // Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
-                }
+                RefreshProjects(config);
+            }
+        }
+
+        public void RefreshPlugins(bool performCompleteParse)
+        {
+            List<PluginAssemblyInfo> plugins = new List<PluginAssemblyInfo>();
+            List<WinMDInfo> winmds = new List<WinMDInfo>();
+            List<string> existingCSProjectFiles = new List<string>();
+
+            Dictionary<string, Action<string, Guid>> scanMap = new Dictionary<string, Action<string, Guid>>();
+
+            if (performCompleteParse)
+            {
+                scanMap.Add(".dll", (path, guid) => plugins.Add(new PluginAssemblyInfo(this, guid, path, Utilities.IsManagedAssembly(path) ? PluginType.Managed : PluginType.Native)));
+                scanMap.Add(".winmd", (path, guid) => winmds.Add(new WinMDInfo(this, guid, path)));
             }
 
-            WinMDs = new ReadOnlyCollection<WinMDInfo>(winmds);
+            scanMap.Add(".csproj", (path, guid) =>
+            {
+                if (!path.EndsWith(".msb4u.csproj"))
+                {
+                    existingCSProjectFiles.Add(path);
+                }
+            });
+
+            ScanAndProcessKnownFolders(scanMap);
+
+            if (performCompleteParse)
+            {
+                Plugins = new ReadOnlyCollection<PluginAssemblyInfo>(plugins);
+                WinMDs = new ReadOnlyCollection<WinMDInfo>(winmds);
+
+                // Logging will be re-enabled with robust update holistically across MSB4U: https://github.com/microsoft/MSBuildForUnity/issues/75
+                //foreach (PluginAssemblyInfo plugin in Plugins)
+                //{
+                //    if (plugin.Type == PluginType.Native)
+                //    {
+                //        Debug.Log($"Native plugin {plugin.ReferencePath.AbsolutePath} not yet supported for MSBuild project.");
+                //    }
+                //}
+            }
+
+            ExistingCSProjects = new ReadOnlyCollection<string>(existingCSProjectFiles);
         }
 
         public void RefreshProjects(MSBuildToolsConfig config)
@@ -396,67 +432,40 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return toReturn;
         }
 
-        private void ScanForReferences(out List<PluginAssemblyInfo> plugins, out List<WinMDInfo> winmds)
+        private IEnumerable<KeyValuePair<string, string>> ScanForFiles(string folder, IEnumerable<string> extensions)
         {
-            plugins = new List<PluginAssemblyInfo>();
-            winmds = new List<WinMDInfo>();
-
-            IEnumerable<string> assetReferences = Directory.EnumerateFiles(Utilities.AssetPath, "*.*", SearchOption.AllDirectories)
-                .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
-            foreach (string assetPath in assetReferences)
+            HashSet<string> extensionSet = new HashSet<string>(extensions.Select(t => t.ToLower()));
+            foreach (string file in Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories))
             {
-                string assetRelativePath = Utilities.GetAssetsRelativePathFrom(assetPath);
-                PluginImporter importer = (PluginImporter)AssetImporter.GetAtPath(assetRelativePath);
-                if (importer == null)
+                string extension = Path.GetExtension(file);
+                if (extensionSet.Contains(extension))
                 {
-                    Debug.LogWarning($"Didn't get an importer for '{assetRelativePath}', most likely due to it being in a Unity hidden folder (prefixed by a .)");
-                    continue;
-                }
-
-                if (assetRelativePath.EndsWith(".dll"))
-                {
-                    PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetPath, importer.isNativePlugin ? PluginType.Native : PluginType.Managed);
-                    plugins.Add(toAdd);
-                }
-                else if (assetRelativePath.EndsWith(".winmd"))
-                {
-                    WinMDInfo toAdd = new WinMDInfo(this, Guid.Parse(AssetDatabase.AssetPathToGUID(assetRelativePath)), assetPath);
-                    winmds.Add(toAdd);
+                    yield return new KeyValuePair<string, string>(extension, file);
                 }
             }
+        }
 
-            IEnumerable<string> packageReferences = Directory.EnumerateFiles(Utilities.PackageLibraryCachePath, "*.*", SearchOption.AllDirectories)
-                .Where(file => file.ToLower().EndsWith(".dll") || file.ToLower().EndsWith(".winmd"));
-            foreach (string packagePath in packageReferences)
+        private void ScanAndProcessKnownFolders(Dictionary<string, Action<string, Guid>> extensionCallbacks)
+        {
+            ScanAndProcessFiles(Utilities.AssetPath, extensionCallbacks);
+            ScanAndProcessFiles(Utilities.PackageLibraryCachePath, extensionCallbacks);
+        }
+
+        private void ScanAndProcessFiles(string folder, Dictionary<string, Action<string, Guid>> extensionCallbacks)
+        {
+            foreach (KeyValuePair<string, string> pair in ScanForFiles(folder, extensionCallbacks.Keys))
             {
-                string metaPath = packagePath + ".meta";
-
-                if (!File.Exists(metaPath))
+                if (!Utilities.IsVisibleToUnity(pair.Value))
                 {
-                    Debug.LogWarning($"Skipping a packages reference that didn't have an associated meta: '{packagePath}'");
-                    continue;
+                    Debug.LogWarning($"Skipping processing asset '{pair.Value}' as it's not visible to Unity.");
                 }
-                Guid guid;
-                using (StreamReader reader = new StreamReader(metaPath))
+                else if (!Utilities.TryGetGuidForAsset(new FileInfo(pair.Value), out Guid guid))
                 {
-                    string guidLine = reader.ReadUntil("guid");
-                    if (!Guid.TryParse(guidLine.Split(':')[1].Trim(), out guid))
-                    {
-                        Debug.LogWarning($"Skipping a packages reference that didn't have a valid guid in the .meta file: '{packagePath}'");
-                        continue;
-                    }
+                    Debug.LogWarning($"Skipping processing asset '{pair.Value}' as no meta file was found, or guid parsed.");
                 }
-
-                if (packagePath.EndsWith(".dll"))
+                else
                 {
-                    bool isManaged = Utilities.IsManagedAssembly(packagePath);
-                    PluginAssemblyInfo toAdd = new PluginAssemblyInfo(this, guid, packagePath, isManaged ? PluginType.Managed : PluginType.Native);
-                    plugins.Add(toAdd);
-                }
-                else if (packagePath.EndsWith(".winmd"))
-                {
-                    WinMDInfo toAdd = new WinMDInfo(this, guid, packagePath);
-                    winmds.Add(toAdd);
+                    extensionCallbacks[pair.Key](pair.Value, guid);
                 }
             }
         }

@@ -270,8 +270,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
                 ExportProject(unityProjectInfo, project);
             }
 
-            GenerateTopLevelDependenciesProject(unityProjectInfo, config.DependenciesProjectGuid);
-
             // Delete before we write to minimize chance of just deleting in case above fails
             if (File.Exists(solutionFilePath))
             {
@@ -616,39 +614,14 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             }
         }
 
-        private void GenerateTopLevelDependenciesProject(UnityProjectInfo unityProjectInfo, Guid dependenciesProjectGuid)
+        public ITopLevelDependenciesProjectExporter CreateTopLevelDependenciesProjectExporter(FileInfo projectPath, DirectoryInfo generatedProjectFolder)
         {
-            string projectPath = GetProjectFilePath(Utilities.AssetPath, "Dependencies");
-            string propsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.props");
-            string targetsPath = GetProjectFilePath(generatedOutputFolder.FullName, "Dependencies").Replace(".csproj", ".g.targets");
+            FileInfo propsFilePath = new FileInfo(Path.Combine(generatedProjectFolder.FullName, projectPath.Name.Replace(".csproj", ".g.props")));
+            FileInfo targetsFilePath = new FileInfo(Path.Combine(generatedProjectFolder.FullName, projectPath.Name.Replace(".csproj", ".g.targets")));
 
-            ITemplatePart propsFileTemplate = dependenciesPropsTemplate.Root;
-            ITemplatePart projectReferenceTemplate = propsFileTemplate.Templates["PROJECT_REFERENCE"];
-
-            TemplateReplacementSet replacementSet = propsFileTemplate.CreateReplacementSet();
-
-            propsFileTemplate.Tokens["PROJECT_GUID"].AssignValue(replacementSet, dependenciesProjectGuid.ToString().ToUpper());
-
-            // We use this to emulate the platform support for all 
-            Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
-            foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
-            {
-                List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
-                ProcessProjectDependency(replacementSet, projectReferenceTemplate, projectInfo, platformConditions);
-            }
-
-            dependenciesPropsTemplate.Write(propsPath, replacementSet);
-
-            ITemplatePart targetsFileTemplate = dependenciesTargetsTemplate.Root;
-
-            dependenciesTargetsTemplate.Write(targetsPath, propsFileTemplate.CreateReplacementSet());
-
-            if (!File.Exists(projectPath))
-            {
-                dependenciesProjectTemplate.Write(projectPath, dependenciesProjectTemplate.Root.CreateReplacementSet());
-            }
+            return new TemplatedTopLevelDependenciesProjectExporter(dependenciesProjectTemplate, dependenciesPropsTemplate, dependenciesTargetsTemplate, projectPath, propsFilePath, targetsFilePath);
         }
-
+        
         private void ProcessSolutionFolders(ITemplatePart rootTemplatePart, TemplateReplacementSet parentReplacementSet, List<Tuple<CSProjectInfo, Guid, string>> folderNestedItems, HashSet<Guid> generatedItems, SolutionFileInfo solutionFileInfo)
         {
             ITemplatePart folderTemplate = rootTemplatePart.Templates["FOLDER"];

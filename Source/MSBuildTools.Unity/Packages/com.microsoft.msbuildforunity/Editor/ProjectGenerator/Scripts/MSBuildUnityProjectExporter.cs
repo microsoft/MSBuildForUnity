@@ -4,6 +4,7 @@
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Exporters;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -16,6 +17,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     /// </summary>
     public static class MSBuildUnityProjectExporter
     {
+        private const string MSBuildFileSuffix = "msb4u";
+
         /// <summary>
         /// Exports the core Unity props file.
         /// </summary>
@@ -75,6 +78,40 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             propsExporter.Write();
         }
 
+        public static void ExportTopLevelDependenciesProject(IUnityProjectExporter exporter, MSBuildToolsConfig config, DirectoryInfo generatedProjectFolder, UnityProjectInfo unityProjectInfo)
+        {
+            string projectPath = GetProjectFilePath(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.Dependencies");
+            ITopLevelDependenciesProjectExporter projectExporter = exporter.CreateTopLevelDependenciesProjectExporter(new FileInfo(projectPath), generatedProjectFolder);
+
+            projectExporter.Guid = config.DependenciesProjectGuid;
+
+            if (unityProjectInfo.AvailablePlatforms != null)
+            {
+                Dictionary<BuildTarget, CompilationPlatformInfo> allPlatforms = unityProjectInfo.AvailablePlatforms.ToDictionary(t => t.BuildTarget, t => t);
+                foreach (CSProjectInfo projectInfo in unityProjectInfo.CSProjects.Values)
+                {
+                    List<string> platformConditions = GetPlatformConditions(allPlatforms, projectInfo.InEditorPlatforms.Keys);
+                    projectExporter.References.Add(new ProjectReference()
+                    {
+                        ReferencePath = new Uri(GetProjectPath(projectInfo, generatedProjectFolder).FullName),
+                        Condition = platformConditions.Count == 0 ? "false" : string.Join(" OR ", platformConditions),
+                        IsGenerated = true
+                    });
+                }
+            }
+
+            foreach (string otherProjectFile in unityProjectInfo.ExistingCSProjects)
+            {
+                projectExporter.References.Add(new ProjectReference()
+                {
+                    ReferencePath = new Uri(otherProjectFile),
+                    IsGenerated = false
+                });
+            }
+
+            projectExporter.Write();
+        }
+
         private static IPlatformPropsExporter CreateWSAPlayerExporter(IUnityProjectExporter exporter, FileInfo outputFile, ScriptingBackend scriptingBackend)
         {
             IWSAPlayerPlatformPropsExporter uwpExporter = exporter.CreateWSAPlayerPlatformPropsExporter(outputFile, scriptingBackend);
@@ -96,6 +133,50 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             return uwpExporter;
         }
+
+        private static string GetProjectFilePath(DirectoryInfo directory, CSProjectInfo projectInfo)
+        {
+            return GetProjectFilePath(directory.FullName, projectInfo.Name);
+        }
+
+        private static string GetProjectFilePath(string directory, string projectName)
+        {
+            return Path.Combine(directory, $"{projectName}.{MSBuildFileSuffix}.csproj");
+        }
+
+        private static List<string> GetPlatformConditions(IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, IEnumerable<BuildTarget> dependencyPlatforms)
+        {
+            List<string> toReturn = new List<string>();
+
+            foreach (BuildTarget platform in dependencyPlatforms)
+            {
+                if (platforms.TryGetValue(platform, out CompilationPlatformInfo platformInfo))
+                {
+                    string platformName = platformInfo.Name;
+                    toReturn.Add($"'$(UnityPlatform)' == '{platformName}'");
+                }
+            }
+
+            return toReturn;
+        }
+
+        ///<inherit-doc/>
+        public static FileInfo GetProjectPath(CSProjectInfo projectInfo, DirectoryInfo generatedProjectFolder)
+        {
+            switch (projectInfo.AssemblyDefinitionInfo.AssetLocation)
+            {
+                case AssetLocation.BuiltInPackage:
+                case AssetLocation.External:
+                case AssetLocation.PackageLibraryCache:
+                    return new FileInfo(GetProjectFilePath(generatedProjectFolder, projectInfo));
+                case AssetLocation.Project:
+                case AssetLocation.Package:
+                    return new FileInfo(GetProjectFilePath(projectInfo.AssemblyDefinitionInfo.Directory, projectInfo));
+                default:
+                    throw new InvalidOperationException("The project's assembly definition file is in an unknown location.");
+            }
+        }
+
     }
 }
 #endif

@@ -37,7 +37,13 @@
     <ItemGroup>
       <ProjectReference>
         <AdditionalProperties>UnityConfiguration=$(UnityConfiguration);UnityPlatform=$(UnityPlatform);$(_MSB4UPropagateProperties);$(AdditionalProperties)</AdditionalProperties>
+        <!-- Override Package/Project References to not have the default private assets-->
+        <PrivateAssets>analyzers</PrivateAssets>
       </ProjectReference>
+      <PackageReference>
+        <!-- Override Package/Project References to not have the default private assets-->
+        <PrivateAssets>analyzers</PrivateAssets>
+      </PackageReference>
     </ItemGroup>
   </Target>
 </Project>

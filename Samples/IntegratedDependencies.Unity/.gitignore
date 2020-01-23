@@ -68,3 +68,4 @@ crashlytics-build.properties
 !/Assets/**/*.msb4u.*
 !/Packages/**/*.msb4u.*
 /Assets/Dependencies
+/Assets/Dependencies.meta

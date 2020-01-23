@@ -111,6 +111,49 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
+        /// Gets whether the given path is visible to Unity.
+        /// </summary>
+        public static bool IsVisibleToUnity(string path)
+        {
+            return GetAssetImporter(path) != null;
+        }
+
+        private static AssetImporter GetAssetImporter(string path)
+        {
+            path = Path.GetFullPath(path);
+
+            string relativePath;
+
+            if (path.StartsWith(AssetPath))
+            {
+                relativePath = path.Replace(AssetPath, AssetsFolderName);
+            }
+            else if (path.StartsWith(PackageLibraryCachePath))
+            {
+                relativePath = path.Replace(PackageLibraryCachePath, PackagesFolderName);
+                // Relative path will contain packages with their version "@x.y.z", so we need to strip that
+                // Method is to split on '@' into 'Packages\com.company.package' and 'x.y.z\<Path>' and then substring to first '\'
+                if (relativePath.Contains('@'))
+                {
+                    string[] parts = relativePath.Split('@');
+                    relativePath = parts[0] + parts[1].Substring(parts[1].IndexOf('\\'));
+                }
+            }
+            else if (path.Contains(PackagesPath))
+            {
+                relativePath = path.Replace(PackagesPath, PackagesFolderName);
+            }
+            else
+            {
+                return null;
+            }
+
+            return string.IsNullOrEmpty(relativePath)
+                ? null
+                : AssetImporter.GetAtPath(relativePath);
+        }
+
+        /// <summary>
         /// Parses a .meta file to extract a guid for the asset.
         /// </summary>
         /// <param name="assetPath">The path to the asset (not the .meta file).</param>
@@ -268,6 +311,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <returns>True if a managed assembly.</returns>
         public static bool IsManagedAssembly(string assemblyPath)
         {
+            assemblyPath = Path.GetFullPath(assemblyPath);
+
+            if (GetAssetImporter(assemblyPath) is PluginImporter importer)
+            {
+                return !importer.isNativePlugin;
+            }
+
             using (Stream fileStream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader binaryReader = new BinaryReader(fileStream))
             {

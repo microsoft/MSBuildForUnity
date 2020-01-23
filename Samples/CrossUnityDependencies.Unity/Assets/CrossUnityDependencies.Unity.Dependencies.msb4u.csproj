@@ -1,4 +1,4 @@
-﻿<Project ToolsVersion="15.0">
+<Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in.
@@ -10,7 +10,7 @@
     and before:
     - <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.targets" />
     
-    Do not add any source or compliation items.
+    Do not add any source or compilation items.
     
     Examples of how you can modify this file:
     - Add NuGet package references:
@@ -34,8 +34,8 @@
   <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.props" />
   
   <ItemGroup>
-    <!-- Add your references here -->
-    <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj" />
+    <!--Add NuGet or Project references here-->
+    <ProjectReference Include="..\..\IntegratedDependencies.Unity\Assets\GeneralComponent\GeneralComponent.msb4u.csproj"/>
   </ItemGroup>
 
   <!-- SDK.targets is imported inside this props file -->

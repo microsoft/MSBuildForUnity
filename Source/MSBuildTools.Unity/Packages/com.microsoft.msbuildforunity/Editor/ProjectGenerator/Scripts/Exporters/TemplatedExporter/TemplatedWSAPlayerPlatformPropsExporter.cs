@@ -25,9 +25,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
         }
 
-        protected override void Export(TemplatedWriter writer)
+        protected override void OnWrite(TemplatedWriter writer)
         {
-            base.Export(writer);
+            base.OnWrite(writer);
 
             writer.Write(TargetUWPVersionToken, TargetUWPVersion);
             writer.Write(MinimumUWPVersionToken, MinimumUWPVersion);
