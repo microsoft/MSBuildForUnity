@@ -375,6 +375,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 if (completeGeneration)
                 {
                     Exporter.ExportSolution(unityProjectInfo, Config);
+                    unityProjectInfo.ExportProjects(Exporter, new DirectoryInfo(Utilities.MSBuildProjectFolder));
                 }
                 MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;

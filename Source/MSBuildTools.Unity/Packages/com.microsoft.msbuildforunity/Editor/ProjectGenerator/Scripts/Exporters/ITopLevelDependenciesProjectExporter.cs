@@ -6,38 +6,6 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 {
-    /// <summary>
-    /// Represents a project reference with a condition.
-    /// </summary>
-    public struct ProjectReference
-    {
-        /// <summary>
-        /// Path to the project.
-        /// </summary>
-        public Uri ReferencePath { get; set; }
-
-        /// <summary>
-        /// Condition for this reference.
-        /// </summary>
-        public string Condition { get; set; }
-
-        /// <summary>
-        /// Whether this is an MSBuildForUnity reference or not.
-        /// </summary>
-        public bool IsGenerated { get; set; }
-
-        /// <inheritdoc/>
-        public override int GetHashCode()
-        {
-            return ReferencePath?.GetHashCode() ?? 0;
-        }
-
-        /// <inheritdoc/>
-        public override bool Equals(object obj)
-        {
-            return obj is ProjectReference other && Equals(ReferencePath, other.ReferencePath);
-        }
-    }
 
     /// <summary>
     /// Represents an exporter for the top-level project that is responsible for bringing in the MSB4U resovled dependencies into Unity.

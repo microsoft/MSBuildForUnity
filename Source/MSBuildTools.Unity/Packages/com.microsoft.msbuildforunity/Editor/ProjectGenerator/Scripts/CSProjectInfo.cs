@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using Microsoft.Build.Unity.ProjectGeneration.Exporters;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -197,7 +199,73 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 new HashSet<BuildTarget>(PlayerPlatforms.Keys.Intersect(referenceInfo.PlayerPlatforms.Keys))));
         }
 
+        #region Export Logic
+        public void Export(ICSharpProjectExporter exporter, DirectoryInfo generatedProjectDirectory)
+        {
+            exporter.Guid = Guid;
+            exporter.AllowUnsafe = AssemblyDefinitionInfo.allowUnsafeCode;
+            exporter.IsEditorOnlyProject = ProjectType == ProjectType.EditorAsmDef || ProjectType == ProjectType.PredefinedEditorAssembly;
+            exporter.ProjectName = Name;
+            exporter.SourceIncludePath = AssemblyDefinitionInfo.Directory;
 
+            foreach (AssemblyDefinitionInfo nestedAsmDef in AssemblyDefinitionInfo.NestedAssemblyDefinitionFiles)
+            {
+                exporter.SourceExcludePaths.Add(nestedAsmDef.Directory);
+            }
+
+            // Set all of the references
+            ProcessDepedencies(exporter.PluginReferences, PluginDependencies, exporter.AssemblySearchPaths, (i, c) => new PluginReference(i.Name, i.ReferencePath, c), i => i.ReferencePath.LocalPath);
+            ProcessDepedencies(exporter.PluginReferences, WinMDDependencies, exporter.AssemblySearchPaths, (i, c) => new PluginReference(i.Name, i.ReferencePath, c), i => i.ReferencePath.LocalPath);
+            ProcessDepedencies(exporter.ProjectReferences, ProjectDependencies, exporter.AssemblySearchPaths, (i, c) => new ProjectReference(new Uri(MSBuildUnityProjectExporter.GetProjectPath(i, generatedProjectDirectory).FullName), c, true));
+
+            AddSupportedBuildPlatformPair(exporter, UnityConfigurationType.InEditor, InEditorPlatforms);
+            AddSupportedBuildPlatformPair(exporter, UnityConfigurationType.Player, PlayerPlatforms);
+        }
+
+        private void AddSupportedBuildPlatformPair(ICSharpProjectExporter exporter, UnityConfigurationType configuration, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms)
+        {
+            // Set supported build platforms
+            foreach (KeyValuePair<BuildTarget, CompilationPlatformInfo> platform in platforms)
+            {
+                exporter.SupportedBuildPlatforms.Add(new ConfigurationPlatformPair(UnityConfigurationType.InEditor, platform.Value.Name));
+            }
+        }
+
+        private void ProcessDepedencies<TInfo, TReference>(Dictionary<UnityConfigurationType, HashSet<TReference>> map, IEnumerable<CSProjectDependency<TInfo>> dependencies, HashSet<string> searchPaths, Func<TInfo, string, TReference> createReferenceFunc, Func<TInfo, string> getReferencePath = null)
+        {
+            // Ensure hash sets created
+            EnsureSet(map, UnityConfigurationType.InEditor);
+            EnsureSet(map, UnityConfigurationType.Player);
+
+            foreach (CSProjectDependency<TInfo> reference in dependencies)
+            {
+                AddReferenceToSet(map[UnityConfigurationType.InEditor], s => createReferenceFunc(reference.Dependency, s), InEditorPlatforms, reference.InEditorSupportedPlatforms);
+                AddReferenceToSet(map[UnityConfigurationType.Player], s => createReferenceFunc(reference.Dependency, s), PlayerPlatforms, reference.PlayerSupportedPlatforms);
+
+                if (getReferencePath != null)
+                {
+                    searchPaths.Add(Path.GetDirectoryName(getReferencePath(reference.Dependency)));
+                }
+            }
+        }
+
+        private void EnsureSet<T>(Dictionary<UnityConfigurationType, HashSet<T>> map, UnityConfigurationType unityConfiguration)
+        {
+            if (!map.ContainsKey(unityConfiguration))
+            {
+                map.Add(unityConfiguration, new HashSet<T>());
+            }
+        }
+
+        private void AddReferenceToSet<T>(HashSet<T> set, Func<string, T> createReferenceFunc, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, IEnumerable<BuildTarget> dependencyPlatforms)
+        {
+            List<string> platformConditions = MSBuildUnityProjectExporter.GetPlatformConditions(platforms, dependencyPlatforms);
+            if (platformConditions.Count > 0)
+            {
+                set.Add(createReferenceFunc(string.Join(" OR ", platformConditions)));
+            }
+        }
+        #endregion
     }
 }
 #endif

@@ -40,9 +40,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         /// <param name="items">Items to write.</param>
         /// <param name="seperator">The seperator, defaulted to ';'.</param>
         /// <param name="optional">Whether this is an optional setting.</param>
-        internal void Write(string token, IEnumerable<string> items, string seperator = ";", bool optional = false)
+        /// <returns>The same writer to allow chaining of writes.</returns>
+        internal TemplatedWriter Write(string token, IEnumerable<string> items, string seperator = ";", bool optional = false)
         {
-            Write(token, new DelimitedStringSet(seperator, items), optional);
+            return Write(token, new DelimitedStringSet(seperator, items), optional);
         }
 
         /// <summary>
@@ -51,9 +52,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         /// <param name="token">The token key.</param>
         /// <param name="value">The value to update to.</param>
         /// <param name="optional">Whether this is an optional setting.</param>
-        internal void Write(string token, string value, bool optional = false)
+        /// <returns>The same writer to allow chaining of writes.</returns>
+        internal TemplatedWriter Write(string token, string value, bool optional = false)
         {
-            Write(token, (object)value, optional);
+            return Write(token, (object)value, optional);
         }
 
         internal void Export(FileInfo exportPath)
@@ -80,7 +82,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             return new TemplatedWriter(null, subTemplate, subTemplate.CreateReplacementSet(replacementSet));
         }
 
-        private void Write(string token, object value, bool optional)
+        private TemplatedWriter Write(string token, object value, bool optional)
         {
             if (optional)
             {
@@ -90,6 +92,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             {
                 template.Tokens[token].AssignValue(replacementSet, value);
             }
+
+            return this;
         }
 
     }
