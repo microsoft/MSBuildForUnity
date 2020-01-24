@@ -22,6 +22,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         string UnityMinorVersion { get; set; }
 
         /// <summary>
+        /// Gets or set the installation folder of the current Unity editor.
+        /// </summary>
+        DirectoryInfo UnityEditorInstallPath { get; set; }
+
+        /// <summary>
         /// Gets or sets the current Unity platform selected in the editor.
         /// </summary>
         string CurrentUnityPlatform { get; set; }

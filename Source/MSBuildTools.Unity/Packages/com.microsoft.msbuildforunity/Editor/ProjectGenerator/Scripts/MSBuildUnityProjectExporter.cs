@@ -68,6 +68,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             string[] versionParts = Application.unityVersion.Split('.');
             propsExporter.UnityMajorVersion = versionParts[0];
             propsExporter.UnityMinorVersion = versionParts[1];
+            propsExporter.UnityEditorInstallPath = new DirectoryInfo(Path.GetDirectoryName(EditorApplication.applicationPath));
 
             propsExporter.GeneratedProjectOutputPath = new DirectoryInfo(Utilities.MSBuildOutputFolder);
             propsExporter.UnityProjectAssetsDirectory = new DirectoryInfo(Utilities.AssetPath);
@@ -144,7 +145,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             return Path.Combine(directory, $"{projectName}.{MSBuildFileSuffix}.csproj");
         }
 
-        private static List<string> GetPlatformConditions(IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, IEnumerable<BuildTarget> dependencyPlatforms)
+        public static List<string> GetPlatformConditions(IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> platforms, IEnumerable<BuildTarget> dependencyPlatforms)
         {
             List<string> toReturn = new List<string>();
 

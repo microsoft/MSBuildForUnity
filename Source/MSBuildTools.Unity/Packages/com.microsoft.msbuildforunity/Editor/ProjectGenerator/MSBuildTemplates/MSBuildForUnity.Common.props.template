@@ -23,10 +23,11 @@
     
     <UnityMajorVersion><!--UNITY_MAJOR_VERSION_TOKEN--></UnityMajorVersion>
     <UnityMinorVersion><!--UNITY_MINOR_VERSION_TOKEN--></UnityMinorVersion>
+    <UnityEditorInstallPath><!--UNITY_EDITOR_INSTALL_FOLDER_TOKEN--></UnityEditorInstallPath>
   </PropertyGroup>
   
   <PropertyGroup>
-    <_MSB4UPropagateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);</_MSB4UPropagateProperties>
+    <_MSB4UPropagateProperties>MSBuildForUnityVersion=$(MSBuildForUnityVersion);MSBuildForUnityPlatformPropsDirectory=$(MSBuildForUnityPlatformPropsDirectory);MSBuildForUnityBuildOutputDirectory=$(MSBuildForUnityBuildOutputDirectory);MSBuildForUnityPublishDirectory=$(MSBuildForUnityPublishDirectory);MSBuildForUnityDefaultOutputPath=$(MSBuildForUnityDefaultOutputPath);UnityCurrentPlatform=$(UnityCurrentPlatform);UnityCurrentTargetFramework=$(UnityCurrentTargetFramework);UnityMajorVersion=$(UnityMajorVersion);UnityMinorVersion=$(UnityMinorVersion);UnityEditorInstallPath=$(UnityEditorInstallPath)</_MSB4UPropagateProperties>
   </PropertyGroup>
   
 <!-- Disabling Clean; brief testing showed there wasn't any errors. If errors are encountered, this should be re-enabled.

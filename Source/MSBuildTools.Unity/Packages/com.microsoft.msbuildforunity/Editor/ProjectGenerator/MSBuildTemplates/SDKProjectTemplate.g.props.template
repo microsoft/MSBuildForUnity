@@ -9,9 +9,8 @@
     <ProjectGuid><!--PROJECT_GUID_TOKEN--></ProjectGuid>
     <AllowUnsafeBlocks><!--ALLOW_UNSAFE_TOKEN--></AllowUnsafeBlocks>
     <LangVersion><!--LANGUAGE_VERSION_TOKEN--></LangVersion>
-    <DevelopmentBuild><!--DEVELOPMENT_BUILD_TOKEN--></DevelopmentBuild>
+    <DevelopmentBuild>false</DevelopmentBuild>
     <IsEditorOnlyTarget><!--IS_EDITOR_ONLY_TARGET_TOKEN--></IsEditorOnlyTarget>
-    <UnityEditorInstallFolder><!--UNITY_EDITOR_INSTALL_FOLDER_TOKEN--></UnityEditorInstallFolder>
     <AssemblyName><!--PROJECT_NAME_TOKEN--></AssemblyName>
     <RootNamespace><!--PROJECT_NAME_TOKEN--></RootNamespace>
   </PropertyGroup>
@@ -94,15 +93,11 @@
   <Import Project="UnixNetSupport.props"/>
 
   <PropertyGroup Condition="'$(UnityConfiguration)'=='InEditor'">
-    <AssemblySearchPaths>$(AssemblySearchPaths);<!--INEDITOR_ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
     <DevelopmentBuild>true</DevelopmentBuild>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UnityConfiguration)'=='Player'">
-    <AssemblySearchPaths>$(AssemblySearchPaths);<!--PLAYER_ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
-  </PropertyGroup>
-
   <PropertyGroup>
+    <AssemblySearchPaths>$(AssemblySearchPaths);<!--ASSEMBLY_SEARCH_PATHS_TOKEN--></AssemblySearchPaths>
     <DefaultItemExcludes>$(DefaultItemExcludes)obj;bin;*.asmdef;*.asmdef.meta;*.csmap;</DefaultItemExcludes>
     <!-- This change prevents from System.Core dll to be removed and readded without the HintPath as is default behaviour for some MSBuild environments for System.Core.dll specifically.-->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -115,7 +110,11 @@
       <PrivateAssets>All</PrivateAssets>
     </ProjectReference>
     <!--PROJECT_REFERENCE_TEMPLATE_END-->
-
+  </ItemGroup>
+  <!--PROJECT_REFERENCE_SET_TEMPLATE_END-->
+  
+  <!--PLUGIN_REFERENCE_SET_TEMPLATE_START-->
+  <ItemGroup Condition="'$(UnityConfiguration)'=='##REFERENCE_CONFIGURATION_TOKEN##'">
     <!--PLUGIN_REFERENCE_TEMPLATE_START-->
     <Reference Include="##REFERENCE_TOKEN##" Condition="##CONDITION_TOKEN##">
       <Private>false</Private>
@@ -123,7 +122,7 @@
     </Reference>
     <!--PLUGIN_REFERENCE_TEMPLATE_END-->
   </ItemGroup>
-  <!--PROJECT_REFERENCE_SET_TEMPLATE_END-->
+  <!--PLUGIN_REFERENCE_SET_TEMPLATE_END-->
 
   <ItemGroup>
     <!--SOURCE_EXCLUDE_TEMPLATE_START-->

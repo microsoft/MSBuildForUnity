@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using Microsoft.Build.Unity.ProjectGeneration.Exporters;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,6 +14,12 @@ using UnityEngine;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
+    public enum UnityConfigurationType
+    {
+        InEditor,
+        Player
+    }
+
     /// <summary>
     /// A helper class to parse the state of the current Unity project.
     /// </summary>
@@ -469,6 +476,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
         }
+
+        #region Export Logic
+        public void ExportProjects(IUnityProjectExporter unityProjectExporter, DirectoryInfo generatedProjectFolder)
+        {
+            foreach (KeyValuePair<string, CSProjectInfo> project in CSProjects)
+            {
+                bool isGenerated = project.Value.AssemblyDefinitionInfo.AssetLocation != AssetLocation.Package && project.Value.AssemblyDefinitionInfo.AssetLocation != AssetLocation.Project;
+
+                ICSharpProjectExporter exporter = unityProjectExporter.CreateCSharpProjectExporter(MSBuildUnityProjectExporter.GetProjectPath(project.Value, generatedProjectFolder), generatedProjectFolder, isGenerated);
+                exporter.DefaultPlatform = CurrentPlayerPlatform.Name;
+                exporter.LanguageVersion = MSBuildTools.CSharpVersion;
+                exporter.IsGenerated = isGenerated;
+                foreach (CompilationPlatformInfo platform in AvailablePlatforms)
+                {
+                    exporter.SupportedPlatforms.Add(platform.Name);
+                }
+
+                project.Value.Export(exporter, generatedProjectFolder);
+                exporter.Write();
+            }
+        }
+        #endregion
     }
 }
 #endif

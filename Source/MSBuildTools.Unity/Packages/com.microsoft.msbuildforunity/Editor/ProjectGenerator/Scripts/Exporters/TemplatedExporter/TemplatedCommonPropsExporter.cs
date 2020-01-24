@@ -11,6 +11,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     {
         private const string UnityMajorVersionToken = "UNITY_MAJOR_VERSION";
         private const string UnityMinorVersionToken = "UNITY_MINOR_VERSION";
+        private const string UnityEditorInstallPathToken = "UNITY_EDITOR_INSTALL_FOLDER";
         private const string CurrentUnityPlatformToken = "CURRENT_UNITY_PLATFORM";
         private const string CurrentTargetFrameworkToken = "CURRENT_TARGET_FRAMEWORK";
         private const string GeneratedOutputDirectoryToken = "GENERATED_OUTPUT_DIRECTORY";
@@ -22,6 +23,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         public string UnityMajorVersion { get; set; }
 
         public string UnityMinorVersion { get; set; }
+
+        public DirectoryInfo UnityEditorInstallPath { get; set; }
 
         public string CurrentUnityPlatform { get; set; }
 
@@ -43,6 +46,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
             writer.Write(UnityMajorVersionToken, UnityMajorVersion);
             writer.Write(UnityMinorVersionToken, UnityMinorVersion);
+            writer.Write(UnityEditorInstallPathToken, UnityEditorInstallPath.FullName);
             writer.Write(CurrentUnityPlatformToken, CurrentUnityPlatform);
             writer.Write(CurrentTargetFrameworkToken, CurrentTargetFramework);
             writer.Write(UnityProjectAssetsDirectoryToken, UnityProjectAssetsDirectory.FullName);
