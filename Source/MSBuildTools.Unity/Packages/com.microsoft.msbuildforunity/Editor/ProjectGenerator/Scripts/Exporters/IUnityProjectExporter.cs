@@ -61,6 +61,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="scriptingBackend">The scripting backend for the platform props.</param>
         IWSAPlayerPlatformPropsExporter CreateWSAPlayerPlatformPropsExporter(FileInfo path, ScriptingBackend scriptingBackend);
 
+        /// <summary>
+        /// Creates an exporter for a C# project.
+        /// </summary>
+        /// <param name="filePath">Path of th project.</param>
+        /// <param name="generatedProjectFolder">The generated projects folder.</param>
+        /// <param name="isGenerated">True whether this is a generated project or not.</param>
+        /// <returns></returns>
         ICSharpProjectExporter CreateCSharpProjectExporter(FileInfo filePath, DirectoryInfo generatedProjectFolder, bool isGenerated);
     }
 }
