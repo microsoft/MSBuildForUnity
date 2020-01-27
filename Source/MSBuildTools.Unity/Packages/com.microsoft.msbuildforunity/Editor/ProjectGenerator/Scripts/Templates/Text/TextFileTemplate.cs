@@ -104,7 +104,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
                 {
                     break;
                 }
-                else if (line[0] == '#')
+                else if (!string.IsNullOrWhiteSpace(line) &&
+                    line[0] == '#')
                 {
                     // Possible start of an in-line template
                     int indexOfSpace = line.IndexOf(' ');

@@ -576,34 +576,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
-        /// Helper to fetch a normal text file based template ('prefixed with #')
-        /// </summary>
-        public static bool TryGetTextTemplate(string text, string templateName, out string fullTemplate)
-        {
-            return TryGetTextTemplate(text, templateName, out fullTemplate, out string _);
-        }
-
-        /// <summary>
-        /// Helper to fetch a normal text file based template ('prefixed with #')
-        /// </summary>
-        public static bool TryGetTextTemplate(string text, string templateName, out string fullTemplate, out string templateBody)
-        {
-            string regex = $"^\\s*#{templateName}_TEMPLATE (.*)$";
-            Match result = Regex.Match(text, regex, RegexOptions.Multiline);
-
-            if (result.Success)
-            {
-                fullTemplate = result.Groups[0].Captures[0].Value.TrimEnd();
-                templateBody = result.Groups[1].Captures[0].Value.TrimEnd();
-                return true;
-            }
-
-            fullTemplate = null;
-            templateBody = null;
-            return false;
-        }
-
-        /// <summary>
         /// Given a list of Asset guids converts them to asset paths in place.
         /// </summary>
         public static void GetPathsFromGuidsInPlace(string[] guids, bool fullPaths = false)

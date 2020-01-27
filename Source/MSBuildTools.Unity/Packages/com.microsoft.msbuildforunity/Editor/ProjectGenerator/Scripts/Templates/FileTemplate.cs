@@ -46,6 +46,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
                     fileTemplate = new XmlFileTemplate(path);
                     break;
                 case ".sln":
+                case ".meta":
                     fileTemplate = new TextFileTemplate(path);
                     break;
                 default:
