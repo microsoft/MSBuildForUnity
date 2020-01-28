@@ -4,19 +4,19 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
-  <!-- This target filters the @(AllCopyLocalItems) item list based on the provided publish file exclusion list. -->
-  <Target Name="FilterCopyLocal" DependsOnTargets="PrepareForBuild" BeforeTargets="ResolveLockFileCopyLocalProjectDeps" Condition=" '@(NuGetPackageIdExclusionList)' != '' ">
+  <!-- This target filters the @(ReferenceCopyLocalPaths) item list based on the provided publish file exclusion list. -->
+  <Target Name="_FilterReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences" Condition=" '@(NuGetPackageIdExclusionList)' != '' ">
     <ItemGroup>
-      <!-- This duplicates each item in @(AllCopyLocalItems), once per item in @(NuGetPackageIdExclusionList). -->
-      <AllCopyLocalItemsWithExclusionListMetadata Include="@(AllCopyLocalItems)">
+      <!-- This duplicates each item in @(ReferenceCopyLocalPaths), once per item in @(NuGetPackageIdExclusionList). -->
+      <_AllReferenceCopyLocalPathsWithExclusionListMetadata Include="@(ReferenceCopyLocalPaths)">
         <NuGetPackageIdExclusionList>%(NuGetPackageIdExclusionList.Identity)</NuGetPackageIdExclusionList>
-      </AllCopyLocalItemsWithExclusionListMetadata>
+      </_AllReferenceCopyLocalPathsWithExclusionListMetadata>
 
-      <!-- This filters the list back down to just the items where the NuGetPackageId matches one of the items in NuGetPackageIdExclusionList (e.g. the excluded items of @(AllCopyLocalItems)). -->
-      <ExcludedAllCopyLocalItems Include="@(AllCopyLocalItemsWithExclusionListMetadata)" Condition=" '%(AllCopyLocalItemsWithExclusionListMetadata.NuGetPackageId)' == '%(AllCopyLocalItemsWithExclusionListMetadata.NuGetPackageIdExclusionList)' " />
+      <!-- This filters the list back down to just the items where the NuGetPackageId matches one of the items in NuGetPackageIdExclusionList (e.g. the excluded items of @(ReferenceCopyLocalPaths)). -->
+      <ExcludedAllReferenceCopyLocalPaths Include="@(_AllReferenceCopyLocalPathsWithExclusionListMetadata)" Condition=" '%(_AllReferenceCopyLocalPathsWithExclusionListMetadata.NuGetPackageId)' == '%(_AllReferenceCopyLocalPathsWithExclusionListMetadata.NuGetPackageIdExclusionList)' " />
 
       <!-- Finally, actually remove the items that have been identified as excluded. -->
-      <AllCopyLocalItems Remove="@(ExcludedAllCopyLocalItems)" />
+      <ReferenceCopyLocalPaths Remove="@(ExcludedAllReferenceCopyLocalPaths)" />
     </ItemGroup>
   </Target>
 
