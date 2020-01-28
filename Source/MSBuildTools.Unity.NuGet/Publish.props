@@ -7,9 +7,6 @@
   <PropertyGroup>
     <!-- This causes the full dependency graph (from ProjectReferences and PackageReferences) to be copied to the build output directory. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-
-    <!-- This causes generation of a XML documentation file based on comments in the source code. -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
