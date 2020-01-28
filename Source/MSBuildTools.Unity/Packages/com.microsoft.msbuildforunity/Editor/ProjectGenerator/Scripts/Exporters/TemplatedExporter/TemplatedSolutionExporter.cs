@@ -124,6 +124,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
                 WriteProject(writer, projectGuid, Projects[projectGuid]);
             }
 
+            SortedDictionary<Guid, Guid> childToParentMapping = new SortedDictionary<Guid, Guid>();
             // Write folders
             foreach (KeyValuePair<Guid, SolutionFolder> folder in Folders)
             {
@@ -133,10 +134,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
                 foreach (Guid child in folder.Value.Children)
                 {
-                    writer.CreateWriterFor(FolderNestedTemplate)
-                        .Write(FolderNestedTemplate_FolderGuidToken, folder.Key)
-                        .Write(FolderNestedTemplate_ChildGuidToken, child);
+                    childToParentMapping[child] = folder.Key;
                 }
+            }
+
+            // Write the sorted nested projects
+            foreach (KeyValuePair<Guid, Guid> mapping in childToParentMapping)
+            {
+                writer.CreateWriterFor(FolderNestedTemplate)
+                .Write(FolderNestedTemplate_ChildGuidToken, mapping.Key)
+                .Write(FolderNestedTemplate_FolderGuidToken, mapping.Value);
             }
 
             // Write Config mappings

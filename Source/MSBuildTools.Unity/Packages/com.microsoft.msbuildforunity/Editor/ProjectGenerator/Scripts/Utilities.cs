@@ -660,6 +660,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
+        /// <summary>
+        /// Gets the value for a specific key if it's part of the dictionary, otherwise creates a new value and sets it using the given factory function.
+        /// </summary>
+        /// <typeparam name="TKey">The type of key.</typeparam>
+        /// <typeparam name="TValue">The type of value.</typeparam>
+        /// <param name="this">The dictionary.</param>
+        /// <param name="key">They key to check for.</param>
+        /// <param name="factoryFunc">The factory func that will be given a key, if a new value needs to be created and added.</param>
+        /// <returns>The fetched or added value.</returns>
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> @this, TKey key, Func<TKey, TValue> factoryFunc)
         {
             if (!@this.TryGetValue(key, out TValue toReturn))

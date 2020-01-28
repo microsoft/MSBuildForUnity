@@ -57,7 +57,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <returns></returns>
         ICSharpProjectExporter CreateCSharpProjectExporter(FileInfo filePath, DirectoryInfo generatedProjectFolder, bool isGenerated);
 
-
+        /// <summary>
+        /// Creates a solution file exporter.
+        /// </summary>
+        /// <param name="logger">A logger to use for logging.</param>
+        /// <param name="outputPath">The output path for the solution.</param>
+        /// <returns>An instance of <see cref="ISolutionExporter"/>.</returns>
         ISolutionExporter CreateSolutionExporter(ILogger logger, FileInfo outputPath);
     }
 }
