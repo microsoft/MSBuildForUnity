@@ -12,6 +12,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
     internal class TextTemplateToken : ITemplateToken
     {
         private readonly Guid token = Guid.NewGuid();
+        private readonly string tokenName;
+
+        public TextTemplateToken(string tokenName)
+        {
+            this.tokenName = tokenName;
+        }
 
         ///<inherit-doc/>
         public void AssignValue(TemplateReplacementSet replacementSet, object value)
@@ -28,6 +34,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
         internal object GetValue(TemplateReplacementSet replacementSet)
         {
             return replacementSet.ReplacementEntries[token];
+        }
+
+        public override string ToString()
+        {
+            return $"Text Token: {tokenName}";
         }
     }
 }

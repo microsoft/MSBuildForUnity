@@ -75,7 +75,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public HashSet<Guid> Dependencies { get; set; }
 
-        public Dictionary<string, SolutionSection> Sections { get; set; }
+        public HashSet<SolutionSection> Sections { get; set; }
     }
 
     internal static class TextSolutionFileParser
@@ -296,7 +296,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             string projectPath = match.Groups[3].Captures[0].Value;
             string projectGuid = match.Groups[4].Captures[0].Value;
 
-            Dictionary<string, SolutionSection> generalProjectSections = new Dictionary<string, SolutionSection>();
+            HashSet<SolutionSection> generalProjectSections = new HashSet<SolutionSection>();
             HashSet<Guid> dependencies = new HashSet<Guid>();
             do
             {
@@ -336,7 +336,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
                 else
                 {
-                    generalProjectSections.Add(projectSectionName, ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SectionType.PreSection : SectionType.PostSection, "EndProjectSection"));
+                    generalProjectSections.Add(ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SectionType.PreSection : SectionType.PostSection, "EndProjectSection"));
                 }
 
             } while (!reader.EndOfStream);

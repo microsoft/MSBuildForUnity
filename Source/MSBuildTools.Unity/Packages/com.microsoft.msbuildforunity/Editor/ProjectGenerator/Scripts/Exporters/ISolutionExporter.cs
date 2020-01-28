@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 {
@@ -20,7 +21,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public bool EnabledForBuild { get; set; }
 
-        public Dictionary<string, ConfigurationPlatformPair> AdditionalPropertyMappings { get; set; }
+        public IDictionary<string, ConfigurationPlatformPair> AdditionalPropertyMappings { get; set; }
     }
 
     public class SolutionProject
@@ -37,18 +38,38 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public Uri RelativePath { get; set; }
 
-        public HashSet<Guid> Dependencies { get; set; }
+        public ISet<Guid> Dependencies { get; }
 
-        public Dictionary<string, SolutionSection> AdditionalSections { get; set; }
+        public IDictionary<string, SolutionSection> AdditionalSections { get; }
 
-        public Dictionary<ConfigurationPlatformPair, ProjectConfigurationPlatformMapping> ConfigurationPlatformMapping { get; } = new Dictionary<ConfigurationPlatformPair, ProjectConfigurationPlatformMapping>();
+        public IDictionary<ConfigurationPlatformPair, ProjectConfigurationPlatformMapping> ConfigurationPlatformMapping { get; }
+            = new SortedDictionary<ConfigurationPlatformPair, ProjectConfigurationPlatformMapping>(ConfigurationPlatformPair.Comparer.Instance);
+
+        public SolutionProject(Guid guid, Guid typeGuid, string name, string relativePath, IEnumerable<SolutionSection> additionalSections, IEnumerable<Guid> depedencies)
+            : this(guid, typeGuid, name, new Uri(relativePath, UriKind.Relative), additionalSections, depedencies) { }
+
+        public SolutionProject(Guid guid, Guid typeGuid, string name, string relativePath, IEnumerable<SolutionSection> additionalSections, HashSet<Guid> depedencies)
+            : this(guid, typeGuid, name, new Uri(relativePath, UriKind.Relative), additionalSections, depedencies) { }
+
+        public SolutionProject(Guid guid, Guid typeGuid, string name, Uri relativePath, IEnumerable<SolutionSection> additionalSections, IEnumerable<Guid> depedencies)
+            : this(guid, typeGuid, name, relativePath, additionalSections, new HashSet<Guid>(depedencies)) { }
+
+        public SolutionProject(Guid guid, Guid typeGuid, string name, Uri relativePath, IEnumerable<SolutionSection> additionalSections, HashSet<Guid> depedencies)
+        {
+            Guid = guid;
+            TypeGuid = typeGuid;
+            Name = name;
+            RelativePath = relativePath;
+            AdditionalSections = additionalSections?.ToDictionary(t => t.Name) ?? new Dictionary<string, SolutionSection>();
+            Dependencies = depedencies;
+        }
     }
 
     public class SolutionFolder
     {
         public string Name { get; }
 
-        public HashSet<Guid> Children { get; } = new HashSet<Guid>();
+        public ISet<Guid> Children { get; } = new HashSet<Guid>();
 
         public SolutionFolder(string name)
         {
@@ -62,24 +83,38 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public SectionType Type { get; set; }
 
-        public List<string> SectionLines { get; } = new List<string>();
+        public IList<string> SectionLines { get; } = new List<string>();
+
+        public override bool Equals(object obj)
+        {
+            return obj is SolutionSection other
+                && Equals(Name, other.Name)
+                && Type == other.Type;
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name?.GetHashCode() ?? 0) ^ Type.GetHashCode();
+        }
     }
 
     public interface ISolutionExporter
     {
-        Dictionary<Guid, SolutionProject> Projects { get; }
+        IDictionary<Guid, SolutionProject> Projects { get; }
 
-        Dictionary<Guid, SolutionFolder> Folders { get; }
+        IDictionary<Guid, SolutionFolder> Folders { get; }
 
-        HashSet<ConfigurationPlatformPair> ConfigurationPlatforms { get; }
+        ISet<ConfigurationPlatformPair> ConfigurationPlatforms { get; }
 
-        Dictionary<string, string> Properties { get; }
+        IDictionary<string, string> Properties { get; }
 
-        Dictionary<string, string> Notes { get; }
+        ISet<Guid> GeneratedItems { get; }
 
-        Dictionary<string, string> ExtensibilityGlobals { get; }
+        IDictionary<string, string> Notes { get; }
 
-        Dictionary<string, SolutionSection> AdditionalSections { get; set; }
+        IDictionary<string, string> ExtensibilityGlobals { get; }
+
+        IDictionary<string, SolutionSection> AdditionalSections { get; set; }
 
         void Write();
     }

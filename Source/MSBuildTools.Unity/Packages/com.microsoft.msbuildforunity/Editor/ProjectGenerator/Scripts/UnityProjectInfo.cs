@@ -486,8 +486,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         #region Export Logic
         public void ExportSolution(IUnityProjectExporter unityProjectExporter, FileInfo solutionFilePath, DirectoryInfo generatedProjectsFolder)
         {
-            const string msbGenerated = "msb4u.generated";
-
             SolutionFileInfo solutionFileInfo = TextSolutionFileParser.ParseExistingSolutionFile(logger, solutionFilePath.FullName);
             ISolutionExporter exporter = unityProjectExporter.CreateSolutionExporter(logger, solutionFilePath);
 
@@ -503,12 +501,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             foreach (KeyValuePair<string, CSProjectInfo> projectPair in CSProjects)
             {
                 Uri relativePath = Utilities.GetRelativeUri(solutionFilePath.Directory.FullName, MSBuildUnityProjectExporter.GetProjectPath(projectPair.Value, generatedProjectsFolder).FullName);
-                SolutionProject project = CreateSolutionProjectEntry(projectPair.Value, relativePath, solutionFileInfo);
-                exporter.Projects.Add(project.Guid, project);
-
-                // Register as MSB4U generated project
-                exporter.Notes[projectPair.Value.Guid.ToString().ToUpper()] = msbGenerated;
+                exporter.AddProject(CreateSolutionProjectEntry(projectPair.Value, relativePath, solutionFileInfo), isGenerated: true);
             }
+
+            // Add dependency project
+            string dependencyProjectName = $"{UnityProjectName}.Dependencies.msb4u";
+            exporter.AddProject(GetDependencyProjectReference(dependencyProjectName, $"{dependencyProjectName}.csproj"), isGenerated: true);
 
             // Process existing projects
             foreach (KeyValuePair<Guid, Project> projectPair in solutionFileInfo.Projects)
@@ -517,8 +515,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     && !solutionFileInfo.MSB4UGeneratedItems.Contains(projectPair.Key)
                     && projectPair.Value.TypeGuid != SolutionProject.FolderTypeGuid)
                 {
-                    SolutionProject project = GetSolutionProjectEntryFrom(projectPair.Value, solutionFileInfo);
-                    exporter.Projects.Add(project.Guid, project);
+                    exporter.AddProject(GetSolutionProjectEntryFrom(projectPair.Value, solutionFileInfo));
                 }
             }
 
@@ -541,8 +538,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // Set the folders by scanning for "projects" with folder type in old projects
             foreach (KeyValuePair<Guid, Project> folderPair in solutionFileInfo.Projects.Where(t => t.Value.TypeGuid == SolutionProject.FolderTypeGuid))
             {
-                SolutionFolder folder = exporter.Folders.GetOrAdd(folderPair.Key, k => new SolutionFolder(folderPair.Value.Name));
-                folder.Children.AddRange(solutionFileInfo.ChildToParentNestedMappings.Where(t => t.Value == folderPair.Key).Select(t => t.Key));
+                exporter.GetOrAddFolder(folderPair.Key, folderPair.Value.Name)
+                    .Children.AddRange(solutionFileInfo.ChildToParentNestedMappings.Where(t => t.Value == folderPair.Key).Select(t => t.Key));
             }
 
             Dictionary<AssetLocation, Tuple<Guid, string>> knownFolderMapping = GetKnownFolderMapping();
@@ -553,6 +550,20 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             //TODO handle existing projects
 
             exporter.AdditionalSections = solutionFileInfo.SolutionSections;
+
+            exporter.Write();
+        }
+
+        private SolutionProject GetDependencyProjectReference(string projectName, string relativePath)
+        {
+            SolutionProject toReturn = new SolutionProject(config.DependenciesProjectGuid, SolutionProject.CSharpProjectTypeGuid, projectName, relativePath, null, CSProjects.Values.Select(t => t.Guid));
+
+            void SetMapping(ConfigurationPlatformPair configPlatform) => toReturn.ConfigurationPlatformMapping.Add(configPlatform, new ProjectConfigurationPlatformMapping() { ConfigurationPlatform = configPlatform, EnabledForBuild = true });
+
+            SetMapping(new ConfigurationPlatformPair("Debug", "Any CPU"));
+            SetMapping(new ConfigurationPlatformPair("Release", "Any CPU"));
+
+            return toReturn;
         }
 
         private void ProcessSetForKnownFolders<T>(ISolutionExporter exporter, Dictionary<AssetLocation, Tuple<Guid, string>> knownFolderMapping, IEnumerable<T> set, Func<T, AssetLocation> getAssetLocation, Func<T, Guid> getGuidFunc)
@@ -561,8 +572,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 if (knownFolderMapping.TryGetValue(getAssetLocation(item), out Tuple<Guid, string> guidNameTuple))
                 {
-                    exporter.Folders
-                        .GetOrAdd(guidNameTuple.Item1, t => new SolutionFolder(guidNameTuple.Item2))
+                    exporter.GetOrAddFolder(guidNameTuple.Item1, guidNameTuple.Item2, isGenerated: true)
                         .Children.Add(getGuidFunc(item));
                 }
             }
@@ -581,15 +591,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private SolutionProject GetSolutionProjectEntryFrom(Project project, SolutionFileInfo solutionFileInfo)
         {
-            SolutionProject toReturn = new SolutionProject()
-            {
-                Guid = project.Guid,
-                TypeGuid = project.TypeGuid,
-                AdditionalSections = project.Sections,
-                Dependencies = project.Dependencies,
-                Name = project.Name,
-                RelativePath = new Uri(project.RelativePath)
-            };
+            SolutionProject toReturn = new SolutionProject(project.Guid, project.TypeGuid, project.Name, project.RelativePath, project.Sections, project.Dependencies);
 
             SetAdditionalProjectProperties(toReturn, project.Guid, solutionFileInfo, config =>
             {
@@ -614,19 +616,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private SolutionProject CreateSolutionProjectEntry(CSProjectInfo project, Uri relativePath, SolutionFileInfo solutionFileInfo)
         {
-            SolutionProject toReturn = new SolutionProject()
-            {
-                Guid = project.Guid,
-                TypeGuid = SolutionProject.CSharpProjectTypeGuid,
-                Name = project.Name + ".msb4u",
-                Dependencies = new HashSet<Guid>(project.ProjectDependencies.Select(t => t.Dependency.Guid)),
-                RelativePath = relativePath
-            };
-
+            IEnumerable<SolutionSection> sections = null;
             if (solutionFileInfo.Projects.TryGetValue(project.Guid, out Project parsedProject))
             {
-                toReturn.AdditionalSections = parsedProject.Sections;
+                sections = parsedProject.Sections;
             }
+
+            SolutionProject toReturn = new SolutionProject(project.Guid, SolutionProject.CSharpProjectTypeGuid, project.Name + ".msb4u", relativePath, sections, project.ProjectDependencies.Select(t => t.Dependency.Guid));
 
             foreach (CompilationPlatformInfo platform in AvailablePlatforms)
             {
@@ -663,7 +659,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         private void ProcessConfigurationPlatformMapping(SolutionProject solutionProject, UnityConfigurationType configType, CompilationPlatformInfo platform, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> enabledPlatforms)
         {
-            ConfigurationPlatformPair configPair = new ConfigurationPlatformPair(UnityConfigurationType.InEditor, platform.Name);
+            ConfigurationPlatformPair configPair = new ConfigurationPlatformPair(configType, platform.Name);
 
             solutionProject.ConfigurationPlatformMapping.Add(configPair, new ProjectConfigurationPlatformMapping()
             {
