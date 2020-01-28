@@ -7,30 +7,34 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 {
-    internal enum SolutionProjecSectionType
-    {
-        PreProject,
-        PostProject
-    }
-
-    internal enum SolutionGlobalSectionType
-    {
-        PreSolution,
-        PostSolution
-    }
-
     internal class SolutionFileInfo
     {
+        public static SolutionFileInfo Empty { get; } = new SolutionFileInfo()
+        {
+            ChildToParentNestedMappings = new Dictionary<Guid, Guid>(),
+            ConfigPlatformPairs = new HashSet<ConfigurationPlatformPair>(),
+            ExtensibilityGlobals = new Dictionary<string, string>(),
+            MSB4UGeneratedItems = new HashSet<Guid>(),
+            ProjectConfigurationEntires = new Dictionary<Guid, List<ProjectConfigurationEntry>>(),
+            Projects = new Dictionary<Guid, Project>(),
+            Properties = new Dictionary<string, string>(),
+            SolutionNotes = new Dictionary<string, string>(),
+            SolutionSections = new Dictionary<string, SolutionSection>()
+        };
+
+        public bool IsEmpty { get; }
+
         public Dictionary<Guid, Project> Projects { get; set; }
 
-        public Dictionary<string, SolutionFileSection<SolutionGlobalSectionType>> SolutionSections { get; set; }
+        public Dictionary<string, SolutionSection> SolutionSections { get; set; }
 
         public Dictionary<Guid, Guid> ChildToParentNestedMappings { get; set; }
 
-        public HashSet<ConfigPlatformPair> ConfigPlatformPairs { get; set; }
+        public HashSet<ConfigurationPlatformPair> ConfigPlatformPairs { get; set; }
 
         public Dictionary<string, string> Properties { get; set; }
 
@@ -41,64 +45,22 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         public Dictionary<Guid, List<ProjectConfigurationEntry>> ProjectConfigurationEntires { get; set; }
 
         public HashSet<Guid> MSB4UGeneratedItems { get; set; }
-    }
 
-    internal struct ConfigPlatformPair
-    {
-        public string Configuration { get; set; }
-
-        public string Platform { get; set; }
-
-        public ConfigPlatformPair(string configuration, string platform)
+        private SolutionFileInfo(bool isEmpty)
         {
-            Configuration = configuration;
-            Platform = platform;
+            IsEmpty = isEmpty;
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is ConfigPlatformPair other
-                && Equals(Configuration, other.Configuration)
-                && Equals(Platform, other.Platform);
-        }
-
-        public override int GetHashCode()
-        {
-            return (Configuration?.GetHashCode() ?? 0)
-                ^ (Platform?.GetHashCode() ?? 0);
-        }
-
-        internal struct Comparer : IComparer<ConfigPlatformPair>
-        {
-            internal static Comparer Instance { get; } = new Comparer();
-
-            public int Compare(ConfigPlatformPair x, ConfigPlatformPair y)
-            {
-                int results = string.Compare(x.Configuration, y.Configuration);
-
-                return results == 0
-                    ? string.Compare(x.Platform, y.Platform)
-                    : results;
-            }
-        }
+        public SolutionFileInfo() : this(false) { }
     }
 
     internal struct ProjectConfigurationEntry
     {
-        public ConfigPlatformPair SolutionConfig { get; set; }
+        public ConfigurationPlatformPair SolutionConfig { get; set; }
 
-        public ConfigPlatformPair ProjectConfig { get; set; }
+        public ConfigurationPlatformPair ProjectConfig { get; set; }
 
         public string Property { get; set; }
-    }
-
-    internal struct SolutionFileSection<T>
-    {
-        public string Name { get; set; }
-
-        public T Type { get; set; }
-
-        public List<string> Lines { get; set; }
     }
 
     internal struct Project
@@ -113,7 +75,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public HashSet<Guid> Dependencies { get; set; }
 
-        public Dictionary<string, SolutionFileSection<SolutionProjecSectionType>> Sections { get; set; }
+        public Dictionary<string, SolutionSection> Sections { get; set; }
     }
 
     internal static class TextSolutionFileParser
@@ -122,7 +84,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         {
             try
             {
-                solutionFileInfo = ParseExistingSolutionFile(path);
+                solutionFileInfo = ParseExistingSolutionFileInner(path);
                 return true;
             }
             catch (Exception ex)
@@ -135,11 +97,30 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             }
         }
 
-        private static SolutionFileInfo ParseExistingSolutionFile(string path)
+        public static SolutionFileInfo ParseExistingSolutionFile(ILogger logger, string path)
+        {
+            if (File.Exists(path))
+            {
+                try
+                {
+                    return ParseExistingSolutionFileInner(path);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(nameof(TextSolutionFileParser), "Failed to parse existing solution file.");
+                    logger?.LogException(ex);
+                }
+            }
+
+            // Return a default/empty one
+            return SolutionFileInfo.Empty;
+        }
+
+        private static SolutionFileInfo ParseExistingSolutionFileInner(string path)
         {
             Dictionary<Guid, Project> projects = new Dictionary<Guid, Project>();
-            Dictionary<string, SolutionFileSection<SolutionGlobalSectionType>> globalSections = new Dictionary<string, SolutionFileSection<SolutionGlobalSectionType>>();
-            HashSet<ConfigPlatformPair> configPlatPairs = new HashSet<ConfigPlatformPair>();
+            Dictionary<string, SolutionSection> globalSections = new Dictionary<string, SolutionSection>();
+            HashSet<ConfigurationPlatformPair> configPlatPairs = new HashSet<ConfigurationPlatformPair>();
             Dictionary<string, string> solutionProperties = new Dictionary<string, string>();
             Dictionary<string, string> extensibilityGlobals = new Dictionary<string, string>();
             Dictionary<string, string> solutionNotes = new Dictionary<string, string>();
@@ -208,7 +189,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                             ReadLinesUntil(reader, "EndGlobalSection", l =>
                             {
                                 string[] configPlatPair = l.Split('=')[0].Trim().Split('|');
-                                configPlatPairs.Add(new ConfigPlatformPair(configPlatPair[0], configPlatPair[1]));
+                                configPlatPairs.Add(new ConfigurationPlatformPair(configPlatPair[0], configPlatPair[1]));
                             });
                             break;
                         case "ProjectConfigurationPlatforms":
@@ -226,8 +207,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
                                 list.Add(new ProjectConfigurationEntry()
                                 {
-                                    SolutionConfig = new ConfigPlatformPair(configMatch.Groups[2].Captures[0].Value, configMatch.Groups[3].Captures[0].Value),
-                                    ProjectConfig = new ConfigPlatformPair(configMatch.Groups[5].Captures[0].Value, configMatch.Groups[6].Captures[0].Value),
+                                    SolutionConfig = new ConfigurationPlatformPair(configMatch.Groups[2].Captures[0].Value, configMatch.Groups[3].Captures[0].Value),
+                                    ProjectConfig = new ConfigurationPlatformPair(configMatch.Groups[5].Captures[0].Value, configMatch.Groups[6].Captures[0].Value),
                                     Property = configMatch.Groups[4].Captures[0].Value
                                 });
                             });
@@ -277,7 +258,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                             });
                             break;
                         default:
-                            globalSections.Add(sectionName, ReadSection(reader, sectionName, prePostSolution == "preSolution" ? SolutionGlobalSectionType.PreSolution : SolutionGlobalSectionType.PostSolution, "EndGlobalSection"));
+                            globalSections.Add(sectionName, ReadSection(reader, sectionName, prePostSolution == "preSolution" ? SectionType.PreSection : SectionType.PostSection, "EndGlobalSection"));
                             break;
                     }
                 }
@@ -315,7 +296,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             string projectPath = match.Groups[3].Captures[0].Value;
             string projectGuid = match.Groups[4].Captures[0].Value;
 
-            Dictionary<string, SolutionFileSection<SolutionProjecSectionType>> generalProjectSections = new Dictionary<string, SolutionFileSection<SolutionProjecSectionType>>();
+            Dictionary<string, SolutionSection> generalProjectSections = new Dictionary<string, SolutionSection>();
             HashSet<Guid> dependencies = new HashSet<Guid>();
             do
             {
@@ -355,7 +336,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
                 }
                 else
                 {
-                    generalProjectSections.Add(projectSectionName, ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SolutionProjecSectionType.PreProject : SolutionProjecSectionType.PostProject, "EndProjectSection"));
+                    generalProjectSections.Add(projectSectionName, ReadSection(reader, projectSectionName, prePostProject == "preProject" ? SectionType.PreSection : SectionType.PostSection, "EndProjectSection"));
                 }
 
             } while (!reader.EndOfStream);
@@ -363,18 +344,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
             throw new InvalidDataException("We should have already returned.");
         }
 
-        private static SolutionFileSection<T> ReadSection<T>(StreamReader reader, string sectionName, T sessionType, string endSectionTag)
+        private static SolutionSection ReadSection(StreamReader reader, string sectionName, SectionType sessionType, string endSectionTag)
         {
-            List<string> sectionLines = new List<string>();
-
-            ReadLinesUntil(reader, endSectionTag, sectionLines.Add);
-
-            return new SolutionFileSection<T>()
+            SolutionSection toReturn = new SolutionSection()
             {
-                Lines = sectionLines,
                 Name = sectionName,
                 Type = sessionType
             };
+
+            ReadLinesUntil(reader, endSectionTag, toReturn.SectionLines.Add);
+
+            return toReturn;
         }
 
         private static void ReadLinesUntil(StreamReader reader, string endLine, Action<string> processLineCallback)

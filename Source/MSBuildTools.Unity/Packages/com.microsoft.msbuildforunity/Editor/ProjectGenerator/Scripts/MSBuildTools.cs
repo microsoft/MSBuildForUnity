@@ -233,7 +233,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static void RegenerateSDKProjects()
         {
-            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, performCompleteParse: true), completeGeneration: true);
+            RegenerateEverything(unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, performCompleteParse: true), completeGeneration: true);
             Debug.Log($"{nameof(RegenerateSDKProjects)} Completed Succesfully.");
         }
 
@@ -295,7 +295,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             if (regenerateEverything || unityProjectInfo == null)
             {
                 // Create the project info only if it's null or we need to regenerate
-                unityProjectInfo = new UnityProjectInfo(SupportedBuildTargets, Config, Config.AutoGenerateEnabled || forceCompleteGeneration);
+                unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, Config.AutoGenerateEnabled || forceCompleteGeneration);
             }
 
             // We regenerate the common "directory" props file under the following conditions:
@@ -374,8 +374,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 solutionExportStart = stopwatch.ElapsedMilliseconds;
                 if (completeGeneration)
                 {
-                    Exporter.ExportSolution(unityProjectInfo, Config);
-                    unityProjectInfo.ExportProjects(Exporter, new DirectoryInfo(Utilities.MSBuildProjectFolder));
+                    DirectoryInfo directoryInfo = new DirectoryInfo(Utilities.MSBuildProjectFolder);
+                    unityProjectInfo.ExportSolution(Exporter, new FileInfo(Exporter.GetSolutionFilePath(unityProjectInfo)), directoryInfo);
+                    unityProjectInfo.ExportProjects(Exporter, directoryInfo);
                 }
                 MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
