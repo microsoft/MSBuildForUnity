@@ -50,7 +50,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             TemplatedWriter propsWriter = new TemplatedWriter(propsTemplateFile);
 
-            propsWriter.Write(ProjectGuidToken, Guid.ToString().ToUpper());
+            propsWriter.Write(ProjectGuidToken, Guid);
 
             foreach (ProjectReference projectReference in References)
             {
