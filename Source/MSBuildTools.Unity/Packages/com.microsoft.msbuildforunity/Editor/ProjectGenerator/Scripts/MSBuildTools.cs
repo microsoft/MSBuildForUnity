@@ -382,7 +382,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
                 {
-                    File.Copy(otherFile, Path.Combine(Utilities.MSBuildProjectFolder, Path.GetFileName(otherFile)));
+                    File.Copy(otherFile, Path.Combine(Utilities.AssetPath, Path.GetFileName(otherFile)));
                 }
 
                 if (completeGeneration)
