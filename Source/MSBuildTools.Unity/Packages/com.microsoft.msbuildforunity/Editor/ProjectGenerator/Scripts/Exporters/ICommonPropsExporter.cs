@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #if UNITY_EDITOR
+using System;
 using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
@@ -11,6 +12,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     /// </summary>
     public interface ICommonPropsExporter
     {
+        /// <summary>
+        /// Gets or sets the current MSBuildForUnity version.
+        /// </summary>
+        Version MSBuildForUnityVersion { get; set; }
+
         /// <summary>
         /// Gets or sets the Unity major version.
         /// </summary>

@@ -61,9 +61,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// </summary>
         /// <param name="exporter">The overal exporter to use for creating exporters.</param>
         /// <param name="currentPlayerPlatform">Current unity platform.</param>
-        public static void ExportCommonPropsFile(IUnityProjectExporter exporter, CompilationPlatformInfo currentPlayerPlatform)
+        public static void ExportCommonPropsFile(IUnityProjectExporter exporter, Version msb4uVersion, CompilationPlatformInfo currentPlayerPlatform)
         {
             ICommonPropsExporter propsExporter = exporter.CreateCommonPropsExporter(new FileInfo(Path.Combine(Utilities.ProjectPath, "MSBuildForUnity.Common.props")));
+            propsExporter.MSBuildForUnityVersion = msb4uVersion;
 
             string[] versionParts = Application.unityVersion.Split('.');
             propsExporter.UnityMajorVersion = versionParts[0];
@@ -79,11 +80,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             propsExporter.Write();
         }
 
-        public static void ExportTopLevelDependenciesProject(IUnityProjectExporter exporter, MSBuildToolsConfig config, DirectoryInfo generatedProjectFolder, UnityProjectInfo unityProjectInfo)
+        public static void ExportTopLevelDependenciesProject(IUnityProjectExporter exporter, Version msb4uVerison, MSBuildToolsConfig config, DirectoryInfo generatedProjectFolder, UnityProjectInfo unityProjectInfo)
         {
             string projectPath = GetProjectFilePath(Utilities.AssetPath, $"{unityProjectInfo.UnityProjectName}.Dependencies");
             ITopLevelDependenciesProjectExporter projectExporter = exporter.CreateTopLevelDependenciesProjectExporter(new FileInfo(projectPath), generatedProjectFolder);
 
+            projectExporter.MSBuildForUnityVersion = msb4uVerison;
             projectExporter.Guid = config.DependenciesProjectGuid;
 
             if (unityProjectInfo.AvailablePlatforms != null)

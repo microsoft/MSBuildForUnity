@@ -18,6 +18,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         Guid Guid { get; set; }
 
         /// <summary>
+        /// Gets or sets the MSBuildForUnity version.
+        /// </summary>
+        Version MSBuildForUnityVersion { get; set; }
+
+        /// <summary>
         /// Gets the set of references for this project.
         /// </summary>
         HashSet<ProjectReference> References { get; }

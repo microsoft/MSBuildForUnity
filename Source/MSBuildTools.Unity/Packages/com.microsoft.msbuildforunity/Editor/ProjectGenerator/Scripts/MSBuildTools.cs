@@ -12,6 +12,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
@@ -25,8 +26,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private int version = 0;
 
+        [FormerlySerializedAs("autoGenerateEnabled")]
         [SerializeField]
-        private bool autoGenerateEnabled = false;
+        private bool fullGenerationEnabled = false;
 
         [SerializeField]
         private string dependenciesProjectGuid = Guid.NewGuid().ToString();
@@ -55,12 +57,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private string solutionGuid = Guid.NewGuid().ToString();
 
-        public bool AutoGenerateEnabled
+        public bool FullGenerationEnabled
         {
-            get => autoGenerateEnabled;
+            get => fullGenerationEnabled;
             set
             {
-                autoGenerateEnabled = value;
+                fullGenerationEnabled = value;
                 Save();
             }
         }
@@ -177,9 +179,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         public const string CSharpVersion = "7.3";
-        public const string AutoGenerate = "MSBuild/Auto Generation Enabled";
+        public const string FullGeneration = "MSBuild/Full Generation Enabled";
 
-        private static readonly string TokenFilePath = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
+        public static readonly Version MSBuildForUnityVersion = new Version(0, 8, 3);
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;
@@ -199,19 +201,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
 
-        [MenuItem(AutoGenerate, priority = 101)]
+        [MenuItem(FullGeneration, priority = 101)]
         public static void ToggleAutoGenerate()
         {
-            Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
-            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
+            Config.FullGenerationEnabled = !Config.FullGenerationEnabled;
+            Menu.SetChecked(FullGeneration, Config.FullGenerationEnabled);
             // If we just toggled on, regenerate everything
             RefreshGeneratedOutput(forceGenerateEverything: true, forceCompleteGeneration: false);
         }
 
-        [MenuItem(AutoGenerate, true, priority = 101)]
+        [MenuItem(FullGeneration, true, priority = 101)]
         public static bool ToggleAutoGenerate_Validate()
         {
-            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
+            Menu.SetChecked(FullGeneration, Config.FullGenerationEnabled);
             return true;
         }
 
@@ -275,45 +277,51 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
             ApiCompatibilityLevel targetFramework = PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup);
 
-            bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
+            bool buildTargetOrFrameworkChanged = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
 
-            if (shouldClean)
+            if (buildTargetOrFrameworkChanged)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
             }
 
-            bool doesTokenFileExist = File.Exists(TokenFilePath);
+            // Get the token file in the Unity Temp directory, if it exists.
+            Version tokenVerison = GetCurrentTokenVersion();
 
-            // We regenerate everything if:
-            // - We are forced to
+            // We regenerate, if the token file exists, and it's current version.
+            bool doesCurrentVersionTokenFileExist = tokenVerison != null && tokenVerison == MSBuildForUnityVersion;
+
+            // We perform the regeneration of complete or partial pass in the following cases:
+            // - forceGenerateEverything is true (we are told to)
+            // - buildTargetOrFrameworkChanged is true (target framework changed)
+            // - doesCurrentVersionTokenFileExist is false (version changed, or editor just opened)
+
             // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
-            bool regenerateEverything = forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean));
+            bool performRegeneration = forceGenerateEverything || buildTargetOrFrameworkChanged || !doesCurrentVersionTokenFileExist;
 
-            if (regenerateEverything || unityProjectInfo == null)
+            if (performRegeneration || unityProjectInfo == null)
             {
                 // Create the project info only if it's null or we need to regenerate
-                unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, Config.AutoGenerateEnabled || forceCompleteGeneration);
+                unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, Config.FullGenerationEnabled || forceCompleteGeneration);
             }
 
-            // We regenerate the common "directory" props file under the following conditions:
-            // - Token file doesn't exist which means editor was just started
-            // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
-            if (shouldClean || !doesTokenFileExist)
+            if (performRegeneration)
             {
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
+                // If we are forced complete, then we regenerate, otherwise perform the one that is selected
+                RegenerateEverything(unityProjectInfo, Config.FullGenerationEnabled || forceCompleteGeneration);
             }
 
-            if (regenerateEverything)
+            if (!doesCurrentVersionTokenFileExist)
             {
-                RegenerateEverything(unityProjectInfo, Config.AutoGenerateEnabled || forceCompleteGeneration);
-            }
+                foreach (string tokenFile in Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly))
+                {
+                    File.Delete(tokenFile);
+                }
 
-            if (!doesTokenFileExist)
-            {
-                File.Create(TokenFilePath).Dispose();
+                File.Create(Path.Combine(Utilities.ProjectPath, "Temp", $"{MSBuildForUnityVersion.ToString(3)}_token.msb4u"))
+                    .Dispose();
             }
 
             // Write the current targetframework and build target
@@ -321,10 +329,32 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}", (int)targetFramework);
 
             // If we cleaned, now build
-            if (shouldClean)
+            if (buildTargetOrFrameworkChanged)
             {
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
+        }
+
+        private static Version GetCurrentTokenVersion()
+        {
+            string[] file = Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly);
+
+            if (file.Length > 0)
+            {
+                string versionNumber = Path.GetFileNameWithoutExtension(file[0]).Split('_')[0];
+
+                string[] versionParts = versionNumber.Split('.');
+
+                if (versionParts.Length == 3
+                    && int.TryParse(versionParts[0], out int major)
+                    && int.TryParse(versionParts[1], out int minor)
+                    && int.TryParse(versionParts[2], out int patch))
+                {
+                    return new Version(major, minor, patch);
+                }
+            }
+
+            return null;
         }
 
         private static void ExportCoreUnityPropFiles(UnityProjectInfo unityProjectInfo)
@@ -364,7 +394,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, MSBuildForUnityVersion, unityProjectInfo.CurrentPlayerPlatform);
                 if (completeGeneration)
                 {
                     ExportCoreUnityPropFiles(unityProjectInfo);
@@ -378,7 +408,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     unityProjectInfo.ExportSolution(Exporter, new FileInfo(Exporter.GetSolutionFilePath(unityProjectInfo)), directoryInfo);
                     unityProjectInfo.ExportProjects(Exporter, directoryInfo);
                 }
-                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
+                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, MSBuildForUnityVersion, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
