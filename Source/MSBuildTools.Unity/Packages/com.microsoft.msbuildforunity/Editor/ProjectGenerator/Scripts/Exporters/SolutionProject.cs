@@ -30,7 +30,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         public Guid Guid { get; }
 
         /// <summary>
-        /// Gets the type of Project entry; note: <see cref="SolutionFolder"/> is fo Folders.
+        /// Gets the type of Project entry; note: <see cref="SolutionFolder"/> is for Folders.
         /// </summary>
         public Guid TypeGuid { get; }
 

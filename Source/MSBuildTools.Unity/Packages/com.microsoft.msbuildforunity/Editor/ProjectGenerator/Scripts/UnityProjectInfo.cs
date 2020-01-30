@@ -490,7 +490,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             ISolutionExporter exporter = unityProjectExporter.CreateSolutionExporter(logger, solutionFilePath);
 
             //TODO we need to figure out how to handle existing projects
-            //Dictionary<string, Guid> existingProjects;
 
             // Remove known folders
             solutionFileInfo.Projects.Remove(config.BuiltInPackagesFolderGuid);
@@ -527,7 +526,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             exporter.ExtensibilityGlobals.AddRange(solutionFileInfo.ExtensibilityGlobals);
             exporter.ExtensibilityGlobals["SolutionGuid"] = "{" + config.SolutionGuid.ToString().ToUpper() + "}";
 
-            // Bring forward the pairs, and then set the platforms we know off
+            // Bring forward the pairs, and then set the platforms we know of
             exporter.ConfigurationPlatforms.AddRange(solutionFileInfo.ConfigPlatformPairs);
             foreach (CompilationPlatformInfo platform in AvailablePlatforms)
             {

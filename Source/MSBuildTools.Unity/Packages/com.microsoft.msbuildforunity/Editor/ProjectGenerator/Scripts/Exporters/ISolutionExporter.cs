@@ -29,27 +29,27 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         ISet<ConfigurationPlatformPair> ConfigurationPlatforms { get; }
         
         /// <summary>
-        /// Gets a mutable set of items that conisdered generated and will be exported as such.
+        /// Gets a mutable set of items that considered generated and will be exported as such.
         /// </summary>
         ISet<Guid> GeneratedItems { get; }
 
         /// <summary>
-        /// Gets or set the mutable dictionary of solution properties to export.
+        /// Gets or sets the mutable dictionary of solution properties to export.
         /// </summary>
         IDictionary<string, string> Properties { get; }
 
         /// <summary>
-        /// Gets or set the mutable dictionary of solution notes to export.
+        /// Gets or sets the mutable dictionary of solution notes to export.
         /// </summary>
         IDictionary<string, string> Notes { get; }
 
         /// <summary>
-        /// Gets or set the mutable dictionary of solution extensibility globals to export.
+        /// Gets or sets the mutable dictionary of solution extensibility globals to export.
         /// </summary>
         IDictionary<string, string> ExtensibilityGlobals { get; }
 
         /// <summary>
-        /// Gets or set the mutable dictionary of additional global solution sections to export.
+        /// Gets or sets the mutable dictionary of additional global solution sections to export.
         /// </summary>
         IDictionary<string, SolutionSection> AdditionalSections { get; set; }
 
