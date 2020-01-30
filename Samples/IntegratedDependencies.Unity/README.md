@@ -53,8 +53,7 @@ In order to add dependencies to your project, you can open any C# project under 
   
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
   <PropertyGroup>
-    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
-    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
@@ -102,8 +101,7 @@ The generated project `Assets/WSASpecific/Component.WSA.msb4u.csproj` contains a
   
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
   <PropertyGroup>
-    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
-    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <Import Project="$(MSBuildForUnityGeneratedOutputDirectory)\$(MSBuildProjectName).g.props" />
