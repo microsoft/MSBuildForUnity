@@ -1,17 +1,6 @@
 <Project ToolsVersion="15.0">
-  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' == ''">
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(UnityCurrentTargetFramework)' != ''">
-    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(UnityCurrentPlatform)'!=''">
-    <UnityPlatform>$(UnityCurrentPlatform)</UnityPlatform>
-  </PropertyGroup>
-
   <PropertyGroup>
+	<UnityPlatform>$(UnityCurrentPlatform)</UnityPlatform>
     <ProjectGuid><!--PROJECT_GUID_TOKEN--></ProjectGuid>
     <UnityConfiguration>InEditor</UnityConfiguration>
     <!-- Make sure Unity ignores the contents of the intermediate output path. -->

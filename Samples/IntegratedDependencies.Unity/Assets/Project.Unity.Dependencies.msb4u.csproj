@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0">
+﻿<Project ToolsVersion="15.0">
   <!--GENERATED FILE-->
   <!--
     This file can be modified and checked in.
@@ -26,8 +26,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
 
   <PropertyGroup>
-    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
-    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <!-- SDK.props is imported inside this props file -->

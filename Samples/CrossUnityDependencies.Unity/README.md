@@ -52,8 +52,7 @@ In addition to that, the same line was added to the specific MSB4U project that 
   
   <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
   <PropertyGroup>
-    <!--anborod: This is a weird thing, it is a required property (even if commented)-->
-    <!--<TargetFrameworks>netstandard2.0;uap10.0;net46</TargetFrameworks> -->
+    <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <!-- SDK.props is imported inside this props file -->
