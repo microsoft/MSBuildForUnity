@@ -55,7 +55,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates.Text
                         string tokenName = potentialToken.Substring(0, potentialToken.Length - TokenSuffix.Length);
                         if (!tokenMap.TryGetValue(tokenName, out ITemplateToken token))
                         {
-                            token = new TextTemplateToken();
+                            token = new TextTemplateToken(tokenName);
                             tokenMap.Add(tokenName, token);
                         }
 

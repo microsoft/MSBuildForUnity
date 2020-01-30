@@ -28,9 +28,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 
         public ProjectReference(Uri referencePath, string condition, bool isGenerated)
         {
-            this.ReferencePath = referencePath;
-            this.Condition = condition;
-            this.IsGenerated = isGenerated;
+            ReferencePath = referencePath;
+            Condition = condition;
+            IsGenerated = isGenerated;
         }
 
         /// <inheritdoc/>

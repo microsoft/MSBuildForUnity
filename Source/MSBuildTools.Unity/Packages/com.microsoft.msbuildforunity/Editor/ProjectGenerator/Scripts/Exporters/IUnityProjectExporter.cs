@@ -3,6 +3,7 @@
 
 #if UNITY_EDITOR
 using System.IO;
+using UnityEngine;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
 {
@@ -12,25 +13,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
     public interface IUnityProjectExporter
     {
         /// <summary>
-        /// Given a C# project, get its export path.
-        /// </summary>
-        /// <param name="projectInfo">The parsed <see cref="CSProjectInfo"/> representing the C# project.</param>
-        /// <returns>The path to the project.</returns>
-        FileInfo GetProjectPath(CSProjectInfo projectInfo);
-
-        /// <summary>
         /// Given the <see cref="UnityProjectInfo"/>, get where the solution file will be exported.
         /// </summary>
         /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
         /// <returns>The path to where the .sln file will be exported.</returns>
         string GetSolutionFilePath(UnityProjectInfo unityProjectInfo);
-
-        /// <summary>
-        /// Exports the MSBuild solution given the <see cref="UnityProjectInfo"/> information.
-        /// </summary>
-        /// <param name="unityProjectInfo">This contains parsed data about the current Unity project.</param>
-        /// <param name="config">Configuration for MSBuild tools.</param>
-        void ExportSolution(UnityProjectInfo unityProjectInfo, MSBuildToolsConfig config);
 
         /// <summary>
         /// Creates an exporter for the commom MSBuild file that is expected to be used by both generated (by MSBuildForUnity) and non-generated (NuGet .targets/.props, or hand-crafted) projects alike.
@@ -61,7 +48,22 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters
         /// <param name="scriptingBackend">The scripting backend for the platform props.</param>
         IWSAPlayerPlatformPropsExporter CreateWSAPlayerPlatformPropsExporter(FileInfo path, ScriptingBackend scriptingBackend);
 
+        /// <summary>
+        /// Creates an exporter for a C# project.
+        /// </summary>
+        /// <param name="filePath">Path of th project.</param>
+        /// <param name="generatedProjectFolder">The generated projects folder.</param>
+        /// <param name="isGenerated">True whether this is a generated project or not.</param>
+        /// <returns></returns>
         ICSharpProjectExporter CreateCSharpProjectExporter(FileInfo filePath, DirectoryInfo generatedProjectFolder, bool isGenerated);
+
+        /// <summary>
+        /// Creates a solution file exporter.
+        /// </summary>
+        /// <param name="logger">A logger to use for logging.</param>
+        /// <param name="outputPath">The output path for the solution.</param>
+        /// <returns>An instance of <see cref="ISolutionExporter"/>.</returns>
+        ISolutionExporter CreateSolutionExporter(ILogger logger, FileInfo outputPath);
     }
 }
 #endif

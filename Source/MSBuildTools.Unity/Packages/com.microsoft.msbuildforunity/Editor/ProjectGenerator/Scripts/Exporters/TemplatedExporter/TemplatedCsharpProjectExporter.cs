@@ -96,7 +96,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         public void Write()
         {
             TemplatedWriter propsWriter = new TemplatedWriter(propsTemplateFile)
-                .Write(ProjectGuidToken, Guid.ToString().ToUpper())
+                .Write(ProjectGuidToken, Guid)
                 .Write(ProjectNameToken, ProjectName)
                 .Write(AllowUnsafeToken, AllowUnsafe.ToString())
                 .Write(LanguageVersionToken, LanguageVersion)
@@ -146,7 +146,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
             foreach (ConfigurationPlatformPair pair in SupportedBuildPlatforms)
             {
                 targetsWriter.CreateWriterFor(SupportedPlatformBuildTemplate)
-                    .Write(SupportedPlatformBuildTemplate_ConfigurationToken, pair.Configuration.ToString())
+                    .Write(SupportedPlatformBuildTemplate_ConfigurationToken, pair.Configuration)
                     .Write(SupportedPlatformBuildTemplate_PlatformToken, pair.Platform);
             }
 

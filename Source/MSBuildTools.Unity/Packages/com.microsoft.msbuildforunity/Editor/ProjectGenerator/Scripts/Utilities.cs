@@ -271,6 +271,32 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         /// <summary>
+        /// Gets a relative path between two absolute paths.
+        /// </summary>
+        public static Uri GetRelativeUri(string thisAbsolute, string thatAbsolute)
+        {
+            if (!thisAbsolute.EndsWith("\\"))
+            {
+                thisAbsolute = thisAbsolute + "\\";
+            }
+
+            return new Uri(thisAbsolute).MakeRelativeUri(new Uri(thatAbsolute));
+        }
+
+        /// <summary>
+        /// Converts a relative Uri to a properly formatted string.
+        /// </summary>
+        public static string AsRelativePath(this Uri uri)
+        {
+            if (uri.IsAbsoluteUri)
+            {
+                throw new ArgumentException("Expecting a relative Uri.", nameof(uri));
+            }
+
+            return GetNormalizedPath(Uri.UnescapeDataString(uri.OriginalString));
+        }
+
+        /// <summary>
         /// Gets a relative path between two known relative paths (inside Assets or Packages)
         /// </summary>
         public static string GetRelativePathForKnownFolders(string thisKnownFolder, string thatKnownFolder)
@@ -632,6 +658,25 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Gets the value for a specific key if it's part of the dictionary, otherwise creates a new value and sets it using the given factory function.
+        /// </summary>
+        /// <typeparam name="TKey">The type of key.</typeparam>
+        /// <typeparam name="TValue">The type of value.</typeparam>
+        /// <param name="this">The dictionary.</param>
+        /// <param name="key">They key to check for.</param>
+        /// <param name="factoryFunc">The factory func that will be given a key, if a new value needs to be created and added.</param>
+        /// <returns>The fetched or added value.</returns>
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> @this, TKey key, Func<TKey, TValue> factoryFunc)
+        {
+            if (!@this.TryGetValue(key, out TValue toReturn))
+            {
+                @this[key] = toReturn = factoryFunc(key);
+            }
+
+            return toReturn;
         }
 
         public static IEnumerable<Version> GetUWPSDKs()

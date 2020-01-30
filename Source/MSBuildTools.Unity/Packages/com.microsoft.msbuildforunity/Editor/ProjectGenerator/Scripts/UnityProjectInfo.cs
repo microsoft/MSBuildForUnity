@@ -52,6 +52,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             { "UnityEngine.TestRunner", new List<string>(){ "UNITY_INCLUDE_TESTS" } },
         };
 
+        private readonly ILogger logger;
+        private readonly MSBuildToolsConfig config;
+
         /// <summary>
         /// Gets the name of this Unity Project.
         /// </summary>
@@ -98,8 +101,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         /// <param name="supportedBuildTargets">BuildTargets that are considered supported.</param>
         /// <param name="config">Config for MSBuildTools.</param>
         /// <param name="performCompleteParse">If this is false, UnityProjectInfo will parse only the minimum required information about current project. Includes: <see cref="ExistingCSProjects"/> <see cref="CurrentPlayerPlatform"/>.</param>
-        public UnityProjectInfo(Dictionary<BuildTarget, string> supportedBuildTargets, MSBuildToolsConfig config, bool performCompleteParse = true)
+        public UnityProjectInfo(ILogger logger, Dictionary<BuildTarget, string> supportedBuildTargets, MSBuildToolsConfig config, bool performCompleteParse = true)
         {
+            this.logger = logger;
+            this.config = config;
+
             if (performCompleteParse)
             {
                 AvailablePlatforms = new ReadOnlyCollection<CompilationPlatformInfo>(CompilationPipeline.GetAssemblyDefinitionPlatforms()
@@ -130,7 +136,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
             if (performCompleteParse)
             {
-                RefreshProjects(config);
+                RefreshProjects();
             }
         }
 
@@ -176,12 +182,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             ExistingCSProjects = new ReadOnlyCollection<string>(existingCSProjectFiles);
         }
 
-        public void RefreshProjects(MSBuildToolsConfig config)
+        public void RefreshProjects()
         {
-            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects(config));
+            CSProjects = new ReadOnlyDictionary<string, CSProjectInfo>(CreateUnityProjects());
         }
 
-        private Dictionary<string, CSProjectInfo> CreateUnityProjects(MSBuildToolsConfig config)
+        private Dictionary<string, CSProjectInfo> CreateUnityProjects()
         {
             // Not all of these will be converted to C# objects, only the ones found to be referenced
             Dictionary<string, AssemblyDefinitionInfo> asmDefInfoMap = new Dictionary<string, AssemblyDefinitionInfo>();
@@ -478,6 +484,189 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         }
 
         #region Export Logic
+        public void ExportSolution(IUnityProjectExporter unityProjectExporter, FileInfo solutionFilePath, DirectoryInfo generatedProjectsFolder)
+        {
+            SolutionFileInfo solutionFileInfo = TextSolutionFileParser.ParseExistingSolutionFile(logger, solutionFilePath.FullName);
+            ISolutionExporter exporter = unityProjectExporter.CreateSolutionExporter(logger, solutionFilePath);
+
+            //TODO we need to figure out how to handle existing projects
+
+            // Remove known folders
+            solutionFileInfo.Projects.Remove(config.BuiltInPackagesFolderGuid);
+            solutionFileInfo.Projects.Remove(config.ImportedPackagesFolderGuid);
+            solutionFileInfo.Projects.Remove(config.ExternalPackagesFolderGuid);
+
+            // Process generated projects
+            foreach (KeyValuePair<string, CSProjectInfo> projectPair in CSProjects)
+            {
+                Uri relativePath = Utilities.GetRelativeUri(solutionFilePath.Directory.FullName, MSBuildUnityProjectExporter.GetProjectPath(projectPair.Value, generatedProjectsFolder).FullName);
+                exporter.AddProject(CreateSolutionProjectEntry(projectPair.Value, relativePath, solutionFileInfo), isGenerated: true);
+            }
+
+            // Add dependency project
+            string dependencyProjectName = $"{UnityProjectName}.Dependencies.msb4u";
+            exporter.AddProject(GetDependencyProjectReference(dependencyProjectName, $"{dependencyProjectName}.csproj"), isGenerated: true);
+
+            // Process existing projects
+            foreach (KeyValuePair<Guid, Project> projectPair in solutionFileInfo.Projects)
+            {
+                if (!exporter.Projects.ContainsKey(projectPair.Key)
+                    && !solutionFileInfo.MSB4UGeneratedItems.Contains(projectPair.Key)
+                    && projectPair.Value.TypeGuid != SolutionProject.FolderTypeGuid)
+                {
+                    exporter.AddProject(GetSolutionProjectEntryFrom(projectPair.Value, solutionFileInfo));
+                }
+            }
+
+            // Bring forward the properties, then set the one we care about
+            exporter.Properties.AddRange(solutionFileInfo.Properties);
+            exporter.Properties["HideSolutionNode"] = "FALSE";
+
+            // Bring forward the extensibility globals, then set the one we care about
+            exporter.ExtensibilityGlobals.AddRange(solutionFileInfo.ExtensibilityGlobals);
+            exporter.ExtensibilityGlobals["SolutionGuid"] = "{" + config.SolutionGuid.ToString().ToUpper() + "}";
+
+            // Bring forward the pairs, and then set the platforms we know of
+            exporter.ConfigurationPlatforms.AddRange(solutionFileInfo.ConfigPlatformPairs);
+            foreach (CompilationPlatformInfo platform in AvailablePlatforms)
+            {
+                exporter.ConfigurationPlatforms.Add(new ConfigurationPlatformPair(UnityConfigurationType.InEditor, platform.Name));
+                exporter.ConfigurationPlatforms.Add(new ConfigurationPlatformPair(UnityConfigurationType.Player, platform.Name));
+            }
+
+            // Set the folders by scanning for "projects" with folder type in old projects
+            foreach (KeyValuePair<Guid, Project> folderPair in solutionFileInfo.Projects.Where(t => t.Value.TypeGuid == SolutionProject.FolderTypeGuid))
+            {
+                exporter.GetOrAddFolder(folderPair.Key, folderPair.Value.Name)
+                    .Children.AddRange(solutionFileInfo.ChildToParentNestedMappings.Where(t => t.Value == folderPair.Key).Select(t => t.Key));
+            }
+
+            Dictionary<AssetLocation, Tuple<Guid, string>> knownFolderMapping = GetKnownFolderMapping();
+
+            // Confiure known folders for generated projects
+            ProcessSetForKnownFolders(exporter, knownFolderMapping, CSProjects.Values, t => t.AssemblyDefinitionInfo.AssetLocation, t => t.Guid);
+
+            //TODO handle existing projects
+
+            exporter.AdditionalSections = solutionFileInfo.SolutionSections;
+
+            exporter.Write();
+        }
+
+        private SolutionProject GetDependencyProjectReference(string projectName, string relativePath)
+        {
+            SolutionProject toReturn = new SolutionProject(config.DependenciesProjectGuid, SolutionProject.CSharpProjectTypeGuid, projectName, relativePath, null, CSProjects.Values.Select(t => t.Guid));
+
+            void SetMapping(ConfigurationPlatformPair configPlatform) => toReturn.ConfigurationPlatformMapping.Add(configPlatform, new ProjectConfigurationPlatformMapping() { ConfigurationPlatform = configPlatform, EnabledForBuild = true });
+
+            SetMapping(new ConfigurationPlatformPair("Debug", "Any CPU"));
+            SetMapping(new ConfigurationPlatformPair("Release", "Any CPU"));
+
+            return toReturn;
+        }
+
+        private void ProcessSetForKnownFolders<T>(ISolutionExporter exporter, Dictionary<AssetLocation, Tuple<Guid, string>> knownFolderMapping, IEnumerable<T> set, Func<T, AssetLocation> getAssetLocation, Func<T, Guid> getGuidFunc)
+        {
+            foreach (T item in set)
+            {
+                if (knownFolderMapping.TryGetValue(getAssetLocation(item), out Tuple<Guid, string> guidNameTuple))
+                {
+                    exporter.GetOrAddFolder(guidNameTuple.Item1, guidNameTuple.Item2, isGenerated: true)
+                        .Children.Add(getGuidFunc(item));
+                }
+            }
+        }
+
+        private Dictionary<AssetLocation, Tuple<Guid, string>> GetKnownFolderMapping()
+        {
+            return new Dictionary<AssetLocation, Tuple<Guid, string>>()
+            {
+                { AssetLocation.BuiltInPackage, new Tuple<Guid, string>(config.BuiltInPackagesFolderGuid, "Built In Packages") },
+                { AssetLocation.PackageLibraryCache, new Tuple<Guid, string>(config.ImportedPackagesFolderGuid, "Imported Packages") },
+                { AssetLocation.External, new Tuple<Guid, string>(config.ExternalPackagesFolderGuid, "External Packages") }
+            };
+        }
+
+
+        private SolutionProject GetSolutionProjectEntryFrom(Project project, SolutionFileInfo solutionFileInfo)
+        {
+            SolutionProject toReturn = new SolutionProject(project.Guid, project.TypeGuid, project.Name, project.RelativePath, project.Sections, project.Dependencies);
+
+            SetAdditionalProjectProperties(toReturn, project.Guid, solutionFileInfo, config =>
+            {
+                if (!toReturn.ConfigurationPlatformMapping.TryGetValue(config.SolutionConfig, out ProjectConfigurationPlatformMapping mapping))
+                {
+                    toReturn.ConfigurationPlatformMapping.Add(config.SolutionConfig, mapping = new ProjectConfigurationPlatformMapping());
+                }
+                mapping.ConfigurationPlatform = config.ProjectConfig;
+
+                switch (config.Property)
+                {
+                    case "ActiveCfg":
+                        break;
+                    case "Build.0":
+                        mapping.EnabledForBuild = true;
+                        break;
+                }
+            });
+
+            return toReturn;
+        }
+
+        private SolutionProject CreateSolutionProjectEntry(CSProjectInfo project, Uri relativePath, SolutionFileInfo solutionFileInfo)
+        {
+            IEnumerable<SolutionSection> sections = null;
+            if (solutionFileInfo.Projects.TryGetValue(project.Guid, out Project parsedProject))
+            {
+                sections = parsedProject.Sections;
+            }
+
+            SolutionProject toReturn = new SolutionProject(project.Guid, SolutionProject.CSharpProjectTypeGuid, project.Name + ".msb4u", relativePath, sections, project.ProjectDependencies.Select(t => t.Dependency.Guid));
+
+            foreach (CompilationPlatformInfo platform in AvailablePlatforms)
+            {
+                ProcessConfigurationPlatformMapping(toReturn, UnityConfigurationType.InEditor, platform, project.InEditorPlatforms);
+                ProcessConfigurationPlatformMapping(toReturn, UnityConfigurationType.Player, platform, project.PlayerPlatforms);
+            }
+
+            SetAdditionalProjectProperties(toReturn, project.Guid, solutionFileInfo);
+
+            return toReturn;
+        }
+
+        private void SetAdditionalProjectProperties(SolutionProject solutionProject, Guid projectGuid, SolutionFileInfo solutionFileInfo, Action<ProjectConfigurationEntry> knownConfigHandler = null)
+        {
+            // Parse additional properties
+            if (solutionFileInfo.ProjectConfigurationEntires.TryGetValue(projectGuid, out List<ProjectConfigurationEntry> projectConfigurations))
+            {
+                foreach (ProjectConfigurationEntry config in projectConfigurations)
+                {
+                    if (config.Property != "Build.0" && config.Property != "ActiveCfg")
+                    {
+                        if (solutionProject.ConfigurationPlatformMapping.TryGetValue(config.SolutionConfig, out ProjectConfigurationPlatformMapping mapping))
+                        {
+                            mapping.AdditionalPropertyMappings[config.Property] = config.ProjectConfig;
+                        }
+                    }
+                    else
+                    {
+                        knownConfigHandler?.Invoke(config);
+                    }
+                }
+            }
+        }
+
+        private void ProcessConfigurationPlatformMapping(SolutionProject solutionProject, UnityConfigurationType configType, CompilationPlatformInfo platform, IReadOnlyDictionary<BuildTarget, CompilationPlatformInfo> enabledPlatforms)
+        {
+            ConfigurationPlatformPair configPair = new ConfigurationPlatformPair(configType, platform.Name);
+
+            solutionProject.ConfigurationPlatformMapping.Add(configPair, new ProjectConfigurationPlatformMapping()
+            {
+                ConfigurationPlatform = configPair,
+                EnabledForBuild = enabledPlatforms.ContainsKey(platform.BuildTarget)
+            });
+        }
+
         public void ExportProjects(IUnityProjectExporter unityProjectExporter, DirectoryInfo generatedProjectFolder)
         {
             foreach (KeyValuePair<string, CSProjectInfo> project in CSProjects)
