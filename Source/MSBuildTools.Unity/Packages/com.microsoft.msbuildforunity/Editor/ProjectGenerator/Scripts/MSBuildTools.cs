@@ -12,6 +12,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
@@ -25,6 +26,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private int version = 0;
 
+        [FormerlySerializedAs("autoGenerateEnabled")]
         [SerializeField]
         private bool fullGenerationEnabled = false;
 
@@ -310,7 +312,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 // If we are forced complete, then we regenerate, otherwise perform the one that is selected
                 RegenerateEverything(unityProjectInfo, Config.FullGenerationEnabled || forceCompleteGeneration);
             }
-            
+
             if (!doesCurrentVersionTokenFileExist)
             {
                 foreach (string tokenFile in Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly))
