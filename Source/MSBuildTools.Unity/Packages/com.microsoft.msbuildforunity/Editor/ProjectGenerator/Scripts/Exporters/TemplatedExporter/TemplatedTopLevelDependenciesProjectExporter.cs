@@ -15,6 +15,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
     internal class TemplatedTopLevelDependenciesProjectExporter : ITopLevelDependenciesProjectExporter
     {
         private const string ProjectGuidToken = "PROJECT_GUID";
+        private const string MSBuildForUnityVersionToken = "MSB4U_VERSION";
 
         private const string ProjectReferenceTemplate = "PROJECT_REFERENCE";
         private const string ProjectReferenceTemplate_ReferenceToken = "REFERENCE";
@@ -32,6 +33,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
         public Guid Guid { get; set; }
 
+        public Version MSBuildForUnityVersion { get; set; }
+
         public HashSet<ProjectReference> References { get; } = new HashSet<ProjectReference>();
 
         public TemplatedTopLevelDependenciesProjectExporter(FileTemplate primaryTemplateFile, FileTemplate propsTemplateFile, FileTemplate targetsTemplateFile,
@@ -48,15 +51,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
         public void Write()
         {
-            TemplatedWriter propsWriter = new TemplatedWriter(propsTemplateFile);
-
-            propsWriter.Write(ProjectGuidToken, Guid);
+            TemplatedWriter propsWriter = new TemplatedWriter(propsTemplateFile)
+                .Write(ProjectGuidToken, Guid)
+                .Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString(3));
 
             foreach (ProjectReference projectReference in References)
             {
-                TemplatedWriter referenceWriter = propsWriter.CreateWriterFor(ProjectReferenceTemplate);
-                referenceWriter.Write(ProjectReferenceTemplate_ReferenceToken, projectReference.ReferencePath.LocalPath);
-                referenceWriter.Write(ProjectReferenceTemplate_ConditionToken, projectReference.Condition ?? string.Empty);
+                TemplatedWriter referenceWriter = propsWriter.CreateWriterFor(ProjectReferenceTemplate)
+                    .Write(ProjectReferenceTemplate_ReferenceToken, projectReference.ReferencePath.LocalPath)
+                    .Write(ProjectReferenceTemplate_ConditionToken, projectReference.Condition ?? string.Empty);
 
                 if (projectReference.IsGenerated)
                 {

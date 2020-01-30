@@ -10,7 +10,7 @@
   
   <!-- We set these common properties for current MSBuild and Unity project, unless we are being invoked from a different MSBuild and Unity project -->
   <PropertyGroup Condition="'$(MSBuildForUnityVersion)'==''">
-    <MSBuildForUnityVersion>0.8.3</MSBuildForUnityVersion>
+    <MSBuildForUnityVersion><!--MSB4U_VERSION_TOKEN--></MSBuildForUnityVersion>
     
     <MSBuildForUnityPlatformPropsDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Projects</MSBuildForUnityPlatformPropsDirectory>
     <MSBuildForUnityBuildOutputDirectory>$(_MSBuildForUnityGeneratedOutputDirectory)\Output</MSBuildForUnityBuildOutputDirectory>

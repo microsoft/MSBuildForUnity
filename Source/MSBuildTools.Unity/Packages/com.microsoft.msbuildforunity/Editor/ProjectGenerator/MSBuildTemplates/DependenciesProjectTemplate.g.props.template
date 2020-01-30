@@ -23,7 +23,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="MSBuildForUnity" Version="[0.8.3-*, 0.8.3]">
+    <PackageReference Include="MSBuildForUnity" Version="[##MSB4U_VERSION_TOKEN##-*, ##MSB4U_VERSION_TOKEN##]">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

@@ -3,12 +3,14 @@
 
 #if UNITY_EDITOR
 using Microsoft.Build.Unity.ProjectGeneration.Templates;
+using System;
 using System.IO;
 
 namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 {
     internal class TemplatedCommonPropsExporter : ICommonPropsExporter
     {
+        private const string MSBuildForUnityVersionToken = "MSB4U_VERSION";
         private const string UnityMajorVersionToken = "UNITY_MAJOR_VERSION";
         private const string UnityMinorVersionToken = "UNITY_MINOR_VERSION";
         private const string UnityEditorInstallPathToken = "UNITY_EDITOR_INSTALL_FOLDER";
@@ -19,6 +21,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
 
         private readonly FileTemplate fileTemplate;
         private readonly FileInfo exportPath;
+
+        public Version MSBuildForUnityVersion { get; set; }
 
         public string UnityMajorVersion { get; set; }
 
@@ -44,6 +48,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             TemplatedWriter writer = new TemplatedWriter(fileTemplate);
 
+            writer.Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString(3));
             writer.Write(UnityMajorVersionToken, UnityMajorVersion);
             writer.Write(UnityMinorVersionToken, UnityMinorVersion);
             writer.Write(UnityEditorInstallPathToken, UnityEditorInstallPath.FullName);

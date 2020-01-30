@@ -179,7 +179,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public const string CSharpVersion = "7.3";
         public const string AutoGenerate = "MSBuild/Auto Generation Enabled";
 
-        private static readonly string TokenFilePath = Path.Combine(Utilities.ProjectPath, "Temp", "PropsGeneratedThisEditorInstance.token");
+        public static readonly Version MSBuildForUnityVersion = new Version(0, 8, 3);
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;
@@ -285,12 +285,16 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
             }
 
-            bool doesTokenFileExist = File.Exists(TokenFilePath);
+            // Get the token file in the Unity Temp directory, if it exists.
+            Version tokenVerison = GetCurrentTokenVersion();
+
+            // We regenerate, if the token file exists, and it's current version.
+            bool doesCurrentVersionTokenFileExist = tokenVerison != null && tokenVerison == MSBuildForUnityVersion;
 
             // We regenerate everything if:
             // - We are forced to
             // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
-            bool regenerateEverything = forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesTokenFileExist || shouldClean));
+            bool regenerateEverything = forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesCurrentVersionTokenFileExist || shouldClean));
 
             if (regenerateEverything || unityProjectInfo == null)
             {
@@ -301,9 +305,9 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // We regenerate the common "directory" props file under the following conditions:
             // - Token file doesn't exist which means editor was just started
             // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
-            if (shouldClean || !doesTokenFileExist)
+            if (shouldClean || !doesCurrentVersionTokenFileExist)
             {
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, MSBuildForUnityVersion, unityProjectInfo.CurrentPlayerPlatform);
             }
 
             if (regenerateEverything)
@@ -311,9 +315,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 RegenerateEverything(unityProjectInfo, Config.AutoGenerateEnabled || forceCompleteGeneration);
             }
 
-            if (!doesTokenFileExist)
+            if (!doesCurrentVersionTokenFileExist)
             {
-                File.Create(TokenFilePath).Dispose();
+                foreach (string tokenFile in Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly))
+                {
+                    File.Delete(tokenFile);
+                }
+
+                File.Create(Path.Combine(Utilities.ProjectPath, "Temp", $"{MSBuildForUnityVersion.ToString(3)}_token.msb4u"))
+                    .Dispose();
             }
 
             // Write the current targetframework and build target
@@ -325,6 +335,28 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
+        }
+
+        private static Version GetCurrentTokenVersion()
+        {
+            string[] file = Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly);
+
+            if (file.Length > 0)
+            {
+                string versionNumber = Path.GetFileNameWithoutExtension(file[0]).Split('_')[0];
+
+                string[] versionParts = versionNumber.Split('.');
+
+                if (versionParts.Length == 3
+                    && int.TryParse(versionParts[0], out int major)
+                    && int.TryParse(versionParts[1], out int minor)
+                    && int.TryParse(versionParts[2], out int patch))
+                {
+                    return new Version(major, minor, patch);
+                }
+            }
+
+            return null;
         }
 
         private static void ExportCoreUnityPropFiles(UnityProjectInfo unityProjectInfo)
@@ -364,7 +396,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 postCleanupAndCopyStamp = stopwatch.ElapsedMilliseconds;
 
                 propsFileGenerationStart = stopwatch.ElapsedMilliseconds;
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, unityProjectInfo.CurrentPlayerPlatform);
+                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, MSBuildForUnityVersion, unityProjectInfo.CurrentPlayerPlatform);
                 if (completeGeneration)
                 {
                     ExportCoreUnityPropFiles(unityProjectInfo);
@@ -378,7 +410,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     unityProjectInfo.ExportSolution(Exporter, new FileInfo(Exporter.GetSolutionFilePath(unityProjectInfo)), directoryInfo);
                     unityProjectInfo.ExportProjects(Exporter, directoryInfo);
                 }
-                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
+                MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, MSBuildForUnityVersion, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
