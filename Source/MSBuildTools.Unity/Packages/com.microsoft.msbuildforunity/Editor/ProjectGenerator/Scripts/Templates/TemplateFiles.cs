@@ -33,7 +33,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
         private const string PluginMetaFileTemplateRegex = @"Plugin\.([a-zA-Z]*)\.meta.template";
         private const string BuildProjectsTemplateName = "BuildProjects.proj.template";
-        private const string NugetConfigFileName = "NuGet.config";
+        private const string NuGetConfigFileName = "NuGet.config";
 
         private static TemplateFiles instance;
 
@@ -98,6 +98,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         public string BuildProjectsTemplatePath { get; }
 
         /// <summary>
+        /// Gets the NuGet.config MSBuild file path.
+        /// </summary>
+        public string NuGetConfigPath { get; }
+
+        /// <summary>
         /// Gets a list of specialized platform templates.
         /// </summary>
         public IReadOnlyDictionary<string, FileInfo> PlatformTemplates { get; }
@@ -142,6 +147,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
             SDKProjectTargetsFileTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "SDK Project Targets", SDKProjectTargetsFileTemplateName));
             PlatformPropsTemplatePath = new FileInfo(GetExpectedTemplatesPath(fileNamesMaps, "Platform Props", PlatformPropsTemplateName));
             BuildProjectsTemplatePath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild Build Projects Proj", BuildProjectsTemplateName);
+            NuGetConfigPath = GetExpectedTemplatesPath(fileNamesMaps, "MSBuild NuGet.config", NuGetConfigFileName);
 
             // Get specific platforms
             Dictionary<string, FileInfo> platformTemplates = new Dictionary<string, FileInfo>();
