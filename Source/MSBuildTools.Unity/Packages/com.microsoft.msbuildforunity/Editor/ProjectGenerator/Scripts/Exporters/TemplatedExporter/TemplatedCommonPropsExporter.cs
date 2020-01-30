@@ -48,7 +48,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             TemplatedWriter writer = new TemplatedWriter(fileTemplate);
 
-            writer.Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString(3));
+            writer.Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString());
             writer.Write(UnityMajorVersionToken, UnityMajorVersion);
             writer.Write(UnityMinorVersionToken, UnityMinorVersion);
             writer.Write(UnityEditorInstallPathToken, UnityEditorInstallPath.FullName);

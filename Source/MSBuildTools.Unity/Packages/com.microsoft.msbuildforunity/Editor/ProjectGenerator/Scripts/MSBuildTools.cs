@@ -26,7 +26,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         private int version = 0;
 
         [SerializeField]
-        private bool autoGenerateEnabled = false;
+        private bool fullGenerationEnabled = false;
 
         [SerializeField]
         private string dependenciesProjectGuid = Guid.NewGuid().ToString();
@@ -55,12 +55,12 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         [SerializeField]
         private string solutionGuid = Guid.NewGuid().ToString();
 
-        public bool AutoGenerateEnabled
+        public bool FullGenerationEnabled
         {
-            get => autoGenerateEnabled;
+            get => fullGenerationEnabled;
             set
             {
-                autoGenerateEnabled = value;
+                fullGenerationEnabled = value;
                 Save();
             }
         }
@@ -177,7 +177,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         };
 
         public const string CSharpVersion = "7.3";
-        public const string AutoGenerate = "MSBuild/Auto Generation Enabled";
+        public const string FullGeneration = "MSBuild/Full Generation Enabled";
 
         public static readonly Version MSBuildForUnityVersion = new Version(0, 8, 3);
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
@@ -199,19 +199,19 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         public static MSBuildToolsConfig Config { get; } = MSBuildToolsConfig.Load();
 
-        [MenuItem(AutoGenerate, priority = 101)]
+        [MenuItem(FullGeneration, priority = 101)]
         public static void ToggleAutoGenerate()
         {
-            Config.AutoGenerateEnabled = !Config.AutoGenerateEnabled;
-            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
+            Config.FullGenerationEnabled = !Config.FullGenerationEnabled;
+            Menu.SetChecked(FullGeneration, Config.FullGenerationEnabled);
             // If we just toggled on, regenerate everything
             RefreshGeneratedOutput(forceGenerateEverything: true, forceCompleteGeneration: false);
         }
 
-        [MenuItem(AutoGenerate, true, priority = 101)]
+        [MenuItem(FullGeneration, true, priority = 101)]
         public static bool ToggleAutoGenerate_Validate()
         {
-            Menu.SetChecked(AutoGenerate, Config.AutoGenerateEnabled);
+            Menu.SetChecked(FullGeneration, Config.FullGenerationEnabled);
             return true;
         }
 
@@ -275,11 +275,11 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
             ApiCompatibilityLevel targetFramework = PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup);
 
-            bool shouldClean = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
+            bool buildTargetOrFrameworkChanged = EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}") != (int)currentBuildTarget
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
 
-            if (shouldClean)
+            if (buildTargetOrFrameworkChanged)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
@@ -291,30 +291,26 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // We regenerate, if the token file exists, and it's current version.
             bool doesCurrentVersionTokenFileExist = tokenVerison != null && tokenVerison == MSBuildForUnityVersion;
 
-            // We regenerate everything if:
-            // - We are forced to
-            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
-            bool regenerateEverything = forceGenerateEverything || (Config.AutoGenerateEnabled && (!doesCurrentVersionTokenFileExist || shouldClean));
+            // We perform the regeneration of complete or partial pass in the following cases:
+            // - forceGenerateEverything is true (we are told to)
+            // - buildTargetOrFrameworkChanged is true (target framework changed)
+            // - doesCurrentVersionTokenFileExist is false (version changed, or editor just opened)
 
-            if (regenerateEverything || unityProjectInfo == null)
+            // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
+            bool performRegeneration = forceGenerateEverything || buildTargetOrFrameworkChanged || !doesCurrentVersionTokenFileExist;
+
+            if (performRegeneration || unityProjectInfo == null)
             {
                 // Create the project info only if it's null or we need to regenerate
-                unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, Config.AutoGenerateEnabled || forceCompleteGeneration);
+                unityProjectInfo = new UnityProjectInfo(Debug.unityLogger, SupportedBuildTargets, Config, Config.FullGenerationEnabled || forceCompleteGeneration);
             }
 
-            // We regenerate the common "directory" props file under the following conditions:
-            // - Token file doesn't exist which means editor was just started
-            // - EditorPrefs currentBuildTarget or targetFramework is different from current ones (same as for executing a clean)
-            if (shouldClean || !doesCurrentVersionTokenFileExist)
+            if (performRegeneration)
             {
-                MSBuildUnityProjectExporter.ExportCommonPropsFile(Exporter, MSBuildForUnityVersion, unityProjectInfo.CurrentPlayerPlatform);
+                // If we are forced complete, then we regenerate, otherwise perform the one that is selected
+                RegenerateEverything(unityProjectInfo, Config.FullGenerationEnabled || forceCompleteGeneration);
             }
-
-            if (regenerateEverything)
-            {
-                RegenerateEverything(unityProjectInfo, Config.AutoGenerateEnabled || forceCompleteGeneration);
-            }
-
+            
             if (!doesCurrentVersionTokenFileExist)
             {
                 foreach (string tokenFile in Directory.GetFiles(Path.Combine(Utilities.ProjectPath, "Temp"), "*_token.msb4u", SearchOption.TopDirectoryOnly))
@@ -331,7 +327,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}", (int)targetFramework);
 
             // If we cleaned, now build
-            if (shouldClean)
+            if (buildTargetOrFrameworkChanged)
             {
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }

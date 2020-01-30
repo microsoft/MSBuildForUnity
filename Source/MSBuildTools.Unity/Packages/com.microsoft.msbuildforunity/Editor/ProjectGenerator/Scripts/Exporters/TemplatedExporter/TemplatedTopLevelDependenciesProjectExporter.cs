@@ -53,7 +53,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter
         {
             TemplatedWriter propsWriter = new TemplatedWriter(propsTemplateFile)
                 .Write(ProjectGuidToken, Guid)
-                .Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString(3));
+                .Write(MSBuildForUnityVersionToken, MSBuildForUnityVersion.ToString());
 
             foreach (ProjectReference projectReference in References)
             {
