@@ -45,26 +45,56 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
     - Add the following to the `dependencies` section of the file:
 
         ```json
-          "com.microsoft.msbuildforunity": "0.8.3"
+          "com.microsoft.msbuildforunity": "0.9.0"
         ```
 
-1. Create a "SDK style" MSBuild project (e.g. csproj) somewhere under your `Assets` directory of your Unity project that references the `MSBuildForUnity` NuGet package. Here is an example:
+1. MSBuildForUnity will create a top-level project in your `Assets` folder named after your Unity project name: `{UnityProjectName}.Dependencies.msb4u.csproj`, edit this project file to add additional references to any NuGet packages or C# projects you want to use in your Unity project.
 
     ```xml
-    <Project Sdk="Microsoft.NET.Sdk">
-        <PropertyGroup>
-            <TargetFramework>netstandard2.0</TargetFramework>
-        </PropertyGroup>
+    <Project ToolsVersion="15.0">
+    <!--GENERATED FILE-->
+    <!--
+        This file can be modified and checked in.
+        
+        It is different from the other generated C# Projects in that it will be the one gathering all dependencies and placing them into the Unity asset folder.
+        
+        You can add project level dependencies to this file, by placing them below:
+        - <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.props" />
+        and before:
+        - <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.targets" />
+        
+        Do not add any source or compilation items.
+        
+        Examples of how you can modify this file:
+        - Add NuGet package references:
+            <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+            </ItemGroup>
+        - Add external C# project references:
         <ItemGroup>
-            <PackageReference Include="MSBuildForUnity" Version="0.8.3">
-                <PrivateAssets>all</PrivateAssets>
-                <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-            </PackageReference>
+            <ProjectReference Include="..\..\..\ExternalLib\ExternalLib.csproj" />
         </ItemGroup>
+    -->
+
+    <Import Project="$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))" Condition="Exists('$([MSBuild]::GetPathOfFileAbove(MSBuildForUnity.Common.props))')" />
+
+    <PropertyGroup>
+        <TargetFramework>$(UnityCurrentTargetFramework)</TargetFramework>
+    </PropertyGroup>
+
+    <!-- SDK.props is imported inside this props file -->
+    <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.props" />
+
+    <ItemGroup>
+        <!--Add NuGet or Project references here-->
+    </ItemGroup>
+
+    <!-- SDK.targets is imported inside this props file -->
+    <Import Project="$(MSBuildForUnityGeneratedProjectDirectory)\$(MSBuildProjectName).g.targets" />
     </Project>
     ```
 
-1. Add additional references to any NuGet packages you want to use in your Unity project.
+1. For additional instructions, see [Core Scenarios](Documentation/CoreScenarios.md).
 
 ## Extended Instructions
 
