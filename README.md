@@ -68,7 +68,7 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
         Examples of how you can modify this file:
         - Add NuGet package references:
             <ItemGroup>
-            <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+                <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
             </ItemGroup>
         - Add external C# project references:
         <ItemGroup>
