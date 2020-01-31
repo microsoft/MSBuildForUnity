@@ -33,7 +33,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
         private const string SpecifcPlatformPropsTemplateRegex = @"[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z0-9]*\.props.template";
         private const string PluginMetaFileTemplateRegex = @"Plugin\.([a-zA-Z]*)\.meta.template";
         private const string BuildProjectsTemplateName = "BuildProjects.proj.template";
-        private const string NuGetConfigFileName = "NuGet.config";
+        private const string NuGetConfigFileName = "NuGet.config.template";
 
         private static TemplateFiles instance;
 
