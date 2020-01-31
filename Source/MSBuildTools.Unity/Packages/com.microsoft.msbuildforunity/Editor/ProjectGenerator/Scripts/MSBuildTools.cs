@@ -411,6 +411,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 MSBuildUnityProjectExporter.ExportTopLevelDependenciesProject(Exporter, MSBuildForUnityVersion, Config, new DirectoryInfo(Utilities.MSBuildProjectFolder), unityProjectInfo);
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
+
+                string nuGetConfigPath = Path.Combine(Utilities.AssetPath, Path.GetFileName(TemplateFiles.Instance.NuGetConfigPath));
+                
+                // Copy the NuGet.config file if it does not exist
+                if (!File.Exists(nuGetConfigPath))
+                {
+                    File.Copy(TemplateFiles.Instance.NuGetConfigPath, nuGetConfigPath);
+                }
+
                 foreach (string otherFile in TemplateFiles.Instance.OtherFiles)
                 {
                     File.Copy(otherFile, Path.Combine(Utilities.MSBuildProjectFolder, Path.GetFileName(otherFile)));
