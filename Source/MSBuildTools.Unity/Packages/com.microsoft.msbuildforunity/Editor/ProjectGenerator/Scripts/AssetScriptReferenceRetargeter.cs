@@ -15,6 +15,9 @@ using UnityEditorInternal;
 using UnityEngine;
 using Microsoft.Build.Unity.ProjectGeneration.Templates;
 using Object = UnityEngine.Object;
+using Microsoft.Build.Unity.ProjectGeneration.Templates.Text;
+using Microsoft.Build.Unity.ProjectGeneration.Templates.Xml;
+using Microsoft.Build.Unity.ProjectGeneration.Exporters.TemplatedExporter;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
@@ -444,44 +447,37 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             }
         }
 
-        private static string ProcessMetaTemplate(string templateText, string guid, Dictionary<string, int> executionOrderEntries = null)
+        private static void ProcessMetaTemplate(FileInfo templateFile, FileInfo outputFile, string guid, Dictionary<string, int> executionOrderEntries = null)
         {
-            if (!Utilities.TryGetTextTemplate(templateText, "PROJECT_GUID", out string projectGuidTemplate, out string projectGuidTemplateBody))
+            if (!FileTemplate.TryParseTemplate(templateFile, out FileTemplate template))
             {
-                throw new FormatException("Incorrect format for the meta template, doesn't contain a place for project_guid.");
+                throw new ArgumentException($"Failed to parse template file: {templateFile?.FullName ?? "null FileInfo"}");
             }
 
-            Dictionary<string, string> tokenReplacements = new Dictionary<string, string>()
-            {
-                { projectGuidTemplate, projectGuidTemplateBody.Replace("<PROJECT_GUID_TOKEN>", guid) }
-            };
+            TemplatedWriter writer = new TemplatedWriter(template);
+            TemplatedWriter projectGuidWriter = writer.CreateWriterFor("PROJECT_GUID");
+            projectGuidWriter.Write("PROJECT_GUID", guid);
 
-            if (Utilities.TryGetTextTemplate(templateText, "EXECUTION_ORDER", out string executionOrderTemplate, out string executionOrderTemplateBody)
-                && Utilities.TryGetTextTemplate(templateText, "EXECUTION_ORDER_ENTRY", out string executionOrderEntryTemplate, out string executionOrderEntryTemplateBody))
+            if ((executionOrderEntries?.Count ?? 0) == 0)
             {
-                if ((executionOrderEntries?.Count ?? 0) == 0)
-                {
-                    tokenReplacements.Add(executionOrderTemplate, executionOrderTemplateBody.Replace("<EMPTY_TOKEN>", "{}"));
-                    tokenReplacements.Add(executionOrderEntryTemplate, string.Empty);
-                }
-                else
-                {
-                    List<string> entries = new List<string>();
-                    foreach (KeyValuePair<string, int> pair in executionOrderEntries)
-                    {
-                        entries.Add(Utilities.ReplaceTokens(executionOrderEntryTemplateBody, new Dictionary<string, string>()
-                        {
-                            { "<SCRIPT_FULL_NAME_TOKEN>", pair.Key },
-                            { "<SCRIPT_EXECUTION_VALUE_TOKEN>", pair.Value.ToString() }
-                        }));
-                    }
+                TemplatedWriter executionOrderWriter = writer.CreateWriterFor("EXECUTION_ORDER");
+                executionOrderWriter.Write("EMPTY", "{}");
+                // By not creating a writer for the EXECUTION_ORDER_ENTRY template, we avoid adding any text for said template.
+            }
+            else
+            {
+                TemplatedWriter executionOrderWriter = writer.CreateWriterFor("EXECUTION_ORDER");
+                executionOrderWriter.Write("EMPTY", string.Empty);
 
-                    tokenReplacements.Add(executionOrderTemplate, executionOrderTemplateBody.Replace("<EMPTY_TOKEN>", string.Empty));
-                    tokenReplacements.Add(executionOrderEntryTemplate, string.Join("\r\n", entries));
+                foreach (KeyValuePair<string, int> pair in executionOrderEntries)
+                {
+                    TemplatedWriter executionOrderEntryWriter = writer.CreateWriterFor("EXECUTION_ORDER_ENTRY");
+                    executionOrderEntryWriter.Write("SCRIPT_FULL_NAME", pair.Key);
+                    executionOrderEntryWriter.Write("SCRIPT_EXECUTION_VALUE", pair.Value.ToString());
                 }
             }
 
-            return Utilities.ReplaceTokens(templateText, tokenReplacements);
+            writer.Export(outputFile);
         }
 
         private static void UpdateMetaFiles(Dictionary<string, AssemblyInformation> assemblyInformation)
@@ -511,12 +507,6 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 throw new FileNotFoundException("Could not find sample standalone dll.meta template.");
             }
 
-            string editorMetaFileTemplate = File.ReadAllText(editorMetaFile.FullName);
-            string wsaMetaFileTemplate = File.ReadAllText(wsaMetaFile.FullName);
-            string androidMetaFileTemplate = File.ReadAllText(androidMetaFile.FullName);
-            string iOSMetaFileTemplate = File.ReadAllText(iOSMetaFile.FullName);
-            string standaloneMetaFileTemplate = File.ReadAllText(standaloneMetaFile.FullName);
-
             Dictionary<AssemblyInformation, FileInfo[]> mappings = new DirectoryInfo(Application.dataPath.Replace("Assets", "NuGet/Plugins"))
                 .GetDirectories("*", SearchOption.AllDirectories)
                 .SelectMany(t => t.EnumerateFiles().Where(f => f.FullName.EndsWith(".dll") || f.FullName.EndsWith(".pdb")))
@@ -538,7 +528,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 // iOS is + 9
                 // iOS PDB is + 10
 
-                string templateToUse = editorMetaFileTemplate;
+                FileInfo templateFile = editorMetaFile;
                 foreach (FileInfo file in mapping.Value)
                 {
                     // The first guid increment happened in RetrieveAsmDefGuids, so our increment value will be one less than specified above.
@@ -546,27 +536,27 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
                     if (file.DirectoryName.EndsWith(InEditorOutputFolderSuffix))
                     {
-                        templateToUse = editorMetaFileTemplate;
+                        templateFile = editorMetaFile;
                         increment = file.Extension.Equals(".dll") ? 0 : 3;
                     }
                     else if (file.DirectoryName.EndsWith(StandalonePlayerOutputFolder))
                     {
-                        templateToUse = standaloneMetaFileTemplate;
+                        templateFile = standaloneMetaFile;
                         increment = file.Extension.Equals(".dll") ? 1 : 4;
                     }
                     else if (file.DirectoryName.EndsWith(WSAPlayerOutputFolder))
                     {
-                        templateToUse = wsaMetaFileTemplate;
+                        templateFile = wsaMetaFile;
                         increment = file.Extension.Equals(".dll") ? 2 : 5;
                     }
                     else if (file.DirectoryName.EndsWith(AndroidPlayerOutputFolder))
                     {
-                        templateToUse = androidMetaFileTemplate;
+                        templateFile = androidMetaFile;
                         increment = file.Extension.Equals(".dll") ? 6 : 7;
                     }
                     else if (file.DirectoryName.EndsWith(iOSPlayerOutputFolder))
                     {
-                        templateToUse = iOSMetaFileTemplate;
+                        templateFile = iOSMetaFile;
                         increment = file.Extension.Equals(".dll") ? 8 : 9;
                     }
                     else
@@ -582,7 +572,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     }
 
                     string metaFilePath = $"{file.FullName}.meta";
-                    File.WriteAllText(metaFilePath, ProcessMetaTemplate(templateToUse, dllGuid, mapping.Key.ExecutionOrderEntries));
+                    ProcessMetaTemplate(templateFile, new FileInfo(metaFilePath), dllGuid, mapping.Key.ExecutionOrderEntries);
                 }
             }
         }
