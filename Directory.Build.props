@@ -9,7 +9,7 @@
     -->
     <MSB4U_MajorVersion>0</MSB4U_MajorVersion>
     <MSB4U_MinorVersion>9</MSB4U_MinorVersion>
-    <MSB4U_RevisionVersion>0</MSB4U_RevisionVersion>
+    <MSB4U_RevisionVersion>1</MSB4U_RevisionVersion>
     <MSB4U_RevisionVersion_PreIncrement>$(MSB4U_RevisionVersion)</MSB4U_RevisionVersion_PreIncrement>
 
     <!-- If we are not on a release or prerelease branch, we increment the revision version -->
