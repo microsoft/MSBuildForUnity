@@ -346,7 +346,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 solutionExportEnd = stopwatch.ElapsedMilliseconds;
 
 
-                string nuGetConfigPath = Path.Combine(Utilities.AssetPath, Path.GetFileName(TemplateFiles.Instance.NuGetConfigPath));
+                string nuGetConfigPath = Path.Combine(Utilities.AssetPath, Path.GetFileNameWithoutExtension(TemplateFiles.Instance.NuGetConfigPath));
                 
                 // Copy the NuGet.config file if it does not exist
                 if (!File.Exists(nuGetConfigPath))
