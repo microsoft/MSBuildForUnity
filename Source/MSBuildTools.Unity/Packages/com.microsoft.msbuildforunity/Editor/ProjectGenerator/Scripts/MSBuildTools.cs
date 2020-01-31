@@ -104,7 +104,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         public const string CSharpVersion = "7.3";
         public const string FullGeneration = "MSBuild/Full Generation Enabled";
 
-        public static readonly Version MSBuildForUnityVersion = new Version(0, 8, 3);
+        public static readonly Version MSBuildForUnityVersion = new Version(0, 9, 0);
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;

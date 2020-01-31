@@ -8,9 +8,9 @@
        - Revision (semver Patch) version is hard-coded and should be incremented when a bug fix is made.
     -->
     <MSB4U_MajorVersion>0</MSB4U_MajorVersion>
-    <MSB4U_MinorVersion>8</MSB4U_MinorVersion>
-    <MSB4U_RevisionVersion>3</MSB4U_RevisionVersion>
-    <MSB4U_RevisionVersion_PreIncrement>3</MSB4U_RevisionVersion_PreIncrement>
+    <MSB4U_MinorVersion>9</MSB4U_MinorVersion>
+    <MSB4U_RevisionVersion>0</MSB4U_RevisionVersion>
+    <MSB4U_RevisionVersion_PreIncrement>$(MSB4U_RevisionVersion)</MSB4U_RevisionVersion_PreIncrement>
     
     <!-- If we are not on a release branch, we increment revision version -->
     <MSB4U_RevisionVersion Condition="!$(BUILD_SOURCEBRANCH.StartsWith('refs/heads/release/'))">$([MSBuild]::Add($(MSB4U_RevisionVersion), 1))</MSB4U_RevisionVersion>
