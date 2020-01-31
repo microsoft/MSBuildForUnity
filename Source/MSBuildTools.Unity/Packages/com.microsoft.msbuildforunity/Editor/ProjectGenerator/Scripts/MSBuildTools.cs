@@ -11,138 +11,10 @@ using System.Diagnostics;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
-using UnityEngine;
-using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
 namespace Microsoft.Build.Unity.ProjectGeneration
 {
-    public class MSBuildToolsConfig
-    {
-        private const int CurrentConfigVersion = 3;
-
-        private static string MSBuildSettingsFilePath { get; } = Path.Combine(Utilities.ProjectPath, "MSBuild", "settings.json");
-
-        [SerializeField]
-        private int version = 0;
-
-        [FormerlySerializedAs("autoGenerateEnabled")]
-        [SerializeField]
-        private bool fullGenerationEnabled = false;
-
-        [SerializeField]
-        private string dependenciesProjectGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string assemblyCSharpGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string assemblyCSharpEditorGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string assemblyCSharpFirstPassGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string assemblyCSharpFirstPassEditorGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string builtInPackagesFolderGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string importedPackagesFolderGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string externalPackagesFolderGuid = Guid.NewGuid().ToString();
-
-        [SerializeField]
-        private string solutionGuid = Guid.NewGuid().ToString();
-
-        public bool FullGenerationEnabled
-        {
-            get => fullGenerationEnabled;
-            set
-            {
-                fullGenerationEnabled = value;
-                Save();
-            }
-        }
-
-        internal Guid DependenciesProjectGuid { get; private set; }
-
-        internal Guid AssemblyCSharpGuid { get; private set; }
-
-        internal Guid AssemblyCSharpEditorGuid { get; private set; }
-
-        internal Guid AssemblyCSharpFirstPassGuid { get; private set; }
-
-        internal Guid AssemblyCSharpFirstPassEditorGuid { get; private set; }
-
-        internal Guid BuiltInPackagesFolderGuid { get; private set; }
-
-        internal Guid ImportedPackagesFolderGuid { get; private set; }
-
-        internal Guid ExternalPackagesFolderGuid { get; private set; }
-
-        internal Guid SolutionGuid { get; private set; }
-
-        private void Save()
-        {
-            // Ensure directory exists first
-            Directory.CreateDirectory(Path.GetDirectoryName(MSBuildSettingsFilePath));
-            File.WriteAllText(MSBuildSettingsFilePath, EditorJsonUtility.ToJson(this));
-        }
-
-        public static MSBuildToolsConfig Load()
-        {
-            MSBuildToolsConfig toReturn = new MSBuildToolsConfig();
-
-            if (File.Exists(MSBuildSettingsFilePath))
-            {
-                EditorJsonUtility.FromJsonOverwrite(File.ReadAllText(MSBuildSettingsFilePath), toReturn);
-            }
-
-            bool needToSave = false;
-
-            toReturn.DependenciesProjectGuid = EnsureGuid(ref toReturn.dependenciesProjectGuid, ref needToSave);
-
-            toReturn.AssemblyCSharpGuid = EnsureGuid(ref toReturn.assemblyCSharpGuid, ref needToSave);
-            toReturn.AssemblyCSharpEditorGuid = EnsureGuid(ref toReturn.assemblyCSharpEditorGuid, ref needToSave);
-            toReturn.AssemblyCSharpFirstPassGuid = EnsureGuid(ref toReturn.assemblyCSharpFirstPassGuid, ref needToSave);
-            toReturn.AssemblyCSharpFirstPassEditorGuid = EnsureGuid(ref toReturn.assemblyCSharpFirstPassEditorGuid, ref needToSave);
-
-            toReturn.BuiltInPackagesFolderGuid = EnsureGuid(ref toReturn.builtInPackagesFolderGuid, ref needToSave);
-            toReturn.ImportedPackagesFolderGuid = EnsureGuid(ref toReturn.importedPackagesFolderGuid, ref needToSave);
-            toReturn.ExternalPackagesFolderGuid = EnsureGuid(ref toReturn.externalPackagesFolderGuid, ref needToSave);
-
-            toReturn.SolutionGuid = EnsureGuid(ref toReturn.solutionGuid, ref needToSave);
-
-            if (CurrentConfigVersion > toReturn.version)
-            {
-                toReturn.version = CurrentConfigVersion;
-                needToSave = true;
-            }
-
-            if (needToSave)
-            {
-                toReturn.Save();
-            }
-
-            return toReturn;
-        }
-
-        private static Guid EnsureGuid(ref string field, ref bool needToSave)
-        {
-            if (!Guid.TryParse(field, out Guid guid))
-            {
-                guid = Guid.NewGuid();
-                field = guid.ToString();
-
-                needToSave = true;
-            }
-
-            return guid;
-        }
-    }
 
     /// <summary>
     /// Class that exposes the MSBuild project generation operation.
@@ -150,6 +22,57 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     [InitializeOnLoad]
     public static class MSBuildTools
     {
+        private static bool CSProjectAssetChanged = false;
+        private static bool AssemblyDefinitionAssetChanged = false;
+        private static bool CSProjectAssetRemoved = false;
+
+        private class AssetPostprocessor : UnityEditor.AssetPostprocessor
+        {
+            private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                // Check for deleted path first
+                CheckPathsForChanges(deletedAssets);
+                CSProjectAssetRemoved = CSProjectAssetChanged;
+
+                CheckPathsForChanges(importedAssets, movedAssets, movedFromAssetPaths);
+
+                if (AssemblyDefinitionAssetChanged || CSProjectAssetChanged)
+                {
+                    RefreshGeneratedOutput(forceGenerateEverything: false, forceCompleteGeneration: false);
+                }
+            }
+
+            public static void CheckPathsForChanges(params string[][] assetPathSets)
+            {
+                foreach (string[] assetPathSet in assetPathSets)
+                {
+                    foreach (string assetPath in assetPathSet)
+                    {
+                        if (CSProjectAssetChanged && AssemblyDefinitionAssetChanged)
+                        {
+                            // Break out early since both are now true
+                            return;
+                        }
+
+                        string extension = Path.GetExtension(assetPath).ToLower();
+
+                        if (extension == ".csproj")
+                        {
+                            // Ignore generated projects
+                            if (!assetPath.EndsWith(".msb4u.csproj", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                CSProjectAssetChanged = true;
+                            }
+                        }
+                        else if (extension == ".asmdef")
+                        {
+                            AssemblyDefinitionAssetChanged = true;
+                        }
+                    }
+                }
+            }
+        }
+
         private class BuildTargetChanged : IActiveBuildTargetChanged
         {
             public int callbackOrder => 0;
@@ -281,9 +204,10 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 || EditorPrefs.GetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}") != (int)targetFramework
                 || forceGenerateEverything;
 
-            if (buildTargetOrFrameworkChanged)
+            if (buildTargetOrFrameworkChanged || CSProjectAssetRemoved)
             {
                 // We clean up previous build if the EditorPrefs currentBuildTarget or targetFramework is different from current ones.
+                // Or a CS Project file has been removed and we need to clean up
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.CleanProfileName);
             }
 
@@ -297,9 +221,17 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             // - forceGenerateEverything is true (we are told to)
             // - buildTargetOrFrameworkChanged is true (target framework changed)
             // - doesCurrentVersionTokenFileExist is false (version changed, or editor just opened)
+            // - CSProjectAssetChanged is true (a csproj file has been added)
+            // - AssemblyDefinitionAssetChanged is true and Config.FullGenerationEnabled is true (asmdef change and full regen is enabled that will gen based off asmdefs)
 
             // - AutoGenerateEnabled and token file doesn't exist or shouldClean is true
-            bool performRegeneration = forceGenerateEverything || buildTargetOrFrameworkChanged || !doesCurrentVersionTokenFileExist;
+            bool performRegeneration = forceGenerateEverything || buildTargetOrFrameworkChanged || !doesCurrentVersionTokenFileExist || CSProjectAssetChanged
+                || (AssemblyDefinitionAssetChanged && Config.FullGenerationEnabled);
+
+            // Reset the values after using them
+            CSProjectAssetChanged = false;
+            AssemblyDefinitionAssetChanged = false;
+            CSProjectAssetRemoved = false;
 
             if (performRegeneration || unityProjectInfo == null)
             {
@@ -328,8 +260,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(currentBuildTarget)}", (int)currentBuildTarget);
             EditorPrefs.SetInt($"{nameof(MSBuildTools)}.{nameof(targetFramework)}", (int)targetFramework);
 
-            // If we cleaned, now build
-            if (buildTargetOrFrameworkChanged)
+            // If we cleaned, now build, or if we regenerated
+            if (buildTargetOrFrameworkChanged || performRegeneration)
             {
                 MSBuildProjectBuilder.TryBuildAllProjects(MSBuildProjectBuilder.BuildProfileName);
             }
