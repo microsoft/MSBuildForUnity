@@ -1,6 +1,6 @@
 # Core Scenarios w/ MSBuildForUnity (MSB4U)
 
-This documentation outlines instructions for the core scenarios that are enabled with MSB4U, and how to get started with them. Each scenario assumes the reader understand how to add MSB4U to the Unity project, if not, take a look at [the instructions](../README.md#Quick%20Start). If you have issues following scenarios, see [troubleshooting](Troubleshooting.md).
+This documentation outlines instructions for the core scenarios that are enabled with MSB4U, and how to get started with them. Each scenario assumes the reader understand how to add MSB4U to the Unity project, if not, take a look at [the instructions](../README.md#Quick-Start). If you have issues following scenarios, see [troubleshooting](Troubleshooting.md).
 
 ## Scenario 1: Adding NuGet Dependency to Unity Project
 
