@@ -14,14 +14,19 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- task: Npm@1
-# Only update the version on master branch
+- task: PowerShell@2
   condition: and(not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')), not(startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/')))
   inputs:
-    command: 'custom'
-    customCommand: --no-git-tag-version version prerelease --preid=$(Build.BuildNumber)
-    workingDir: 'Source/MSBuildTools.Unity/Packages/com.microsoft.msbuildforunity'
-  displayName: 'Update UPM Version'
+    filePath: 'Scripts/IncrementUPMVersion.ps1'
+    arguments: '-IncrementPatch -PrereleaseID $(Build.BuildNumber)'
+  displayName: 'Increment Version Patch Value (Non Release/Prerelease Branch)`
+  
+- task: PowerShell@2
+  condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/')
+  inputs:
+    filePath: 'Scripts/IncrementUPMVersion.ps1'
+    arguments: '-PrereleaseID $(Build.BuildNumber)'
+  displayName: 'Set Prerelease Version (Prerelease Branch)`
   
 - task: Npm@1
   inputs:
