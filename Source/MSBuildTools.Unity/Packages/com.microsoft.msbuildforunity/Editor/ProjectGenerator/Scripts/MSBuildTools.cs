@@ -106,7 +106,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
 
         // On master branches this version must be incremented by 1 as to what is specified in the package.json.
         // This is because the build pipelines do that and append a prerelease.
-        public static readonly Version MSBuildForUnityVersion = new Version(0, 9, 1);
+        public static readonly Version MSBuildForUnityVersion = new Version(0, 9, 2);
         public static readonly Version DefaultMinUWPSDK = new Version("10.0.14393.0");
 
         private static UnityProjectInfo unityProjectInfo;

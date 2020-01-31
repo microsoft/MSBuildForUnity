@@ -45,7 +45,7 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
     - Add the following to the `dependencies` section of the file:
 
         ```json
-          "com.microsoft.msbuildforunity": "0.9.0"
+          "com.microsoft.msbuildforunity": "0.9.1"
         ```
 
 1. MSBuildForUnity will create a top-level project in your `Assets` folder named after your Unity project name: `{UnityProjectName}.Dependencies.msb4u.csproj`, edit this project file to add additional references to any NuGet packages or C# projects you want to use in your Unity project.
