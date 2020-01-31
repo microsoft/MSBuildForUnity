@@ -119,6 +119,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration.Templates
 
         private TemplateFiles()
         {
+            AssetDatabase.Refresh();
+
             string[] templateFolders = AssetDatabase.FindAssets(TemplateFilesFolderName);
             Utilities.GetPathsFromGuidsInPlace(templateFolders);
 
