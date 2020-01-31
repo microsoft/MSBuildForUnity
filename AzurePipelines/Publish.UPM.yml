@@ -19,15 +19,15 @@ steps:
   inputs:
     filePath: 'Scripts/IncrementUPMVersion.ps1'
     arguments: '-IncrementPatch -PrereleaseID $(Build.BuildNumber)'
-  displayName: 'Increment Version Patch Value (Non Release/Prerelease Branch)`
-  
+  displayName: 'Increment Version Patch Value (Non Release/Prerelease Branch)'
+
 - task: PowerShell@2
   condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/')
   inputs:
     filePath: 'Scripts/IncrementUPMVersion.ps1'
     arguments: '-PrereleaseID $(Build.BuildNumber)'
-  displayName: 'Set Prerelease Version (Prerelease Branch)`
-  
+  displayName: 'Increment Version Patch Value (Non Release/Prerelease Branch)'
+
 - task: Npm@1
   inputs:
     command: 'publish'
