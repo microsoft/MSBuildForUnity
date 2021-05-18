@@ -58,8 +58,7 @@
 
     <!-- This is the standard .meta file header and is inserted into the top of the generated .meta file. -->
     <UnityMetaFileHeader>
-      <![CDATA[
-fileFormatVersion: 2
+      <![CDATA[fileFormatVersion: 2
 guid: {0}
 PluginImporter:
   serializedVersion: 2
@@ -68,8 +67,7 @@ PluginImporter:
 
     <!-- This is the .meta configuration per supported player. It is inserted into the file for each entry in the Platforms metadata of appropriate UnityPlayerDefinition. -->
     <UnityMetaFilePlayerEnabledFormat>
-      <![CDATA[
-  - first:
+      <![CDATA[  - first:
       {0}
     second:
       enabled: {1}]]>
@@ -77,8 +75,7 @@ PluginImporter:
 
     <!-- This is the .meta configuration per excluded platform. It is inserted into the "Any" player exclusion block for each entry in the Platforms metadata of UnityPlayerDefinition that match the $(ExcludedUnityPlayers) property. -->
     <UnityMetaFilePlatformExcludedFormat>
-      <![CDATA[
-        Exclude {0}: {1}]]>
+      <![CDATA[        Exclude {0}: {1}]]>
     </UnityMetaFilePlatformExcludedFormat>
 
   </PropertyGroup>
