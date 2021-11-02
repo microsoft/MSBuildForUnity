@@ -185,7 +185,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 }
             }
 
-            if (guid != null && Guid.TryParse(guidString, out guid))
+            if (guidString != null && Guid.TryParse(guidString, out guid))
             {
                 return true;
             }
