@@ -15,7 +15,7 @@ The samples included in this repository best convey the simplicity and value of 
 
 | Build | Build Status                                         | Package Feed                                                                                                          |
 |-------|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       | [Azure DevOps](https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=feed&feed=UnityDeveloperTools) |
+| UPM   | [![UPM Build Status][UPMBuildBadge]][UPMBuild]       | [Azure DevOps][UPMPackage]                                                                                            |
 | NuGet | [![NuGet Build Status][NuGetBuildBadge]][NuGetBuild] | [![NuGet Package][NuGetPackageBadge]][NuGetPackage]                                                                   |
 
 ## Quick Start
@@ -45,8 +45,9 @@ This scenario leverages the MSBuildForUnity [Project Builder](#msbuild-project-b
     - Add the following to the `dependencies` section of the file:
 
         ```json
-          "com.microsoft.msbuildforunity": "0.9.2-20200131.11"
+          "com.microsoft.msbuildforunity": "<version>"
         ```
+      NOTE: Replace `<version>` with the latest package version from the [MSBuildForUnity UPM feed][UPMPackage].
 
 1. MSBuildForUnity will create a top-level project in your `Assets` folder named after your Unity project name: `{UnityProjectName}.Dependencies.msb4u.csproj`, edit this project file to add additional references to any NuGet packages or C# projects you want to use in your Unity project.
 
@@ -137,6 +138,8 @@ For details, see the [documentation](Documentation/MSBuildForUnityNuGetPackage/M
 
 [NuGetBuildBadge]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_apis/build/status/MSBuildForUnity.Publish.NuGet?branchName=master
 [NuGetBuild]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_build/latest?definitionId=3&branchName=master
+
+[UPMPackage]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=package&feed=UnityDeveloperTools&view=versions&package=com.microsoft.msbuildforunity&protocolType=Npm
 
 [NuGetPackageBadge]: https://feeds.dev.azure.com/UnityDeveloperTools/0cb95e25-9194-4ccd-9afb-439b25ecb93a/_apis/public/Packaging/Feeds/a3d1c3cc-6042-4e05-b699-39a947e75639/Packages/bdf78d31-dd97-4f6b-befb-75bb6185172e/Badge
 [NuGetPackage]: https://dev.azure.com/UnityDeveloperTools/MSBuildForUnity/_packaging?_a=package&feed=a3d1c3cc-6042-4e05-b699-39a947e75639&package=bdf78d31-dd97-4f6b-befb-75bb6185172e&preferRelease=true
