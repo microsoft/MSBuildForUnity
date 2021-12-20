@@ -442,7 +442,11 @@ namespace Microsoft.Build.Unity
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
-
+#if UNITY_EDITOR_WIN
+                    var defaultEncoding = System.Text.Encoding.GetEncoding(Thread.CurrentThread.CurrentCulture.TextInfo.ANSICodePage);
+                    process.StartInfo.StandardOutputEncoding = defaultEncoding;
+                    process.StartInfo.StandardErrorEncoding = defaultEncoding;
+#endif
                     process.OutputDataReceived += (object sender, System.Diagnostics.DataReceivedEventArgs e) =>
                     {
                         if (!string.IsNullOrWhiteSpace(e.Data))
