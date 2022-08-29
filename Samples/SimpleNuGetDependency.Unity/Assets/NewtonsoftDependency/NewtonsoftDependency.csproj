@@ -20,7 +20,7 @@
   
   <ItemGroup>
     <!-- Standard NuGet package -->
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 
     <!-- A MSBuildForUnity enabled NuGet package that has additional behavior for Unity specific (no difference in import) -->
     <PackageReference Include="Microsoft.MixedReality.QR" Version="0.5.2085"/>
