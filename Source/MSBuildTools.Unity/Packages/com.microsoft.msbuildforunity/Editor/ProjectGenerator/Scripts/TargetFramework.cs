@@ -13,6 +13,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
     public enum TargetFramework
     {
         NetStandard20,
+        NetStandard21,
         Net20,
         Net46
     }
@@ -40,6 +41,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 case TargetFramework.NetStandard20:
                     return "netstandard2.0";
+                case TargetFramework.NetStandard21:
+                    return "netstandard2.1";
                 case TargetFramework.Net20:
                     return "net20";
                 case TargetFramework.Net46:
@@ -60,6 +63,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
             {
                 case TargetFramework.NetStandard20:
                     return "NetStandard20";
+                case TargetFramework.NetStandard21:
+                    return "NetStandard21";
                 case TargetFramework.Net20:
                     return "Net20";
                 case TargetFramework.Net46:
@@ -92,8 +97,13 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 case ApiCompatibilityLevel.NET_Web:
                 case ApiCompatibilityLevel.NET_Micro:
                     throw new PlatformNotSupportedException("Don't currently support NET_Web and NET_Micro API compat");
+#if !UNITY_2021_2_OR_NEWER
                 case ApiCompatibilityLevel.NET_Standard_2_0:
                     return TargetFramework.NetStandard20;
+#else
+                case ApiCompatibilityLevel.NET_Standard:
+                    return TargetFramework.NetStandard21;
+#endif
             }
 
             throw new PlatformNotSupportedException("ApiCompatibilityLevel platform not matched.");
