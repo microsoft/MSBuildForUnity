@@ -15,7 +15,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
         NetStandard20,
         NetStandard21,
         Net20,
-        Net46
+        Net46,
+        Net471
     }
 
     public enum ScriptingBackend
@@ -47,6 +48,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     return "net20";
                 case TargetFramework.Net46:
                     return "net46";
+                case TargetFramework.Net471:
+                    return "net471";
             }
 
             throw new ArgumentOutOfRangeException(nameof(@this));
@@ -69,6 +72,8 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                     return "Net20";
                 case TargetFramework.Net46:
                     return "Net46";
+                case TargetFramework.Net471:
+                    return "Net471";
             }
 
             throw new ArgumentOutOfRangeException(nameof(@this));
@@ -92,8 +97,15 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 case ApiCompatibilityLevel.NET_2_0:
                 case ApiCompatibilityLevel.NET_2_0_Subset:
                     return TargetFramework.Net20;
+#if !UNITY_2021_2_OR_NEWER
                 case ApiCompatibilityLevel.NET_4_6:
                     return TargetFramework.Net46;
+#else
+                case ApiCompatibilityLevel.NET_Unity_4_8:
+                    // Unity 2021.2+ and 2022.* both generates projects that targets
+                    // .NET Framework 4.7.1 instead of 4.8, so we can't use net48 here.
+                    return TargetFramework.Net471;
+#endif
                 case ApiCompatibilityLevel.NET_Web:
                 case ApiCompatibilityLevel.NET_Micro:
                     throw new PlatformNotSupportedException("Don't currently support NET_Web and NET_Micro API compat");
