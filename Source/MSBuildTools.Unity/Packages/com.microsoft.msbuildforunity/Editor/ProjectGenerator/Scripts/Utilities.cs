@@ -136,7 +136,7 @@ namespace Microsoft.Build.Unity.ProjectGeneration
                 if (relativePath.Contains('@'))
                 {
                     string[] parts = relativePath.Split('@');
-                    relativePath = parts[0] + parts[1].Substring(parts[1].IndexOf('\\'));
+                    relativePath = parts[0] + parts[1].Substring(parts[1].IndexOf(Path.DirectorySeparatorChar));
                 }
             }
             else if (path.Contains(PackagesPath))
